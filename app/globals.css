@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --sky-blue:   #1AB0EB;
+  --ocean-blue: #00508D;
+  --deep-blue:  #002949;
+  --brand-bg:   #F0F9FF;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: 'Lexend Deca', Arial, Helvetica, sans-serif;
+  background: #ffffff;
+  color: #002949;
+  -webkit-font-smoothing: antialiased;
+}
+
+.scrollbar-none { scrollbar-width: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }
