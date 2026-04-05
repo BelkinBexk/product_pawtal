@@ -1,6 +1,33 @@
-import Link from "next/link";
+"use client";
 
-// ── Sample deals (prototype — hardcoded) ─────────────────────────────────────
+import Link from "next/link";
+import { useState } from "react";
+
+// ── Bangkok areas ─────────────────────────────────────────────────────────────
+const AREAS = [
+  "Sukhumvit",
+  "Ekkamai",
+  "Thonglor",
+  "Phrom Phong",
+  "Asok",
+  "On Nut",
+  "Nana",
+  "Phra Khanong",
+  "Bang Na",
+  "Bearing",
+  "Ari",
+  "Silom",
+];
+
+// ── Nav links ─────────────────────────────────────────────────────────────────
+const NAV_LINKS = [
+  { label: "Home",     href: "/" },
+  { label: "Services", href: "/" },
+  { label: "About Us", href: "/" },
+  { label: "Blogs",    href: "/" },
+];
+
+// ── Sample deals (prototype) ──────────────────────────────────────────────────
 const PREVIEW_DEALS = [
   {
     id: 1,
@@ -61,65 +88,113 @@ const PREVIEW_DEALS = [
 ];
 
 export default function LandingPage() {
+  const [selectedArea, setSelectedArea] = useState("Sukhumvit");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-white">
 
       {/* ── Navbar ── */}
-      <nav className="sticky top-0 z-40 bg-white border-b border-[#E5E7EB] px-6 sm:px-10 h-16 flex items-center justify-between">
+      <nav className="sticky top-0 z-40 bg-white border-b border-[#E5E7EB] px-6 sm:px-12 h-16 flex items-center justify-between gap-6">
+
         {/* Logo */}
-        <Link href="/" className="text-xl font-extrabold text-[#002949] tracking-tight">
+        <Link href="/" className="text-xl font-extrabold text-[#002949] tracking-tight flex-shrink-0">
           PAWTAL
         </Link>
 
-        {/* Right: For Business + Get Start */}
-        <div className="flex items-center gap-4">
+        {/* Nav links — desktop */}
+        <div className="hidden sm:flex items-center gap-7">
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.label}
+              href={link.href}
+              className="text-sm font-medium text-[#374151] hover:text-[#002949] transition-colors"
+            >
+              {link.label}
+            </Link>
+          ))}
+        </div>
+
+        {/* Right CTAs */}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {/* For Business — outlined CI button */}
           <Link
             href="/vendor"
-            className="text-sm font-semibold text-[#D97706] hover:text-[#B45309] transition-colors"
+            className="hidden sm:inline-flex items-center px-5 py-2 rounded-full border-2 border-[#002949] text-[#002949] text-sm font-bold hover:bg-[#002949] hover:text-white transition-all"
           >
             For Business
           </Link>
+          {/* Get Start — filled CI button */}
           <Link
             href="/auth/customer/login"
-            className="px-5 py-2 rounded-full bg-[#16A34A] text-white text-sm font-bold hover:bg-[#15803D] transition-colors"
+            className="inline-flex items-center px-5 py-2 rounded-full bg-[#1AB0EB] text-white text-sm font-bold hover:bg-[#00508D] transition-colors shadow-[0_4px_14px_rgba(26,176,235,0.30)]"
           >
-            Get start
+            Get Start
           </Link>
         </div>
       </nav>
 
       {/* ── Hero ── */}
-      <section className="px-6 sm:px-10 pt-16 sm:pt-24 pb-10 text-center">
+      <section className="px-6 sm:px-12 pt-16 sm:pt-24 pb-10 text-center">
         <h1 className="text-[42px] sm:text-[68px] font-extrabold text-[#002949] leading-[1.1] mb-5">
-          welcome to pawtal
+          Welcome to Pawtal
         </h1>
-        <p className="text-[#6B7280] text-base sm:text-xl max-w-[520px] mx-auto leading-relaxed mb-10">
+        <p className="text-[#6B7280] text-base sm:text-lg max-w-[500px] mx-auto leading-relaxed mb-10">
           Discover off-peak deals on grooming, spa &amp; pet care near you —
-          book in seconds, save up to 40%.
+          connect with trusted pet service providers in Bangkok.
         </p>
 
-        {/* Area + deal count combined pill */}
+        {/* Location pill with dropdown */}
         <div className="flex items-center justify-center mb-12">
-          <button className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-[#E5E7EB] bg-white shadow-sm text-sm font-semibold text-[#002949] hover:border-[#1AB0EB] transition-colors">
-            <span>📍</span>
-            <span className="font-bold">Sukhumvit</span>
-            <span className="text-[#6B7280]">{PREVIEW_DEALS.length} deals</span>
-            <svg className="w-3.5 h-3.5 text-[#6B7280]" viewBox="0 0 12 8" fill="none">
-              <path d="M1 1l5 5 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setDropdownOpen((o) => !o)}
+              className="flex items-center gap-2.5 px-5 py-3 rounded-full border border-[#E5E7EB] bg-white shadow-sm text-sm font-semibold text-[#002949] hover:border-[#1AB0EB] transition-colors min-w-[180px]"
+            >
+              <span>📍</span>
+              <span className="font-bold">{selectedArea}</span>
+              <span className="text-[#9CA3AF] font-normal">{PREVIEW_DEALS.length} deals</span>
+              <svg
+                className={`w-3.5 h-3.5 text-[#6B7280] ml-auto transition-transform ${dropdownOpen ? "rotate-180" : ""}`}
+                viewBox="0 0 12 8" fill="none"
+              >
+                <path d="M1 1l5 5 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </button>
+
+            {/* Dropdown */}
+            {dropdownOpen && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-[#E5E7EB] rounded-2xl shadow-lg overflow-hidden z-50">
+                {AREAS.map((area) => (
+                  <button
+                    key={area}
+                    onClick={() => { setSelectedArea(area); setDropdownOpen(false); }}
+                    className={`w-full text-left px-5 py-3 text-sm font-semibold flex items-center gap-2 transition-colors ${
+                      area === selectedArea
+                        ? "bg-[#E6F6FD] text-[#1AB0EB]"
+                        : "text-[#374151] hover:bg-[#F9FAFB]"
+                    }`}
+                  >
+                    {area === selectedArea && <span className="text-[#1AB0EB] text-xs">✓</span>}
+                    {area !== selectedArea && <span className="w-3" />}
+                    {area}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
       {/* ── Deal Cards ── */}
-      <section className="px-6 sm:px-10 pb-14">
+      <section className="px-6 sm:px-12 pb-14">
         <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {PREVIEW_DEALS.map((deal) => (
             <DealCard key={deal.id} deal={deal} />
           ))}
         </div>
 
-        {/* Explore CTA — outlined */}
+        {/* Explore — outlined */}
         <div className="text-center mt-12">
           <Link
             href="/deals"
@@ -129,6 +204,11 @@ export default function LandingPage() {
           </Link>
         </div>
       </section>
+
+      {/* Backdrop to close dropdown */}
+      {dropdownOpen && (
+        <div className="fixed inset-0 z-30" onClick={() => setDropdownOpen(false)} />
+      )}
 
     </div>
   );
@@ -151,11 +231,9 @@ function DealCard({ deal }: { deal: Deal }) {
 
       {/* Body */}
       <div className="p-4">
-        {/* Shop + service */}
         <div className="font-extrabold text-[#002949] text-sm mb-0.5 truncate">{deal.shop}</div>
         <div className="text-xs text-[#6B7280] mb-2.5 truncate">{deal.service}</div>
 
-        {/* Rating + area */}
         <div className="flex items-center gap-1.5 text-xs text-[#6B7280] mb-2.5">
           <span className="text-[#D97706] font-bold">★ {deal.rating}</span>
           <span>({deal.reviews})</span>
@@ -163,20 +241,17 @@ function DealCard({ deal }: { deal: Deal }) {
           <span>📍 {deal.area}</span>
         </div>
 
-        {/* Price row */}
         <div className="flex items-center gap-2 mb-1.5">
           <span className="text-xs text-[#9CA3AF] line-through">฿{deal.original.toLocaleString()}</span>
           <span className="text-base font-extrabold text-[#002949]">฿{deal.deal.toLocaleString()}</span>
           <span className="text-xs font-bold text-[#16A34A]">Save ฿{save.toLocaleString()}</span>
         </div>
 
-        {/* Timer */}
         <div className={`flex items-center gap-1 text-[11px] font-semibold mb-4 ${deal.timer.active ? "text-[#DC2626]" : "text-[#6B7280]"}`}>
           <span>⏰</span>
           <span>{deal.timer.label}</span>
         </div>
 
-        {/* Book Now */}
         <button className="w-full py-2.5 rounded-xl bg-[#1AB0EB] text-white text-sm font-bold hover:bg-[#00508D] transition-colors">
           Book Now
         </button>
