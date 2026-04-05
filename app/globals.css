@@ -25,7 +25,7 @@ body { font-family: 'Lexend Deca', sans-serif; background: #fff; color: var(--da
 .nav-link { font-size: 14px; font-weight: 400; color: var(--navy); padding: 8px 18px; border-radius: 8px; cursor: pointer; text-decoration: none; transition: background 0.15s; }
 .nav-link:hover { background: var(--surface); }
 .nav-right { display: flex; align-items: center; gap: 12px; }
-.nav-login { font-size: 14px; font-weight: 500; color: var(--navy); padding: 9px 20px; border-radius: 100px; border: 1.5px solid var(--border2); cursor: pointer; transition: background 0.15s; }
+.nav-login { font-size: 14px; font-weight: 500; color: var(--navy); padding: 9px 20px; border-radius: 100px; border: 1.5px solid #c0d8f0; cursor: pointer; transition: background 0.15s; background: transparent; }
 .nav-login:hover { background: var(--surface); }
 .nav-cta { background: var(--blue); color: #fff; font-size: 14px; font-weight: 600; padding: 10px 24px; border-radius: 100px; cursor: pointer; transition: background 0.15s; font-family: 'Lexend Deca', sans-serif; border: none; }
 .nav-cta:hover { background: var(--blue-hover); }
@@ -164,7 +164,7 @@ body { font-family: 'Lexend Deca', sans-serif; background: #fff; color: var(--da
 .faq-item.open .faq-a { max-height: 300px; padding-bottom: 20px; }
 
 /* VENDOR STRIP */
-.vendor-strip { position: relative; overflow: hidden; }
+.vendor-strip { background: #003459; }
 .vendor-inner { position: relative; z-index: 2; max-width: 1200px; margin: 0 auto; padding: 80px 48px; display: flex; align-items: center; justify-content: space-between; gap: 40px; }
 .vendor-text h2 { font-size: 36px; font-weight: 700; color: #fff; letter-spacing: -0.8px; margin-bottom: 14px; }
 .vendor-text p { font-size: 15px; color: #a8d4ee; font-weight: 300; max-width: 540px; line-height: 1.7; }
@@ -210,3 +210,58 @@ body { font-family: 'Lexend Deca', sans-serif; background: #fff; color: var(--da
 .footer-col a:hover { color: var(--blue); }
 .footer-bottom { border-top: 1px solid var(--navy); padding-top: 28px; display: flex; justify-content: space-between; align-items: center; }
 .footer-copy { font-size: 13px; color: #3a6a80; font-weight: 300; }
+
+/* ── LOGIN PAGE ── */
+.login-layout { display: flex; min-height: 100vh; font-family: 'Lexend Deca', sans-serif; }
+
+/* Left panel */
+.login-left { width: 380px; flex-shrink: 0; background: #003459; padding: 40px 36px; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+.login-left-logo { font-size: 20px; font-weight: 700; color: #fff; letter-spacing: -0.3px; margin-bottom: 24px; }
+.login-left-badge { display: inline-flex; align-items: center; gap: 7px; border: 1.5px solid rgba(23,168,255,0.55); color: #17A8FF; font-size: 11px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; padding: 5px 14px; border-radius: 100px; margin-bottom: 28px; width: fit-content; }
+.login-left-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: #17A8FF; }
+.login-left-h1 { font-size: 34px; font-weight: 800; color: #fff; line-height: 1.15; letter-spacing: -1px; margin-bottom: 16px; }
+.login-left-sub { font-size: 13px; color: #a8d4ee; font-weight: 300; line-height: 1.75; margin-bottom: 36px; }
+.login-deal-list { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.login-deal-card { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; gap: 14px; }
+.login-deal-icon { width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
+.login-deal-icon svg { width: 44px; height: 44px; }
+.login-deal-info { flex: 1; min-width: 0; }
+.login-deal-name { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.login-deal-meta { font-size: 11px; color: #7eb5d6; font-weight: 300; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.login-deal-price { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.login-deal-old { font-size: 11px; color: #5a8fa8; text-decoration: line-through; }
+.login-deal-row { display: flex; align-items: center; gap: 6px; }
+.login-deal-new { font-size: 15px; font-weight: 700; color: #17A8FF; }
+.login-deal-badge { background: #DC2626; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 100px; }
+.login-left-footer { font-size: 11px; color: #3a6a80; margin-top: 32px; }
+
+/* Right panel */
+.login-right { flex: 1; background: #f0f4f8; display: flex; align-items: center; justify-content: center; padding: 48px 24px; }
+.login-card { background: #fff; border-radius: 24px; padding: 44px 48px; width: 100%; max-width: 460px; box-shadow: 0 8px 40px rgba(0,52,89,0.10); }
+.login-card-title { font-size: 28px; font-weight: 800; color: var(--dark); letter-spacing: -0.8px; margin-bottom: 6px; }
+.login-card-sub { font-size: 14px; color: #7eb5d6; font-weight: 300; margin-bottom: 32px; }
+.login-field { margin-bottom: 20px; }
+.login-field label { display: block; font-size: 13px; font-weight: 600; color: var(--dark); margin-bottom: 8px; }
+.login-input { width: 100%; background: #e8f4ff; border: none; border-radius: 12px; padding: 14px 16px; font-size: 14px; color: var(--dark); font-family: 'Lexend Deca', sans-serif; outline: none; transition: box-shadow 0.15s; }
+.login-input:focus { box-shadow: 0 0 0 2px rgba(23,168,255,0.35); }
+.login-input::placeholder { color: #9ec9e0; }
+.login-input-wrap { position: relative; }
+.login-input-wrap .login-input { padding-right: 48px; }
+.login-eye { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #7eb5d6; font-size: 18px; line-height: 1; padding: 2px; }
+.login-forgot { display: block; text-align: right; font-size: 13px; color: var(--blue); font-weight: 500; cursor: pointer; margin-top: 8px; text-decoration: none; }
+.login-forgot:hover { text-decoration: underline; }
+.login-btn { width: 100%; background: var(--blue); color: #fff; border: none; border-radius: 100px; padding: 16px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: 'Lexend Deca', sans-serif; margin-top: 28px; margin-bottom: 12px; transition: background 0.15s; }
+.login-btn:hover { background: var(--blue-hover); }
+.login-create-btn { width: 100%; background: transparent; color: var(--blue); border: 1.5px solid var(--blue); border-radius: 100px; padding: 15px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: 'Lexend Deca', sans-serif; margin-bottom: 24px; transition: background 0.15s; }
+.login-create-btn:hover { background: var(--blue-light); }
+.login-back { display: block; text-align: center; font-size: 13px; color: #9ec9e0; font-weight: 300; text-decoration: none; cursor: pointer; transition: color 0.15s; }
+.login-back:hover { color: var(--blue); }
+
+/* ── FORGOT PASSWORD (shares login-layout / login-card / login-left) ── */
+.fp-back { display: inline-flex; align-items: center; font-size: 13px; color: #9ec9e0; font-weight: 400; text-decoration: none; margin-bottom: 28px; transition: color 0.15s; }
+.fp-back:hover { color: var(--blue); }
+.fp-title { font-size: 32px; font-weight: 800; color: var(--dark); letter-spacing: -1px; margin-bottom: 12px; }
+.fp-sub { font-size: 15px; color: #7eb5d6; font-weight: 300; line-height: 1.75; margin-bottom: 32px; }
+.fp-field { margin-bottom: 4px; }
+.fp-label { display: block; font-size: 11px; font-weight: 700; color: var(--dark); letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 10px; }
+.fp-success-icon { font-size: 40px; margin-bottom: 16px; }

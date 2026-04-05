@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
@@ -55,7 +56,10 @@ type Deal = typeof deals[number];
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
+const LOCATIONS = ["Sukhumvit", "Thonglor", "Asok", "Phrom Phong", "Ekkamai", "On Nut"];
+
 export default function LandingPage() {
+  const router = useRouter();
   const [activeCat, setActiveCat] = useState("All");
   const [activeSvc, setActiveSvc] = useState<string | null>(null);
   const [activeGroup, setActiveGroup] = useState("all");
@@ -64,6 +68,8 @@ export default function LandingPage() {
   const [toast, setToast] = useState("");
   const [toastVisible, setToastVisible] = useState(false);
   const [search, setSearch] = useState("");
+  const [selectedLoc, setSelectedLoc] = useState("Sukhumvit");
+  const [locOpen, setLocOpen] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dealsRef = useRef<HTMLDivElement>(null);
 
@@ -122,8 +128,8 @@ export default function LandingPage() {
             <a className="nav-link" href="#vendor">For Business</a>
           </div>
           <div className="nav-right">
-            <button className="nav-login" onClick={() => showToast("Sign in coming soon!")}>Sign in</button>
-            <button className="nav-cta" onClick={() => showToast("Welcome to Pawtal! Sign up coming soon.")}>Get started</button>
+            <button className="nav-login" onClick={() => router.push("/login")}>Sign in</button>
+            <button className="nav-cta" onClick={() => router.push("/login")}>Get started</button>
           </div>
         </div>
       </nav>
@@ -154,7 +160,27 @@ export default function LandingPage() {
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               />
               <div className="hero-search-sep" />
-              <div className="hero-search-loc" onClick={() => showToast("Location selector coming soon!")}>Sukhumvit</div>
+              <div style={{ position: "relative" }}>
+                <div className="hero-search-loc" onClick={() => setLocOpen((o) => !o)}>
+                  📍 {selectedLoc}
+                  <svg style={{ marginLeft: 6, display: "inline", verticalAlign: "middle", transition: "transform 0.2s", transform: locOpen ? "rotate(180deg)" : "rotate(0deg)" }} width="10" height="10" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="#5a8fa8" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                </div>
+                {locOpen && (
+                  <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, background: "#fff", border: "1px solid var(--border2)", borderRadius: 14, boxShadow: "0 8px 24px rgba(0,52,89,0.12)", overflow: "hidden", zIndex: 100, minWidth: 160 }}>
+                    {LOCATIONS.map((loc) => (
+                      <div
+                        key={loc}
+                        onClick={() => { setSelectedLoc(loc); setLocOpen(false); }}
+                        style={{ padding: "10px 18px", fontSize: 13, fontWeight: selectedLoc === loc ? 600 : 400, color: selectedLoc === loc ? "var(--blue)" : "var(--navy)", background: selectedLoc === loc ? "var(--blue-light)" : "transparent", cursor: "pointer" }}
+                        onMouseEnter={(e) => { if (selectedLoc !== loc) (e.currentTarget as HTMLDivElement).style.background = "var(--surface)"; }}
+                        onMouseLeave={(e) => { if (selectedLoc !== loc) (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
+                      >
+                        {loc}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               <button className="hero-search-btn" onClick={handleSearch}>Search</button>
             </div>
             <div className="hero-stats">
@@ -252,7 +278,7 @@ export default function LandingPage() {
               <h2 className="section-h2">Flash deals near you</h2>
               <p className="section-sub">Limited-time offers from top-rated vendors in Sukhumvit and surrounding areas.</p>
             </div>
-            <div className="see-all" onClick={() => showToast("Explore all deals coming soon!")}>Explore all deals &rsaquo;</div>
+            <div className="see-all" onClick={() => router.push("/login")}>Explore all deals &rsaquo;</div>
           </div>
 
           {/* Category pills */}
@@ -468,10 +494,6 @@ export default function LandingPage() {
 
       {/* ── VENDOR STRIP ── */}
       <div className="vendor-strip reveal" id="vendor">
-        <div className="vendor-bg">
-          <div style={{ background: "#003459", width: "100%", height: "100%" }} />
-          <div className="vendor-bg-overlay" />
-        </div>
         <div className="vendor-inner">
           <div className="vendor-text">
             <h2>Are you a pet service provider?</h2>
@@ -560,7 +582,7 @@ export default function LandingPage() {
                 <span>{modalDeal.timer}</span>
               </div>
             </div>
-            <button className="modal-book-btn" onClick={() => { closeModal(); showToast("Booking confirmed! Check your email for details."); }}>
+            <button className="modal-book-btn" onClick={() => { closeModal(); router.push("/login"); }}>
               Confirm Booking
             </button>
           </div>
@@ -569,6 +591,11 @@ export default function LandingPage() {
 
       {/* ── TOAST ── */}
       <div className={`toast${toastVisible ? " show" : ""}`}>{toast}</div>
+
+      {/* Backdrop to close location dropdown */}
+      {locOpen && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 99 }} onClick={() => setLocOpen(false)} />
+      )}
     </>
   );
 }

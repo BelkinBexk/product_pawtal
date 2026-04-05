@@ -17,6 +17,15 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={lexend.variable}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(regs) {
+              regs.forEach(function(reg) { reg.unregister(); });
+            });
+          }
+        `}} />
+      </head>
       <body style={{ fontFamily: "var(--font-lexend), Arial, sans-serif" }}>
         {children}
       </body>
