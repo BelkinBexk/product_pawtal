@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 
 const PREVIEW_DEALS = [
   {
@@ -33,16 +34,32 @@ const PREVIEW_DEALS = [
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email.trim()) setSent(true);
+    setError("");
+    setLoading(true);
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+    setLoading(false);
+
+    if (error) {
+      setError(error.message);
+      return;
+    }
+
+    setSent(true);
   };
 
   return (
     <div className="login-layout">
 
-      {/* ── Left Panel (same as login) ── */}
+      {/* ── Left Panel ── */}
       <div className="login-left">
         <div className="login-left-logo">Pawtal</div>
 
@@ -90,6 +107,10 @@ export default function ForgotPasswordPage() {
                 Enter your registered email and we&apos;ll send you a reset link right away.
               </p>
 
+              {error && (
+                <div className="login-error">{error}</div>
+              )}
+
               <form onSubmit={handleSubmit}>
                 <div className="fp-field">
                   <label htmlFor="fp-email" className="fp-label">Email</label>
@@ -104,8 +125,8 @@ export default function ForgotPasswordPage() {
                     autoComplete="email"
                   />
                 </div>
-                <button type="submit" className="login-btn" style={{ marginTop: 24 }}>
-                  Send Reset Link
+                <button type="submit" className="login-btn" style={{ marginTop: 24 }} disabled={loading}>
+                  {loading ? "Sending…" : "Send Reset Link"}
                 </button>
               </form>
 
@@ -116,7 +137,7 @@ export default function ForgotPasswordPage() {
               <div className="fp-success-icon">✉️</div>
               <h1 className="fp-title">Check your inbox</h1>
               <p className="fp-sub">
-                We&apos;ve sent a password reset link to <strong>{email}</strong>. It may take a minute to arrive.
+                We&apos;ve sent a password reset link to <strong>{email}</strong>. It may take a minute to arrive. Check your spam folder if you don&apos;t see it.
               </p>
               <Link href="/login" className="login-btn" style={{ display: "block", textAlign: "center", textDecoration: "none", marginTop: 24 }}>
                 Back to Log In

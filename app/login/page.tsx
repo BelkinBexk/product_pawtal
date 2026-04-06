@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
-// ── Deal previews shown on left panel ────────────────────────────────────────
+// ── Deal previews ─────────────────────────────────────────────────────────────
 const PREVIEW_DEALS = [
   {
     name: "Happy Paws Grooming",
@@ -33,13 +35,28 @@ const PREVIEW_DEALS = [
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Prototype — no real auth
+    setError("");
+    setLoading(true);
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    setLoading(false);
+
+    if (error) {
+      setError(error.message);
+      return;
+    }
+
+    router.push("/deals");
   };
 
   return (
@@ -59,14 +76,10 @@ export default function LoginPage() {
           Premium grooming &amp; care at up to 40% off — only during quiet hours. Book in seconds, pay upfront, love your pet more.
         </p>
 
-        {/* Deal preview cards */}
         <div className="login-deal-list">
           {PREVIEW_DEALS.map((deal) => (
             <div key={deal.name} className="login-deal-card">
-              <div
-                className="login-deal-icon"
-                dangerouslySetInnerHTML={{ __html: deal.svg }}
-              />
+              <div className="login-deal-icon" dangerouslySetInnerHTML={{ __html: deal.svg }} />
               <div className="login-deal-info">
                 <div className="login-deal-name">{deal.name}</div>
                 <div className="login-deal-meta">{deal.meta}</div>
@@ -91,8 +104,12 @@ export default function LoginPage() {
           <div className="login-card-title">Log In</div>
           <div className="login-card-sub">Welcome back, pet lover 🐾</div>
 
+          {/* Error banner */}
+          {error && (
+            <div className="login-error">{error}</div>
+          )}
+
           <form onSubmit={handleLogin}>
-            {/* Email */}
             <div className="login-field">
               <label htmlFor="email">Email</label>
               <input
@@ -102,11 +119,11 @@ export default function LoginPage() {
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                required
                 autoComplete="email"
               />
             </div>
 
-            {/* Password */}
             <div className="login-field">
               <label htmlFor="password">Password</label>
               <div className="login-input-wrap">
@@ -117,6 +134,7 @@ export default function LoginPage() {
                   placeholder="••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  required
                   autoComplete="current-password"
                 />
                 <button
@@ -142,10 +160,12 @@ export default function LoginPage() {
               <Link href="/forgot-password" className="login-forgot">Forgot password?</Link>
             </div>
 
-            <button type="submit" className="login-btn">Log In</button>
+            <button type="submit" className="login-btn" disabled={loading}>
+              {loading ? "Logging in…" : "Log In"}
+            </button>
           </form>
 
-          <button type="button" className="login-create-btn">
+          <button type="button" className="login-create-btn" onClick={() => router.push("/signup")}>
             Create a Pet Owner Account
           </button>
 
