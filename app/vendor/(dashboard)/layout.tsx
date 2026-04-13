@@ -27,6 +27,10 @@ const NAV_MAIN = [
     key: "reviews", label: "Reviews", href: "/vendor/reviews", badge: null,
     icon: `<svg viewBox="0 0 16 16" fill="none"><path d="M8 1l1.8 3.6L14 5.3l-3 2.9.7 4.1L8 10.4 4.3 12.3l.7-4.1L2 5.3l4.2-.7z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
   },
+  {
+    key: "customers", label: "Customers", href: "/vendor/customers", badge: null,
+    icon: `<svg viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M1 13c0-2.76 2.24-5 5-5s5 2.24 5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="12" cy="7" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M14 13c0-1.66-.9-3-2-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
+  },
 ];
 
 const NAV_SETTINGS = [
@@ -48,6 +52,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/vendor/reviews":   "Reviews",
   "/vendor/profile":   "Profile & Settings",
   "/vendor/services":  "Services",
+  "/vendor/customers": "Customers",
 };
 
 function getPageTitle(pathname: string) {

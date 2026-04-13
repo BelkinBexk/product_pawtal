@@ -2,14 +2,21 @@ import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 
 // ── Protected customer routes ──────────────────────────────────────────────────
-// Any path starting with these requires an authenticated Supabase session.
-const CUSTOMER_PROTECTED = ["/deals", "/book", "/payment", "/bookings", "/explore"];
+const CUSTOMER_PROTECTED = ["/deals", "/book", "/payment", "/bookings", "/explore", "/pets", "/profile"];
 
 // ── Vendor protected routes ────────────────────────────────────────────────────
-// Vendor dashboard routes (not auth pages) require a provider session.
-const VENDOR_PROTECTED = ["/vendor/dashboard", "/vendor/bookings", "/vendor/profile", "/vendor/transactions", "/vendor/reviews"];
+const VENDOR_PROTECTED = [
+  "/vendor/dashboard",
+  "/vendor/calendar",
+  "/vendor/bookings",
+  "/vendor/revenue",
+  "/vendor/reviews",
+  "/vendor/services",
+  "/vendor/profile",
+  "/vendor/customers",
+];
 
-export async function proxy(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
   const { pathname } = req.nextUrl;
 
