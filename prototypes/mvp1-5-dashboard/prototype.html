@@ -1,0 +1,2352 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1280" />
+<title>Pawtal MVP#1.5 — Provider Dashboard (Desktop)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@300;400;500;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+/* ── Reset ────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  /* ── Pawtal CI Palette ── */
+  --sky-blue:    #1AB0EB;   /* Primary CTA / accent        */
+  --ocean-blue:  #00508D;   /* Secondary / hover            */
+  --deep-blue:   #002949;   /* Sidebar / headings / dark bg */
+  --blue-black:  #00131F;   /* Footer / darkest             */
+  --brand-light: #E6F6FD;   /* Sky Blue 20% tint            */
+  --white:       #FFFFFF;
+
+  /* Semantic aliases kept for legacy CSS */
+  --blue:        #002949;
+  --blue-mid:    #00508D;
+  --teal:        #1AB0EB;
+  --teal-light:  #E6F6FD;
+
+  /* Status colours */
+  --success:     #16A34A;
+  --success-bg:  #DCFCE7;
+  --warning:     #D97706;
+  --warning-bg:  #FEF3C7;
+  --error:       #DC2626;
+  --error-bg:    #FEE2E2;
+
+  /* Neutrals */
+  --n900: #002949;
+  --n700: #374151;
+  --n500: #6B7280;
+  --n300: #D1D5DB;
+  --n200: #E5E7EB;
+  --n100: #F3F4F6;
+  --n50:  #F8FBFD;
+
+  --sidebar-w: 240px;
+  --header-h:  64px;
+}
+body {
+  font-family: 'Lexend Deca', 'Noto Sans Thai', Arial, Helvetica, sans-serif;
+  background: #0B1520;
+  color: var(--n900);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 24px 48px;
+}
+
+/* ── Prototype Shell ──────────────────────────────────────────────────── */
+.proto-meta {
+  width: 100%; max-width: 1400px;
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 20px;
+}
+.proto-title h1 { color: #E2E8F0; font-size: 16px; font-weight: 800; }
+.proto-title p  { color: #64748B; font-size: 12px; margin-top: 2px; }
+.version-badge {
+  background: #1E3A5F; color: #60A5FA;
+  font-size: 10px; font-weight: 700;
+  padding: 4px 12px; border-radius: 99px; letter-spacing: .5px;
+  margin-right: 12px;
+}
+.proto-nav { display: flex; gap: 6px; align-items: center; }
+.pnav-btn {
+  padding: 8px 16px; border-radius: 8px;
+  background: transparent; border: 1px solid #1E2D3D;
+  color: #64748B; font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all .2s; font-family: inherit;
+  display: flex; align-items: center; gap: 7px;
+}
+.pnav-btn:hover { background: #1A2A38; color: #94A3B8; border-color: #263545; }
+.pnav-btn.active { background: rgba(0,41,73,.9); color: var(--sky-blue); border-color: rgba(26,176,235,.4); }
+.pnav-dot { width: 7px; height: 7px; border-radius: 50%; background: #263545; }
+.pnav-btn.active .pnav-dot { background: var(--sky-blue); }
+
+/* ── Browser Chrome ───────────────────────────────────────────────────── */
+.browser-chrome {
+  width: 100%; max-width: 1400px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 32px 80px rgba(0,0,0,.6), 0 0 0 1px #1E2D3D;
+}
+.browser-bar {
+  background: #1A222C;
+  padding: 10px 16px;
+  display: flex; align-items: center; gap: 12px;
+  border-bottom: 1px solid #0E1820;
+}
+.browser-dots { display: flex; gap: 6px; }
+.bd { width: 12px; height: 12px; border-radius: 50%; }
+.bd-r { background: #FF5F57; }
+.bd-y { background: #FEBC2E; }
+.bd-g { background: #28C840; }
+.browser-url {
+  flex: 1; max-width: 560px; margin: 0 auto;
+  background: #0E1820; border-radius: 6px;
+  padding: 6px 14px; display: flex; align-items: center; gap: 8px;
+}
+.url-lock { color: #4ADE80; font-size: 11px; }
+.url-text { color: #94A3B8; font-size: 12px; font-weight: 500; }
+
+/* ── App Shell ────────────────────────────────────────────────────────── */
+.app-shell {
+  display: flex;
+  background: var(--n50);
+  min-height: 820px;
+}
+
+/* ── Sidebar ──────────────────────────────────────────────────────────── */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--deep-blue);
+  display: flex; flex-direction: column;
+  flex-shrink: 0;
+  min-height: 820px;
+}
+.sb-brand {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  display: flex; align-items: center; gap: 10px;
+}
+.sb-brand-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: rgba(255,255,255,.12);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.sb-brand-name { color: white; font-size: 18px; font-weight: 800; }
+.sb-brand-sub { color: rgba(255,255,255,.5); font-size: 10px; font-weight: 600; letter-spacing: .5px; margin-top: 1px; }
+
+.sb-section-label {
+  padding: 16px 20px 6px;
+  color: rgba(255,255,255,.4);
+  font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
+}
+.sb-nav { padding: 0 10px; }
+.sb-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 8px;
+  color: rgba(255,255,255,.6);
+  font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all .2s;
+  margin-bottom: 2px; border: none; background: none;
+  width: 100%; text-align: left; font-family: inherit;
+  position: relative;
+}
+.sb-item:hover { background: rgba(255,255,255,.08); color: rgba(255,255,255,.9); }
+.sb-item.active { background: var(--sky-blue); color: white; }
+.sb-item.active::before { display: none; }
+.sb-icon { font-size: 16px; width: 20px; text-align: center; }
+.sb-badge {
+  margin-left: auto; min-width: 20px; height: 20px;
+  border-radius: 99px; padding: 0 6px;
+  background: rgba(255,255,255,.15);
+  color: rgba(255,255,255,.9);
+  font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.sb-badge-alert { background: #EF4444; color: white; }
+
+.sb-footer {
+  margin-top: auto;
+  padding: 16px 10px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+.sb-profile {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 8px;
+  cursor: pointer; transition: background .2s;
+}
+.sb-profile:hover { background: rgba(255,255,255,.08); }
+.sb-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--sky-blue);
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-weight: 700; font-size: 14px; flex-shrink: 0;
+}
+.sb-profile-name { color: white; font-size: 12px; font-weight: 700; }
+.sb-profile-sub { color: rgba(255,255,255,.5); font-size: 11px; margin-top: 1px; }
+.sb-profile-arrow { margin-left: auto; color: rgba(255,255,255,.4); font-size: 12px; }
+
+/* ── Main Content ─────────────────────────────────────────────────────── */
+.main-content {
+  flex: 1; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+
+/* Top Header */
+.top-header {
+  height: var(--header-h);
+  background: white;
+  border-bottom: 1px solid var(--n200);
+  display: flex; align-items: center;
+  padding: 0 28px;
+  gap: 16px;
+  flex-shrink: 0;
+}
+.page-breadcrumb { color: var(--n500); font-size: 13px; }
+.breadcrumb-current { color: var(--n900); font-weight: 700; }
+.top-header-actions { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.th-btn {
+  height: 36px; padding: 0 16px; border-radius: 8px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: inherit; border: none;
+  display: flex; align-items: center; gap: 6px;
+}
+.th-btn-primary { background: var(--sky-blue); color: white; }
+.th-btn-outline { background: white; color: var(--n700); border: 1.5px solid var(--n300); }
+.th-notif {
+  width: 36px; height: 36px; border-radius: 8px;
+  background: var(--n100); border: none;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 17px; position: relative;
+}
+.th-notif-dot {
+  position: absolute; top: 6px; right: 6px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #EF4444; border: 2px solid white;
+}
+.th-date { color: var(--n500); font-size: 12px; }
+
+/* Page Content */
+.page-content { padding: 28px; overflow-y: auto; flex: 1; }
+
+/* ── Screen visibility ────────────────────────────────────────────────── */
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* ── Page Title Block ─────────────────────────────────────────────────── */
+.page-head { margin-bottom: 24px; }
+.page-head h1 { font-size: 22px; font-weight: 800; color: var(--n900); }
+.page-head p  { font-size: 13px; color: var(--n500); margin-top: 4px; }
+
+/* ── Stat Cards ───────────────────────────────────────────────────────── */
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.stat-card {
+  background: white; border: 1px solid var(--n200);
+  border-radius: 12px; padding: 20px 22px;
+}
+.sc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+.sc-icon {
+  width: 42px; height: 42px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; font-size: 20px;
+}
+.sc-delta {
+  font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 99px;
+}
+.sc-delta-up   { background: var(--success-bg); color: var(--success); }
+.sc-delta-down { background: var(--error-bg); color: var(--error); }
+.sc-num { font-size: 28px; font-weight: 800; color: var(--n900); line-height: 1; }
+.sc-label { font-size: 13px; color: var(--n500); margin-top: 6px; }
+
+/* ── Two-col layout ───────────────────────────────────────────────────── */
+.two-col { display: grid; grid-template-columns: 1fr 360px; gap: 20px; margin-bottom: 24px; }
+.card {
+  background: white; border: 1px solid var(--n200); border-radius: 12px;
+}
+.card-header {
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--n100);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.card-title { font-size: 15px; font-weight: 700; color: var(--n900); }
+.card-sub { font-size: 12px; color: var(--n500); margin-top: 2px; }
+.see-all { font-size: 12px; color: var(--sky-blue); font-weight: 600; cursor: pointer; background: none; border: none; font-family: inherit; }
+
+/* ── Chart ────────────────────────────────────────────────────────────── */
+.chart-wrap { padding: 20px 22px 16px; }
+.chart-bars { display: flex; align-items: flex-end; gap: 12px; height: 140px; }
+.cbar-group { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+.cbar {
+  width: 100%; border-radius: 6px 6px 0 0;
+  background: linear-gradient(180deg, var(--teal) 0%, var(--blue) 100%);
+  cursor: pointer; transition: opacity .2s;
+}
+.cbar:hover { opacity: .8; }
+.cbar.dim { background: var(--n200); }
+.cbar.today { background: linear-gradient(180deg, #0EA5E9 0%, var(--teal) 100%); }
+.cbar-label { font-size: 11px; color: var(--n500); font-weight: 500; }
+.chart-legend { display: flex; gap: 20px; margin-top: 14px; }
+.cl-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--n500); }
+.cl-dot { width: 10px; height: 10px; border-radius: 3px; }
+
+/* ── Recent Bookings Table ────────────────────────────────────────────── */
+.booking-table { width: 100%; border-collapse: collapse; }
+.bt-head th {
+  text-align: left; padding: 10px 16px;
+  font-size: 11px; font-weight: 700; color: var(--n500);
+  text-transform: uppercase; letter-spacing: .6px;
+  background: var(--n50); border-bottom: 1px solid var(--n200);
+}
+.bt-head th:first-child { padding-left: 22px; border-radius: 0; }
+.bt-row { cursor: pointer; transition: background .15s; }
+.bt-row:hover { background: var(--n50); }
+.bt-row td {
+  padding: 13px 16px; border-bottom: 1px solid var(--n100);
+  font-size: 13px; color: var(--n700); vertical-align: middle;
+}
+.bt-row td:first-child { padding-left: 22px; }
+.bt-row td:last-child { padding-right: 22px; }
+.td-id { font-size: 12px; color: var(--n500); font-family: monospace; }
+.td-pet { display: flex; align-items: center; gap: 10px; }
+.td-pet-icon { font-size: 20px; }
+.td-pet-name { font-weight: 700; color: var(--n900); font-size: 13px; }
+.td-pet-owner { font-size: 11px; color: var(--n500); margin-top: 1px; }
+.td-price { font-weight: 700; color: var(--blue); }
+
+/* ── Badge ────────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 99px;
+  font-size: 11px; font-weight: 600; white-space: nowrap;
+}
+.badge-confirmed  { background: var(--success-bg); color: var(--success); }
+.badge-pending    { background: var(--warning-bg); color: var(--warning); }
+.badge-inprogress { background: var(--teal-light); color: var(--teal); }
+.badge-cancelled  { background: var(--error-bg); color: var(--error); }
+.badge-new        { background: var(--brand-light); color: var(--blue); }
+.badge-done       { background: #F0FDF4; color: #166534; }
+
+/* ── Today Schedule ───────────────────────────────────────────────────── */
+.schedule-list { padding: 12px 16px; }
+.schedule-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px; border-radius: 8px; margin-bottom: 4px;
+  transition: background .15s; cursor: pointer; position: relative;
+}
+.schedule-item:hover { background: var(--n50); }
+.schedule-time { font-size: 12px; font-weight: 700; color: var(--n500); width: 56px; flex-shrink: 0; padding-top: 2px; }
+.schedule-line { width: 2px; background: var(--n200); flex-shrink: 0; border-radius: 2px; align-self: stretch; min-height: 40px; margin: 2px 0; }
+.schedule-line.active { background: var(--teal); }
+.schedule-body { flex: 1; }
+.schedule-name { font-size: 13px; font-weight: 700; color: var(--n900); }
+.schedule-service { font-size: 12px; color: var(--n500); margin-top: 2px; }
+
+/* ── Full Bookings Screen ─────────────────────────────────────────────── */
+.filter-bar {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 20px; flex-wrap: wrap;
+}
+.filter-tabs-row { display: flex; gap: 4px; }
+.ftab {
+  padding: 8px 16px; border-radius: 8px;
+  font-size: 13px; font-weight: 600;
+  border: 1.5px solid var(--n200);
+  background: white; color: var(--n500);
+  cursor: pointer; transition: all .2s; font-family: inherit;
+}
+.ftab.active { background: var(--blue); color: white; border-color: var(--blue); }
+.search-input-wrap {
+  display: flex; align-items: center; gap: 8px;
+  background: white; border: 1.5px solid var(--n200);
+  border-radius: 8px; padding: 0 14px; height: 40px;
+  min-width: 240px;
+}
+.si-icon { color: var(--n500); font-size: 14px; }
+.si-input {
+  border: none; outline: none; font-size: 13px;
+  font-family: inherit; color: var(--n900); flex: 1; background: transparent;
+}
+.si-input::placeholder { color: var(--n500); }
+.filter-ml { margin-left: auto; }
+
+.bookings-table-card { background: white; border: 1px solid var(--n200); border-radius: 12px; overflow: hidden; }
+.full-bt { width: 100%; border-collapse: collapse; }
+.full-bt thead th {
+  text-align: left; padding: 12px 18px;
+  font-size: 11px; font-weight: 700; color: var(--n500);
+  text-transform: uppercase; letter-spacing: .6px;
+  background: var(--n50); border-bottom: 1px solid var(--n200);
+}
+.full-bt tbody tr { cursor: pointer; transition: background .15s; }
+.full-bt tbody tr:hover { background: #FAFBFF; }
+.full-bt tbody td {
+  padding: 14px 18px; border-bottom: 1px solid var(--n100);
+  font-size: 13px; color: var(--n700); vertical-align: middle;
+}
+.full-bt tbody tr:last-child td { border-bottom: none; }
+
+.td-actions { display: flex; gap: 6px; }
+.act-btn {
+  height: 30px; padding: 0 12px; border-radius: 6px;
+  font-size: 11px; font-weight: 700; cursor: pointer; font-family: inherit; border: none;
+}
+.act-primary { background: var(--blue); color: white; }
+.act-outline { background: white; color: var(--blue); border: 1.5px solid var(--blue); }
+.act-ghost   { background: var(--n100); color: var(--n500); }
+
+/* ── Customers Screen ─────────────────────────────────────────────────── */
+.customer-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 0; }
+.customer-card {
+  background: white; border: 1px solid var(--n200); border-radius: 12px;
+  padding: 20px; cursor: pointer; transition: all .2s;
+}
+.customer-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.07); border-color: var(--teal); }
+.cc-top { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.cc-avatar { width: 46px; height: 46px; border-radius: 50%; background: var(--n100); display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+.cc-name { font-size: 15px; font-weight: 700; color: var(--n900); }
+.cc-pet { font-size: 12px; color: var(--n500); margin-top: 2px; }
+.cc-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border-top: 1px solid var(--n100); padding-top: 14px; }
+.cc-stat { text-align: center; }
+.cc-stat + .cc-stat { border-left: 1px solid var(--n100); }
+.cc-stat-num { font-size: 16px; font-weight: 800; color: var(--blue); }
+.cc-stat-label { font-size: 10px; color: var(--n500); margin-top: 2px; }
+.cc-last { font-size: 11px; color: var(--n500); margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--n100); }
+
+/* ── Booking Detail Screen ────────────────────────────────────────────── */
+.detail-layout { display: grid; grid-template-columns: 1fr 340px; gap: 20px; }
+.detail-card { background: white; border: 1px solid var(--n200); border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
+.dc-head { padding: 16px 22px; border-bottom: 1px solid var(--n100); display: flex; justify-content: space-between; align-items: center; }
+.dc-head-title { font-size: 14px; font-weight: 700; color: var(--n900); }
+.dc-body { padding: 6px 0; }
+.dc-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 22px; border-bottom: 1px solid var(--n50); }
+.dc-row:last-child { border-bottom: none; }
+.dc-key { font-size: 13px; color: var(--n500); }
+.dc-val { font-size: 13px; font-weight: 600; color: var(--n900); }
+.dc-row-total { background: var(--n50); }
+.dc-row-total .dc-key { font-weight: 700; color: var(--n900); font-size: 14px; }
+.dc-row-total .dc-val { font-size: 18px; font-weight: 800; color: var(--blue); }
+
+.detail-hero {
+  background: linear-gradient(135deg, var(--blue), var(--teal));
+  border-radius: 12px; padding: 28px;
+  margin-bottom: 20px;
+  display: flex; justify-content: space-between; align-items: flex-start;
+}
+.dh-left { color: white; }
+.dh-id { font-size: 12px; color: rgba(255,255,255,.65); margin-bottom: 6px; }
+.dh-amount { font-size: 40px; font-weight: 800; line-height: 1; }
+.dh-service { font-size: 14px; color: rgba(255,255,255,.75); margin-top: 6px; }
+.dh-right { text-align: right; }
+
+/* Timeline */
+.timeline { padding: 10px 22px 20px; }
+.tl-item { display: flex; gap: 16px; }
+.tl-col { display: flex; flex-direction: column; align-items: center; width: 24px; flex-shrink: 0; }
+.tl-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; border: 2px solid var(--n300); background: white; }
+.tl-dot.done   { border-color: var(--success); background: var(--success); }
+.tl-dot.active { border-color: var(--teal); background: var(--teal); box-shadow: 0 0 0 3px var(--teal-light); }
+.tl-line { flex: 1; width: 2px; background: var(--n200); min-height: 28px; }
+.tl-line.done { background: var(--success); }
+.tl-body { padding-bottom: 24px; }
+.tl-title { font-size: 13px; font-weight: 700; color: var(--n900); }
+.tl-time { font-size: 12px; color: var(--n500); margin-top: 2px; }
+
+/* ── Login Screen ─────────────────────────────────────────────────────── */
+.login-wrap {
+  min-height: 820px;
+  background: var(--deep-blue);
+  display: flex; align-items: center; justify-content: center;
+  gap: 80px; padding: 60px;
+}
+.login-left { max-width: 460px; }
+.login-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 36px; }
+.login-logo-icon { font-size: 36px; }
+.login-logo-text { color: white; font-size: 28px; font-weight: 800; font-family: 'Lexend Deca', sans-serif; letter-spacing: -0.5px; }
+.login-headline { color: white; font-size: 40px; font-weight: 800; line-height: 1.2; margin-bottom: 16px; }
+.login-sub { color: rgba(255,255,255,.6); font-size: 16px; line-height: 1.7; margin-bottom: 32px; }
+.login-pills { display: flex; flex-wrap: wrap; gap: 10px; }
+.login-pill {
+  background: rgba(26,176,235,.12); border: 1px solid rgba(26,176,235,.25);
+  color: rgba(255,255,255,.85); border-radius: 99px;
+  padding: 8px 16px; font-size: 13px; font-weight: 600;
+}
+
+.login-form-card {
+  background: white; border-radius: 16px;
+  padding: 36px 32px; width: 420px; flex-shrink: 0;
+  box-shadow: 0 24px 60px rgba(0,0,0,.3);
+}
+.lfc-title { font-size: 22px; font-weight: 800; color: var(--n900); margin-bottom: 4px; }
+.lfc-sub { font-size: 13px; color: var(--n500); margin-bottom: 28px; }
+.form-group { margin-bottom: 18px; }
+.form-label { display: block; font-size: 13px; font-weight: 600; color: var(--n700); margin-bottom: 6px; }
+.form-input {
+  width: 100%; height: 48px;
+  border: 1.5px solid var(--n300); border-radius: 8px;
+  padding: 0 14px; font-size: 14px; font-family: inherit; color: var(--n900);
+  background: white; outline: none; transition: border-color .2s;
+}
+.form-input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(13,115,119,.1); }
+.form-input::placeholder { color: var(--n500); }
+.btn-primary-full {
+  width: 100%; height: 50px; border: none; border-radius: 10px;
+  background: var(--sky-blue);
+  color: white; font-size: 15px; font-weight: 700; cursor: pointer;
+  font-family: inherit; transition: opacity .2s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-primary-full:hover { opacity: .92; }
+.divider-row {
+  display: flex; align-items: center; gap: 12px;
+  color: var(--n300); font-size: 12px; margin: 18px 0;
+}
+.divider-row::before, .divider-row::after { content: ''; flex: 1; height: 1px; background: var(--n200); }
+.btn-register-full {
+  width: 100%; height: 50px; border-radius: 10px;
+  background: white; color: var(--deep-blue); border: 2px solid var(--deep-blue);
+  font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  transition: background .2s, color .2s;
+}
+.btn-register-full:hover { background: var(--brand-light); }
+.form-footer { text-align: center; margin-top: 20px; font-size: 13px; color: var(--n500); }
+.form-footer a { color: var(--sky-blue); font-weight: 700; text-decoration: none; cursor: pointer; }
+.form-options { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 20px; }
+.forgot-link { font-size: 13px; color: var(--sky-blue); font-weight: 600; cursor: pointer; text-decoration: none; }
+
+/* Forgot Password overlay card */
+.forgot-card {
+  display: none; position: absolute; inset: 0; background: rgba(0,0,0,.5);
+  align-items: center; justify-content: center; z-index: 100; border-radius: 16px;
+}
+.forgot-card.open { display: flex; }
+.forgot-inner {
+  background: white; border-radius: 12px; padding: 28px 28px 24px; width: 360px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.3);
+}
+.forgot-title { font-size: 18px; font-weight: 800; color: var(--n900); margin-bottom: 6px; }
+.forgot-desc { font-size: 13px; color: var(--n500); margin-bottom: 20px; line-height: 1.5; }
+.forgot-success { background: #DCFCE7; border: 1px solid #86EFAC; border-radius: 8px; padding: 12px 14px; font-size: 13px; color: #166534; margin-bottom: 16px; display: none; }
+.forgot-close { background: none; border: none; font-size: 18px; color: var(--n500); cursor: pointer; float: right; margin-top: -4px; }
+
+/* ── Summary Row (Customers page) ────────────────────────────────────── */
+.summary-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+
+/* ══════════════════════════════════════════════════════════════════════ */
+/* REGISTRATION FORM STYLES                                               */
+/* ══════════════════════════════════════════════════════════════════════ */
+.reg-wrap { background: #F8FAFB; min-height: 820px; overflow-y: auto; scrollbar-width: none; }
+.reg-wrap::-webkit-scrollbar { display: none; }
+
+/* Registration Nav */
+.reg-nav {
+  background: white; border-bottom: 1px solid var(--n200);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 40px; height: 60px;
+  position: sticky; top: 0; z-index: 50;
+}
+.reg-logo { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 800; color: var(--blue); }
+.reg-logo-icon { font-size: 20px; }
+.reg-back-link { font-size: 13px; color: var(--n500); cursor: pointer; text-decoration: none; }
+.reg-back-link:hover { color: var(--blue); }
+
+/* Step Indicator Pills */
+.reg-step-indicator { display: flex; align-items: center; gap: 4px; }
+.reg-step-pill {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 16px; border-radius: 99px;
+  font-size: 13px; font-weight: 600;
+  border: 1.5px solid var(--n300);
+  background: white; color: var(--n500);
+  white-space: nowrap;
+}
+.reg-step-pill .sp-num {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--n200); color: var(--n500);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+.reg-step-pill.active {
+  background: var(--blue); color: white; border-color: var(--blue);
+}
+.reg-step-pill.active .sp-num { background: rgba(255,255,255,.25); color: white; }
+.reg-step-pill.done {
+  background: white; color: var(--teal); border-color: var(--teal);
+}
+.reg-step-pill.done .sp-num { background: var(--teal); color: white; font-size: 12px; }
+.reg-step-sep { width: 20px; height: 1.5px; background: var(--n300); }
+.reg-step-sep.done { background: var(--teal); }
+
+/* Main content area */
+.reg-content {
+  max-width: 560px; margin: 0 auto; padding: 40px 20px 48px;
+}
+.reg-step-label { color: var(--teal); font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+.reg-title { font-size: 36px; font-weight: 800; color: var(--blue); margin-bottom: 6px; }
+.reg-sub { font-size: 14px; color: var(--n500); margin-bottom: 20px; }
+
+/* Progress bar */
+.reg-progress { height: 5px; background: var(--n200); border-radius: 99px; margin-bottom: 28px; overflow: hidden; }
+.reg-progress-fill { height: 100%; border-radius: 99px; background: linear-gradient(to right, var(--blue), var(--teal)); transition: width .4s ease; }
+
+/* Form inputs */
+.reg-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.reg-form-group { margin-bottom: 14px; }
+.reg-label { font-size: 13px; font-weight: 600; color: var(--n700); margin-bottom: 6px; display: block; }
+.reg-label .req { color: var(--error); }
+.reg-input {
+  width: 100%; height: 50px;
+  background: #EEF4FB; border: 1.5px solid transparent;
+  border-radius: 10px; padding: 0 14px;
+  font-size: 15px; font-family: inherit; color: var(--n900);
+  outline: none; transition: border-color .2s, background .2s;
+}
+.reg-input:focus { border-color: var(--teal); background: white; }
+.reg-input::placeholder { color: #A0AEC0; }
+.reg-input-note { font-size: 11px; color: var(--n500); margin-top: 5px; }
+.reg-textarea {
+  width: 100%; min-height: 80px; resize: vertical;
+  background: #EEF4FB; border: 1.5px solid transparent;
+  border-radius: 10px; padding: 12px 14px;
+  font-size: 14px; font-family: inherit; color: var(--n900);
+  outline: none; transition: border-color .2s;
+}
+.reg-textarea:focus { border-color: var(--teal); background: white; }
+.reg-textarea::placeholder { color: #A0AEC0; }
+.reg-select {
+  width: 100%; height: 50px;
+  background: #EEF4FB; border: 1.5px solid transparent;
+  border-radius: 10px; padding: 0 14px;
+  font-size: 14px; font-family: inherit; color: var(--n900);
+  outline: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center;
+  background-color: #EEF4FB;
+  cursor: pointer;
+}
+
+/* Service cards grid */
+.reg-service-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.reg-service-card {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px; border-radius: 10px;
+  border: 1.5px solid var(--n200); background: white;
+  cursor: pointer; transition: all .2s; position: relative;
+}
+.reg-service-card:hover { border-color: var(--teal); background: #F0FDFA; }
+.reg-service-card.selected { border-color: var(--teal); background: #F0FDFA; }
+.reg-service-icon { font-size: 22px; flex-shrink: 0; }
+.reg-service-info { flex: 1; }
+.reg-service-name { font-size: 14px; font-weight: 700; color: var(--n900); }
+.reg-service-sub { font-size: 11px; color: var(--n500); margin-top: 2px; }
+.reg-service-check {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 1.5px solid var(--n300); background: white;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 11px; color: white;
+  transition: all .2s;
+}
+.reg-service-card.selected .reg-service-check {
+  background: var(--teal); border-color: var(--teal);
+}
+.reg-service-card.selected .reg-service-check::after { content: '✓'; }
+
+/* Form section label */
+.reg-section-label { font-size: 13px; font-weight: 700; color: var(--n700); margin-bottom: 10px; }
+.reg-section-label .req { color: var(--error); }
+
+/* Navigation buttons */
+.reg-btn-row { display: flex; align-items: center; justify-content: space-between; margin-top: 24px; gap: 12px; }
+.reg-btn-back {
+  height: 50px; padding: 0 24px; border-radius: 10px;
+  background: white; border: 1.5px solid var(--n200);
+  color: var(--n700); font-size: 14px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+}
+.reg-btn-next {
+  flex: 1; height: 50px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--blue) 0%, var(--teal) 100%);
+  color: white; border: none;
+  font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit;
+}
+
+/* Bottom info cards */
+.reg-info-strip { background: #F8FAFB; border-top: 1px solid var(--n200); padding: 28px 40px; }
+.reg-info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 900px; margin: 0 auto; }
+.reg-info-card { background: white; border: 1px solid var(--n200); border-radius: 12px; padding: 18px; }
+.reg-info-card.amber { background: #FFFBEB; border-color: #FDE68A; }
+.reg-info-card.green { background: #F0FDF4; border-color: #BBF7D0; }
+.reg-info-title { font-size: 12px; font-weight: 700; color: var(--n700); margin-bottom: 8px; }
+.reg-info-body { font-size: 12px; color: var(--n500); line-height: 1.6; }
+.reg-info-body strong { color: var(--n700); }
+.reg-info-step { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px; font-size: 12px; color: var(--n700); }
+.reg-info-step-num {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--teal); color: white;
+  font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;
+}
+.reg-amber-badge { display: flex; align-items: center; gap: 10px; }
+.reg-amber-icon { font-size: 24px; }
+.reg-amber-text { font-size: 14px; font-weight: 700; color: #92400E; line-height: 1.4; }
+
+/* Step 2 — area info */
+.reg-info-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 760px; margin: 0 auto; }
+.reg-area-img { height: 80px; background: linear-gradient(135deg, #BAE6FD, #7DD3FC); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 32px; margin-bottom: 10px; }
+
+/* Step 3 — review */
+.reg-review-card { background: white; border: 1px solid var(--n200); border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+.reg-review-header { padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--n100); }
+.reg-review-title { font-size: 14px; font-weight: 700; color: var(--n900); }
+.reg-review-edit { font-size: 13px; color: var(--teal); font-weight: 600; cursor: pointer; text-decoration: underline; }
+.reg-review-row { display: flex; padding: 12px 20px; border-bottom: 1px solid var(--n50); gap: 16px; }
+.reg-review-row:last-child { border-bottom: none; }
+.reg-review-key { font-size: 13px; color: var(--n500); width: 90px; flex-shrink: 0; }
+.reg-review-val { font-size: 13px; font-weight: 600; color: var(--n900); }
+.reg-service-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; background: var(--teal-light); color: var(--teal); margin-right: 6px; }
+
+/* Step 3 — PDPA checkbox */
+.reg-pdpa-card {
+  border: 2px solid var(--teal); border-radius: 12px;
+  padding: 16px; background: white; display: flex; align-items: flex-start; gap: 12px; cursor: pointer;
+}
+.reg-pdpa-check {
+  width: 22px; height: 22px; border-radius: 5px;
+  background: var(--teal); border: none;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 14px; color: white; margin-top: 1px;
+}
+.reg-pdpa-text { font-size: 13px; color: var(--n700); line-height: 1.6; }
+.reg-pdpa-text a { color: var(--teal); text-decoration: underline; cursor: pointer; }
+
+/* Step 4 — Create Account */
+.reg-password-wrap { position: relative; }
+.reg-password-wrap .reg-input { padding-right: 44px; }
+.reg-eye { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--n500); font-size: 16px; }
+.reg-strength { display: flex; gap: 4px; margin-top: 8px; }
+.reg-strength-bar { flex: 1; height: 4px; border-radius: 99px; background: var(--n200); }
+.reg-strength-bar.s1 { background: var(--error); }
+.reg-strength-bar.s2 { background: var(--warning); }
+.reg-strength-bar.s3, .reg-strength-bar.s4 { background: var(--success); }
+.reg-strength-label { font-size: 11px; color: var(--n500); margin-top: 4px; }
+.reg-info-box { background: var(--brand-light); border: 1px solid #C7DBEF; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--blue); line-height: 1.6; }
+
+/* Success screen */
+.reg-success { text-align: center; padding: 60px 20px; }
+.reg-success-icon { font-size: 64px; margin-bottom: 16px; }
+.reg-success-title { font-size: 28px; font-weight: 800; color: var(--blue); margin-bottom: 10px; }
+.reg-success-sub { font-size: 15px; color: var(--n500); line-height: 1.7; margin-bottom: 28px; }
+.reg-success-timeline { background: white; border: 1px solid var(--n200); border-radius: 12px; padding: 20px; text-align: left; margin-bottom: 24px; }
+.reg-success-step { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--n100); }
+.reg-success-step:last-child { border-bottom: none; }
+.reg-success-step-num { width: 28px; height: 28px; border-radius: 50%; background: var(--teal); color: white; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.reg-success-step-text { font-size: 13px; color: var(--n700); font-weight: 600; }
+
+/* ── Landing Page (S0) ────────────────────────────────────────────────── */
+.lp-wrap { background: white; overflow-y: auto; max-height: 820px; scrollbar-width: none; }
+.lp-wrap::-webkit-scrollbar { display: none; }
+
+/* Nav */
+.lp-nav {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(255,255,255,.95); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--n200);
+  display: flex; align-items: center; padding: 0 48px; height: 64px; gap: 32px;
+}
+.lp-logo { display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 800; color: var(--deep-blue); text-decoration: none; font-family: 'Lexend Deca', sans-serif; letter-spacing: -0.5px; }
+.lp-logo-icon { display: none; }
+.lp-nav-links { display: flex; gap: 24px; }
+.lp-nav-link { font-size: 13px; font-weight: 500; color: var(--n500); text-decoration: none; cursor: pointer; transition: color .15s; }
+.lp-nav-link:hover { color: var(--blue); }
+.lp-nav-ctas { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+.lp-btn-primary-nav {
+  height: 38px; padding: 0 20px; border-radius: 8px;
+  background: var(--sky-blue); color: white; border: none;
+  font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit;
+  transition: opacity .15s;
+}
+.lp-btn-primary-nav:hover { opacity: .90; }
+.lp-btn-login {
+  height: 40px; padding: 0 20px; border-radius: 8px;
+  background: white; border: 1.5px solid var(--n300);
+  color: var(--n700); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: all .15s;
+}
+.lp-btn-login:hover { border-color: var(--blue); color: var(--blue); }
+.lp-btn-register {
+  height: 40px; padding: 0 20px; border-radius: 8px;
+  background: var(--sky-blue);
+  color: white; border: none; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit;
+  box-shadow: 0 4px 14px rgba(26,176,235,.30); transition: opacity .15s;
+}
+.lp-btn-register:hover { opacity: .90; }
+
+/* Hero */
+.lp-hero {
+  background: var(--deep-blue);
+  padding: 72px 48px 64px; display: flex; align-items: center; gap: 56px;
+}
+.lp-hero-left { flex: 1; max-width: 520px; }
+.lp-hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(26,176,235,.15); border: 1px solid rgba(26,176,235,.30);
+  border-radius: 99px; padding: 6px 16px;
+  color: var(--sky-blue); font-size: 12px; font-weight: 600;
+  margin-bottom: 24px;
+}
+.lp-hero-title { color: white; font-size: 52px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; }
+.lp-hero-sub { color: rgba(255,255,255,.75); font-size: 16px; line-height: 1.7; margin-bottom: 28px; }
+.lp-hero-btns { display: flex; gap: 12px; align-items: center; }
+.lp-btn-cta-white {
+  height: 50px; padding: 0 28px; border-radius: 10px;
+  background: var(--sky-blue); color: white; border: none;
+  font-size: 15px; font-weight: 800; cursor: pointer; font-family: inherit;
+  transition: opacity .15s; box-shadow: 0 8px 24px rgba(26,176,235,.35);
+}
+.lp-btn-cta-white:hover { opacity: .92; }
+.lp-btn-cta-ghost {
+  height: 50px; padding: 0 24px; border-radius: 10px;
+  background: rgba(255,255,255,.12); border: 1.5px solid rgba(255,255,255,.3);
+  color: white; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+.lp-hero-note { color: rgba(255,255,255,.55); font-size: 12px; margin-top: 14px; }
+
+/* Hero right — dashboard card */
+.lp-hero-right { flex-shrink: 0; width: 340px; }
+.lp-dash-card {
+  background: white; border-radius: 16px;
+  padding: 20px; box-shadow: 0 24px 60px rgba(0,0,0,.25);
+}
+.ldc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.ldc-title { font-size: 13px; font-weight: 700; color: var(--n900); }
+.ldc-live { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--success); font-weight: 600; }
+.ldc-live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.ldc-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 16px; }
+.ldc-stat { background: var(--n50); border-radius: 8px; padding: 10px; text-align: center; }
+.ldc-stat-num { font-size: 18px; font-weight: 800; color: var(--blue); }
+.ldc-stat-lbl { font-size: 10px; color: var(--n500); margin-top: 2px; }
+.ldc-appt { border-top: 1px solid var(--n100); padding-top: 14px; }
+.ldc-appt-title { font-size: 11px; font-weight: 700; color: var(--n500); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
+.ldc-appt-row { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 8px; background: var(--n50); margin-bottom: 6px; }
+.ldc-appt-icon { font-size: 18px; }
+.ldc-appt-info { flex: 1; }
+.ldc-appt-name { font-size: 12px; font-weight: 700; color: var(--n900); }
+.ldc-appt-time { font-size: 10px; color: var(--n500); margin-top: 1px; }
+.ldc-appt-badge { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 99px; }
+
+/* Stats strip */
+.lp-stats {
+  background: var(--deep-blue); padding: 40px 48px;
+  display: grid; grid-template-columns: repeat(4,1fr); gap: 0;
+}
+.lp-stat { text-align: center; padding: 8px; border-right: 1px solid rgba(255,255,255,.08); }
+.lp-stat:last-child { border-right: none; }
+.lp-stat-num { font-size: 40px; font-weight: 800; color: var(--sky-blue); }
+.lp-stat-label { font-size: 13px; color: rgba(255,255,255,.55); margin-top: 6px; }
+
+/* Features */
+.lp-features { background: var(--n50); padding: 64px 48px; }
+.lp-section-label { text-align: center; color: var(--teal); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+.lp-section-title { text-align: center; font-size: 30px; font-weight: 800; color: var(--blue); margin-bottom: 8px; }
+.lp-section-sub { text-align: center; font-size: 15px; color: var(--n500); margin-bottom: 40px; }
+.lp-feat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+.lp-feat-card { background: white; border: 1px solid var(--n200); border-radius: 14px; padding: 28px 24px; }
+.lp-feat-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 26px; margin-bottom: 16px; }
+.lp-feat-title { font-size: 16px; font-weight: 800; color: var(--blue); margin-bottom: 8px; }
+.lp-feat-desc { font-size: 14px; color: var(--n500); line-height: 1.65; }
+
+/* How it works */
+.lp-how { padding: 64px 48px; background: white; }
+.lp-steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 24px; margin-top: 40px; }
+.lp-step { text-align: center; }
+.lp-step-num {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--sky-blue);
+  color: white; font-size: 22px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px; box-shadow: 0 8px 24px rgba(26,176,235,.30);
+}
+.lp-step-title { font-size: 16px; font-weight: 800; color: var(--blue); margin-bottom: 8px; }
+.lp-step-desc { font-size: 13px; color: var(--n500); line-height: 1.6; }
+
+/* Testimonials */
+.lp-testimonials { background: var(--n50); padding: 64px 48px; }
+.lp-testi-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 20px; margin-top: 40px; }
+.lp-testi-card { background: white; border: 1px solid var(--n200); border-radius: 14px; padding: 24px; }
+.lp-testi-quote { font-size: 15px; color: var(--n700); line-height: 1.7; margin-bottom: 18px; font-style: italic; }
+.lp-testi-author { display: flex; align-items: center; gap: 12px; }
+.lp-testi-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 15px; flex-shrink: 0; }
+.lp-testi-name { font-size: 13px; font-weight: 700; color: var(--n900); }
+.lp-testi-shop { font-size: 12px; color: var(--n500); margin-top: 2px; }
+
+/* CTA Banner */
+.lp-cta-banner {
+  background: var(--deep-blue);
+  padding: 56px 48px; text-align: center;
+}
+.lp-cta-title { color: white; font-size: 32px; font-weight: 800; margin-bottom: 10px; }
+.lp-cta-sub { color: rgba(255,255,255,.7); font-size: 15px; margin-bottom: 28px; }
+.lp-cta-pdpa { color: rgba(255,255,255,.5); font-size: 12px; margin-top: 14px; }
+
+/* Footer */
+.lp-footer {
+  background: var(--blue-black); padding: 32px 48px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.lp-footer-logo { color: white; font-size: 16px; font-weight: 800; }
+.lp-footer-copy { color: rgba(255,255,255,.4); font-size: 12px; margin-top: 4px; }
+.lp-footer-links { display: flex; gap: 20px; }
+.lp-footer-link { color: rgba(255,255,255,.45); font-size: 12px; cursor: pointer; text-decoration: none; }
+.lp-footer-link:hover { color: rgba(255,255,255,.8); }
+.sr-card { background: white; border: 1px solid var(--n200); border-radius: 12px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; }
+.sr-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+.sr-num { font-size: 22px; font-weight: 800; color: var(--n900); }
+.sr-label { font-size: 12px; color: var(--n500); margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<!-- ═══ PROTO META ════════════════════════════════════════════════════ -->
+<div class="proto-meta">
+  <div class="proto-title">
+    <span class="version-badge">MVP#1.5 PROTOTYPE — DESKTOP</span>
+    <h1>Pawtal — Pet Service Provider Dashboard</h1>
+    <p>Interactive desktop prototype · Provider-side only · Click screens to navigate</p>
+  </div>
+  <div class="proto-nav">
+    <button class="pnav-btn active" id="btn-s0" onclick="showScreen('s0')"><div class="pnav-dot"></div>S0 Landing</button>
+    <button class="pnav-btn" id="btn-sreg" onclick="showScreen('s-reg')"><div class="pnav-dot"></div>S1 Register</button>
+    <button class="pnav-btn" id="btn-s1" onclick="showScreen('s1')"><div class="pnav-dot"></div>S2 Login</button>
+    <button class="pnav-btn" id="btn-s2" onclick="showScreen('s2')"><div class="pnav-dot"></div>S3 Dashboard</button>
+    <button class="pnav-btn" id="btn-s3" onclick="showScreen('s3')"><div class="pnav-dot"></div>S4 Bookings</button>
+    <button class="pnav-btn" id="btn-s4" onclick="showScreen('s4')"><div class="pnav-dot"></div>S5 Customers</button>
+    <button class="pnav-btn" id="btn-s5" onclick="showScreen('s5')"><div class="pnav-dot"></div>S6 Detail</button>
+  </div>
+</div>
+
+<!-- ═══ BROWSER CHROME ════════════════════════════════════════════════ -->
+<div class="browser-chrome">
+  <div class="browser-bar">
+    <div class="browser-dots">
+      <div class="bd bd-r"></div>
+      <div class="bd bd-y"></div>
+      <div class="bd bd-g"></div>
+    </div>
+    <div class="browser-url" id="url-bar">
+      <span class="url-lock">🔒</span>
+      <span class="url-text" id="url-text">pawtal-web.vercel.app/providers/join</span>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- S0: LANDING PAGE (matching pawtal-web.vercel.app/providers/join)  -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div class="screen active" id="s0">
+    <div class="lp-wrap">
+
+      <!-- NAV -->
+      <nav class="lp-nav">
+        <span class="lp-logo">Pawtal</span>
+        <div class="lp-nav-links">
+          <span class="lp-nav-link">บริการ</span>
+          <span class="lp-nav-link">ราคา</span>
+          <span class="lp-nav-link">ตัวอย่าง</span>
+          <span class="lp-nav-link">ผู้ใช้</span>
+          <span class="lp-nav-link">คำถามที่พบบ่อย</span>
+        </div>
+        <div class="lp-nav-ctas">
+          <button class="lp-btn-login" onclick="showScreen('s1')">เข้าสู่ระบบ</button>
+          <button class="lp-btn-register" onclick="showScreen('s-reg')">ลงทะเบียนฟรี →</button>
+        </div>
+      </nav>
+
+      <!-- HERO -->
+      <section class="lp-hero">
+        <div class="lp-hero-left">
+          <div class="lp-hero-badge">สำหรับผู้ให้บริการสัตว์เลี้ยง · ฟรี 3 เดือนแรก</div>
+          <h1 class="lp-hero-title">รับลูกค้าใหม่<br>ง่ายกว่าเดิม</h1>
+          <p class="lp-hero-sub">เชื่อมต่อร้านตัดขนสัตว์เลี้ยงของคุณกับเจ้าของสัตว์เลี้ยงในกรุงเทพ จัดการการนัดหมาย และขยายธุรกิจได้ง่ายกว่าเดิม</p>
+          <div class="lp-hero-btns">
+            <button class="lp-btn-cta-white" onclick="showScreen('s-reg')">เริ่มต้นฟรี — ลงทะเบียน</button>
+            <button class="lp-btn-cta-ghost">ดูตัวอย่าง</button>
+          </div>
+          <p class="lp-hero-note">ไม่มีค่าใช้จ่าย · ไม่มีสัญญาผูกมัด · ทีมงานโทรกลับภายใน 24 ชั่วโมง</p>
+        </div>
+        <div class="lp-hero-right">
+          <div class="lp-dash-card">
+            <div class="ldc-header">
+              <div class="ldc-title">Happy Paws Salon</div>
+              <div class="ldc-live"><div class="ldc-live-dot"></div>Live</div>
+            </div>
+            <div class="ldc-stats">
+              <div class="ldc-stat"><div class="ldc-stat-num">12</div><div class="ldc-stat-lbl">การจองใหม่</div></div>
+              <div class="ldc-stat"><div class="ldc-stat-num">4.9⭐</div><div class="ldc-stat-lbl">คะแนน</div></div>
+              <div class="ldc-stat"><div class="ldc-stat-num">+8</div><div class="ldc-stat-lbl">ลูกค้าใหม่</div></div>
+            </div>
+            <div class="ldc-appt">
+              <div class="ldc-appt-title">การนัดหมายวันนี้</div>
+              <div class="ldc-appt-row">
+                <span class="ldc-appt-icon">🐕</span>
+                <div class="ldc-appt-info">
+                  <div class="ldc-appt-name">น้องโมจิ — ตัดขน</div>
+                  <div class="ldc-appt-time">10:00 – 11:30 น.</div>
+                </div>
+                <span class="ldc-appt-badge" style="background:var(--success-bg);color:var(--success)">ยืนยัน</span>
+              </div>
+              <div class="ldc-appt-row">
+                <span class="ldc-appt-icon">🐈</span>
+                <div class="ldc-appt-info">
+                  <div class="ldc-appt-name">น้องโซดา — อาบน้ำ</div>
+                  <div class="ldc-appt-time">13:00 – 14:00 น.</div>
+                </div>
+                <span class="ldc-appt-badge" style="background:var(--warning-bg);color:var(--warning)">รอยืนยัน</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STATS STRIP -->
+      <div class="lp-stats">
+        <div class="lp-stat">
+          <div class="lp-stat-num">0%</div>
+          <div class="lp-stat-label">ค่าคอมมิชชัน 3 เดือนแรก</div>
+        </div>
+        <div class="lp-stat">
+          <div class="lp-stat-num">500+</div>
+          <div class="lp-stat-label">เจ้าของสัตว์เลี้ยงรอใช้บริการ</div>
+        </div>
+        <div class="lp-stat">
+          <div class="lp-stat-num">2 นาที</div>
+          <div class="lp-stat-label">เวลาลงทะเบียน</div>
+        </div>
+        <div class="lp-stat">
+          <div class="lp-stat-num">24 ชม.</div>
+          <div class="lp-stat-label">ทีมงานโทรกลับ</div>
+        </div>
+      </div>
+
+      <!-- FEATURES -->
+      <section class="lp-features">
+        <div class="lp-section-label">ทำไมต้อง Pawtal</div>
+        <h2 class="lp-section-title">ทุกสิ่งที่คุณต้องการ ในที่เดียว</h2>
+        <p class="lp-section-sub">ออกแบบมาสำหรับผู้ให้บริการสัตว์เลี้ยงในกรุงเทพโดยเฉพาะ</p>
+        <div class="lp-feat-grid">
+          <div class="lp-feat-card">
+            <div class="lp-feat-icon" style="background:#EFF6FF">📱</div>
+            <div class="lp-feat-title">ลูกค้าใหม่จากดิจิทัล</div>
+            <div class="lp-feat-desc">เชื่อมต่อกับเจ้าของสัตว์เลี้ยงที่กำลังมองหาบริการของคุณอยู่ตอนนี้ ไม่ต้องพึ่ง LINE หรือ Facebook อีกต่อไป</div>
+          </div>
+          <div class="lp-feat-card">
+            <div class="lp-feat-icon" style="background:#ECFDF5">📅</div>
+            <div class="lp-feat-title">ระบบนัดหมายอัตโนมัติ</div>
+            <div class="lp-feat-desc">จัดการตารางนัดหมาย รับการจองออนไลน์ และส่งการแจ้งเตือนอัตโนมัติ ประหยัดเวลาการติดต่อ</div>
+          </div>
+          <div class="lp-feat-card">
+            <div class="lp-feat-icon" style="background:#FDF4FF">⭐</div>
+            <div class="lp-feat-title">โปรไฟล์น่าเชื่อถือ</div>
+            <div class="lp-feat-desc">สร้างโปรไฟล์ร้านที่มีรีวิวจากลูกค้าจริง รูปภาพผลงาน และข้อมูลครบ ให้ลูกค้าใหม่มั่นใจได้ทันที</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- HOW IT WORKS -->
+      <section class="lp-how">
+        <div class="lp-section-label">ขั้นตอน</div>
+        <h2 class="lp-section-title">เริ่มรับลูกค้าใน 3 ขั้นตอน</h2>
+        <div class="lp-steps">
+          <div class="lp-step">
+            <div class="lp-step-num">1</div>
+            <div class="lp-step-title">กรอกข้อมูลสมัคร</div>
+            <div class="lp-step-desc">กรอกแบบฟอร์ม 3 ขั้นตอน ใช้เวลาแค่ 2 นาที ข้อมูลธุรกิจ บริการ และพื้นที่ให้บริการ</div>
+          </div>
+          <div class="lp-step">
+            <div class="lp-step-num">2</div>
+            <div class="lp-step-title">ทีมงานติดต่อกลับ</div>
+            <div class="lp-step-desc">ทีมงาน Pawtal จะโทรกลับหาคุณภายใน 24 ชั่วโมง เพื่อยืนยันข้อมูลและตั้งค่าโปรไฟล์</div>
+          </div>
+          <div class="lp-step">
+            <div class="lp-step-num">3</div>
+            <div class="lp-step-title">เริ่มรับลูกค้าใหม่</div>
+            <div class="lp-step-desc">โปรไฟล์ร้านของคุณจะปรากฏบนแพลตฟอร์ม และเริ่มรับการจองจากลูกค้าในพื้นที่ทันที</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TESTIMONIALS -->
+      <section class="lp-testimonials">
+        <div class="lp-section-label">เสียงจากผู้ใช้จริง</div>
+        <h2 class="lp-section-title">ผู้ให้บริการพูดถึง Pawtal</h2>
+        <div class="lp-testi-grid">
+          <div class="lp-testi-card">
+            <p class="lp-testi-quote">"ก่อนใช้ Pawtal ต้องตอบ LINE ทั้งวัน ตอนนี้ลูกค้าจองเองผ่านแอป ประหยัดเวลาไปได้เยอะมาก รายได้เพิ่มขึ้น 40% ในเดือนแรก"</p>
+            <div class="lp-testi-author">
+              <div class="lp-testi-avatar" style="background:linear-gradient(135deg,var(--blue),var(--teal))">น</div>
+              <div>
+                <div class="lp-testi-name">คุณนภา — Napa Pet Salon</div>
+                <div class="lp-testi-shop">ตัดขนสัตว์เลี้ยง · สุขุมวิท 39</div>
+              </div>
+            </div>
+          </div>
+          <div class="lp-testi-card">
+            <p class="lp-testi-quote">"ลูกค้าใหม่เพิ่มขึ้นทุกสัปดาห์ ระบบนัดหมายใช้งานง่ายมาก ทีมงาน Pawtal ดูแลดีตั้งแต่วันแรก แนะนำเลย"</p>
+            <div class="lp-testi-author">
+              <div class="lp-testi-avatar" style="background:linear-gradient(135deg,#7C3AED,#A855F7)">ก</div>
+              <div>
+                <div class="lp-testi-name">คุณกิตติ — Happy Pets Grooming</div>
+                <div class="lp-testi-shop">ร้านตัดขน · ทองหล่อ</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CTA BANNER -->
+      <section class="lp-cta-banner">
+        <h2 class="lp-cta-title">พร้อมรับลูกค้าใหม่แล้วหรือยัง?</h2>
+        <p class="lp-cta-sub">ลงทะเบียนฟรีวันนี้ ไม่มีค่าใช้จ่ายใน 3 เดือนแรก</p>
+        <button class="lp-btn-cta-white" onclick="showScreen('s-reg')">ลงทะเบียนฟรี — เริ่มเลย →</button>
+        <p class="lp-cta-pdpa">ข้อมูลของคุณถูกเก็บรักษาตาม พ.ร.บ. PDPA · ใช้เฉพาะเพื่อติดต่อประสานงาน</p>
+      </section>
+
+      <!-- FOOTER -->
+      <footer class="lp-footer">
+        <div>
+          <div class="lp-footer-logo">Pawtal</div>
+          <div class="lp-footer-copy">© 2026 Pawtal Co., Ltd. · กรุงเทพมหานคร</div>
+        </div>
+        <div class="lp-footer-links">
+          <span class="lp-footer-link">นโยบายความเป็นส่วนตัว</span>
+          <span class="lp-footer-link">เงื่อนไขการใช้งาน</span>
+          <span class="lp-footer-link">ติดต่อเรา</span>
+        </div>
+      </footer>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- S-REG: REGISTRATION FORM (4 steps)                               -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div class="screen" id="s-reg">
+    <div class="reg-wrap">
+
+      <!-- ── SHARED NAV (all steps) ────────────────────────────────── -->
+      <nav class="reg-nav">
+        <span class="reg-logo" onclick="showScreen('s0')" style="cursor:pointer">Pawtal</span>
+
+        <!-- Step pills -->
+        <div class="reg-step-indicator" id="reg-step-indicator">
+          <div class="reg-step-pill active" id="reg-pill-1">
+            <span class="sp-num">1</span> ข้อมูลส่วนตัว
+          </div>
+          <div class="reg-step-sep" id="reg-sep-1"></div>
+          <div class="reg-step-pill" id="reg-pill-2">
+            <span class="sp-num">2</span> บริการ &amp; พื้นที่
+          </div>
+          <div class="reg-step-sep" id="reg-sep-2"></div>
+          <div class="reg-step-pill" id="reg-pill-3">
+            <span class="sp-num">3</span> ยืนยัน
+          </div>
+          <div class="reg-step-sep" id="reg-sep-3"></div>
+          <div class="reg-step-pill" id="reg-pill-4">
+            <span class="sp-num">4</span> สร้างบัญชี
+          </div>
+        </div>
+
+        <a class="reg-back-link" onclick="showScreen('s0')">← กลับหน้าหลัก</a>
+      </nav>
+
+      <!-- ══ STEP 1: PERSONAL INFO ══════════════════════════════════ -->
+      <div id="reg-s1">
+        <div class="reg-content">
+          <div class="reg-step-label">ขั้นตอนที่ 1/4</div>
+          <h1 class="reg-title">ข้อมูลส่วนตัวและธุรกิจ</h1>
+          <p class="reg-sub">กรอกข้อมูลเพื่อให้ทีมงาน Pawtal ติดต่อกลับหาคุณ</p>
+          <div class="reg-progress"><div class="reg-progress-fill" style="width:25%"></div></div>
+
+          <div class="reg-form-row">
+            <div class="reg-form-group">
+              <label class="reg-label">ชื่อ <span class="req">*</span></label>
+              <input class="reg-input" type="text" placeholder="ชื่อจริง" value="Chanasin" />
+            </div>
+            <div class="reg-form-group">
+              <label class="reg-label">นามสกุล <span class="req">*</span></label>
+              <input class="reg-input" type="text" placeholder="นามสกุล" value="Thiamphet" />
+            </div>
+          </div>
+
+          <div class="reg-form-group">
+            <label class="reg-label">ชื่อธุรกิจ / ร้าน <span class="req">*</span></label>
+            <input class="reg-input" type="text" placeholder="เช่น Happy Paws Salon" value="Beck" />
+          </div>
+
+          <div class="reg-form-row">
+            <div class="reg-form-group">
+              <label class="reg-label">เบอร์โทรศัพท์ <span class="req">*</span></label>
+              <input class="reg-input" type="tel" placeholder="0812345678" value="0925141993" />
+              <div class="reg-input-note">ทีมงานจะโทรหาคุณที่เบอร์นี้</div>
+            </div>
+            <div class="reg-form-group">
+              <label class="reg-label">อีเมล <span class="req">*</span></label>
+              <input class="reg-input" type="email" placeholder="email@example.com" value="cthiamph.magmatech@cpaxtra.co.th" />
+              <div class="reg-input-note">เราจะส่งอีเมลยืนยันมาที่นี่</div>
+            </div>
+          </div>
+
+          <div class="reg-btn-row">
+            <button class="reg-btn-back" onclick="showScreen('s0')">← กลับ</button>
+            <button class="reg-btn-next" onclick="regGoTo(2)">ถัดไป — เลือกบริการ →</button>
+          </div>
+        </div>
+
+        <!-- Bottom info strip -->
+        <div class="reg-info-strip">
+          <div class="reg-info-grid">
+            <div class="reg-info-card">
+              <div class="reg-info-title">🔒 ข้อมูลของคุณปลอดภัย</div>
+              <div class="reg-info-body">ข้อมูลของคุณถูกเก็บรักษาตาม <strong>พ.ร.บ. PDPA</strong> และใช้เฉพาะเพื่อติดต่อประสานงาน</div>
+            </div>
+            <div class="reg-info-card">
+              <div class="reg-info-title">จะเกิดอะไรขึ้นหลังจากนี้</div>
+              <div class="reg-info-step"><div class="reg-info-step-num">1</div>กรอกแบบฟอร์ม 4 ขั้นตอน ใช้เวลาแค่ 2 นาที</div>
+              <div class="reg-info-step"><div class="reg-info-step-num">2</div>ทีมงานโทรกลับภายใน 24 ชั่วโมง</div>
+              <div class="reg-info-step"><div class="reg-info-step-num">3</div>เริ่มรับลูกค้าใหม่บน Pawtal</div>
+            </div>
+            <div class="reg-info-card amber">
+              <div class="reg-amber-badge">
+                <div class="reg-amber-icon">⏰</div>
+                <div class="reg-amber-text">ใช้เวลาแค่ <strong>2 นาที</strong> ในการกรอกข้อมูล</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ STEP 2: SERVICES ═══════════════════════════════════════ -->
+      <div id="reg-s2" style="display:none">
+        <div class="reg-content">
+          <div class="reg-step-label">ขั้นตอนที่ 2/4</div>
+          <h1 class="reg-title">บริการของคุณ</h1>
+          <p class="reg-sub">เลือกประเภทบริการที่คุณให้บริการ (เลือกได้มากกว่า 1 อย่าง)</p>
+          <div class="reg-progress"><div class="reg-progress-fill" style="width:50%"></div></div>
+
+          <div class="reg-section-label">ประเภทบริการ <span class="req">*</span></div>
+          <div class="reg-service-grid">
+            <div class="reg-service-card selected" onclick="this.classList.toggle('selected')">
+              <span class="reg-service-icon">✂️</span>
+              <div class="reg-service-info">
+                <div class="reg-service-name">ตัดขน (Grooming)</div>
+                <div class="reg-service-sub">ร้านตัดขนทั่วไป</div>
+              </div>
+              <div class="reg-service-check"></div>
+            </div>
+            <div class="reg-service-card" onclick="this.classList.toggle('selected')">
+              <span class="reg-service-icon">🚐</span>
+              <div class="reg-service-info">
+                <div class="reg-service-name">บริการถึงบ้าน</div>
+                <div class="reg-service-sub">Mobile grooming</div>
+              </div>
+              <div class="reg-service-check"></div>
+            </div>
+            <div class="reg-service-card" onclick="this.classList.toggle('selected')">
+              <span class="reg-service-icon">🏥</span>
+              <div class="reg-service-info">
+                <div class="reg-service-name">คลินิกสัตว์</div>
+                <div class="reg-service-sub">รักษา-ตรวจสุขภาพ</div>
+              </div>
+              <div class="reg-service-check"></div>
+            </div>
+            <div class="reg-service-card" onclick="this.classList.toggle('selected')">
+              <span class="reg-service-icon">🏨</span>
+              <div class="reg-service-info">
+                <div class="reg-service-name">รับฝากสัตว์เลี้ยง</div>
+                <div class="reg-service-sub">Pet hotel / boarding</div>
+              </div>
+              <div class="reg-service-check"></div>
+            </div>
+            <div class="reg-service-card selected" onclick="this.classList.toggle('selected')">
+              <span class="reg-service-icon">🌞</span>
+              <div class="reg-service-info">
+                <div class="reg-service-name">Day Care</div>
+                <div class="reg-service-sub">รับเลี้ยงรายวัน</div>
+              </div>
+              <div class="reg-service-check"></div>
+            </div>
+            <div class="reg-service-card" onclick="this.classList.toggle('selected')">
+              <span class="reg-service-icon">🎓</span>
+              <div class="reg-service-info">
+                <div class="reg-service-name">ฝึกสัตว์เลี้ยง</div>
+                <div class="reg-service-sub">Training</div>
+              </div>
+              <div class="reg-service-check"></div>
+            </div>
+          </div>
+
+          <div class="reg-form-row">
+            <div class="reg-form-group">
+              <label class="reg-label">พื้นที่ให้บริการ <span class="req">*</span></label>
+              <select class="reg-select">
+                <option>📍 สุขุมวิท (Sukhumvit)</option>
+                <option>📍 ทองหล่อ</option>
+                <option>📍 อโศก</option>
+                <option>📍 พระโขนง</option>
+                <option>📍 อ่อนนุช</option>
+                <option>📍 พื้นที่อื่น (ระบุ)</option>
+              </select>
+            </div>
+            <div class="reg-form-group">
+              <label class="reg-label">ข้อมูลเพิ่มเติม (ไม่บังคับ)</label>
+              <textarea class="reg-textarea" placeholder="เช่น มีประสบการณ์ 5 ปี..."></textarea>
+            </div>
+          </div>
+
+          <div class="reg-btn-row">
+            <button class="reg-btn-back" onclick="regGoTo(1)">← ย้อนกลับ</button>
+            <button class="reg-btn-next" onclick="regGoTo(3)">ถัดไป — ตรวจสอบ →</button>
+          </div>
+        </div>
+
+        <div class="reg-info-strip">
+          <div class="reg-info-grid-2">
+            <div class="reg-info-card">
+              <div class="reg-area-img">🗺️</div>
+              <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:4px">สุขุมวิท · กรุงเทพ</div>
+              <div style="font-size:12px;color:var(--n500)">Phase 1: สุขุมวิท 1–77, ทองหล่อ, เอกมัย, อ่อนนุช, พระโขนง</div>
+            </div>
+            <div class="reg-info-card green">
+              <div style="font-size:14px;font-weight:800;color:#166534;margin-bottom:6px">✅ อยู่นอกพื้นที่?</div>
+              <div style="font-size:13px;color:#166534;line-height:1.6">เราขยายพื้นที่ให้บริการทุกไตรมาส สมัครไว้ก่อนเพื่อรับสิทธิ์แรก</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ STEP 3: REVIEW ══════════════════════════════════════════ -->
+      <div id="reg-s3" style="display:none">
+        <div class="reg-content">
+          <div class="reg-step-label">ขั้นตอนที่ 3/4</div>
+          <h1 class="reg-title">ตรวจสอบข้อมูล</h1>
+          <p class="reg-sub">กรุณาตรวจสอบข้อมูลก่อนส่ง</p>
+          <div class="reg-progress"><div class="reg-progress-fill" style="width:75%"></div></div>
+
+          <div class="reg-review-card">
+            <div class="reg-review-header">
+              <div class="reg-review-title">ข้อมูลของคุณ</div>
+              <span class="reg-review-edit" onclick="regGoTo(1)">แก้ไข</span>
+            </div>
+            <div class="reg-review-row">
+              <span class="reg-review-key">ชื่อ-นามสกุล</span>
+              <span class="reg-review-val">Chanasin Thiamphet</span>
+            </div>
+            <div class="reg-review-row">
+              <span class="reg-review-key">ธุรกิจ</span>
+              <span class="reg-review-val">Beck</span>
+            </div>
+            <div class="reg-review-row">
+              <span class="reg-review-key">เบอร์โทร</span>
+              <span class="reg-review-val">0925141993</span>
+            </div>
+            <div class="reg-review-row">
+              <span class="reg-review-key">อีเมล</span>
+              <span class="reg-review-val">cthiamph.magmatech@cpaxtra.co.th</span>
+            </div>
+            <div class="reg-review-row">
+              <span class="reg-review-key">บริการ</span>
+              <div>
+                <span class="reg-service-badge">✂️ ตัดขน</span>
+                <span class="reg-service-badge">🌞 Day Care</span>
+              </div>
+            </div>
+            <div class="reg-review-row" style="justify-content:space-between;align-items:center">
+              <span class="reg-review-key">พื้นที่</span>
+              <span class="reg-review-val" style="flex:1;margin-left:0">สุขุมวิท</span>
+              <span class="reg-review-edit" onclick="regGoTo(2)">แก้ไข</span>
+            </div>
+          </div>
+
+          <div class="reg-btn-row">
+            <button class="reg-btn-back" onclick="regGoTo(2)">← ย้อนกลับ</button>
+            <button class="reg-btn-next" onclick="regGoTo(4)">ถัดไป — สร้างบัญชี →</button>
+          </div>
+        </div>
+
+        <div class="reg-info-strip">
+          <div class="reg-info-grid">
+            <div class="reg-info-card" style="border-color:var(--teal);border-width:2px">
+              <div class="reg-pdpa-card" style="border:none;padding:0;background:transparent">
+                <div class="reg-pdpa-check">✓</div>
+                <div class="reg-pdpa-text">ฉันยินยอมให้ Pawtal จัดเก็บและประมวลผลข้อมูลส่วนบุคคลของฉัน ตาม <a>นโยบายความเป็นส่วนตัว</a></div>
+              </div>
+            </div>
+            <div class="reg-info-card amber">
+              <div class="reg-amber-badge">
+                <div class="reg-amber-icon">⏰</div>
+                <div class="reg-amber-text">ทีมงานจะโทรกลับคุณ<br><strong>ภายใน 24 ชั่วโมง</strong></div>
+              </div>
+            </div>
+            <div class="reg-info-card green">
+              <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:8px">✅ ก่อนส่ง กรุณาตรวจสอบ</div>
+              <div style="font-size:12px;color:#166534;line-height:1.8">
+                · ชื่อและนามสกุลถูกต้อง<br>
+                · เบอร์โทรรับสาย<br>
+                · อีเมลถูกต้อง ตรวจสอบ Spam
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ STEP 4: CREATE ACCOUNT ══════════════════════════════════ -->
+      <div id="reg-s4" style="display:none">
+        <div class="reg-content">
+          <div class="reg-step-label">ขั้นตอนที่ 4/4</div>
+          <h1 class="reg-title">สร้างบัญชีผู้ใช้</h1>
+          <p class="reg-sub">ตั้งรหัสผ่านเพื่อเข้าสู่ระบบ Provider Portal ของคุณ</p>
+          <div class="reg-progress"><div class="reg-progress-fill" style="width:100%"></div></div>
+
+          <div class="reg-info-box">
+            ℹ️ อีเมลด้านล่างนำมาจากขั้นตอนที่ 1 บัญชีนี้จะใช้เพื่อเข้าสู่ Provider Dashboard หลังจากที่ทีมงานยืนยันข้อมูลของคุณ
+          </div>
+
+          <div class="reg-form-group">
+            <label class="reg-label">อีเมล (บัญชีผู้ใช้)</label>
+            <input class="reg-input" type="email" value="cthiamph.magmatech@cpaxtra.co.th" readonly style="opacity:.75;cursor:not-allowed" />
+          </div>
+
+          <div class="reg-form-group">
+            <label class="reg-label">รหัสผ่าน <span class="req">*</span></label>
+            <div class="reg-password-wrap">
+              <input class="reg-input" type="password" placeholder="อย่างน้อย 8 ตัวอักษร" id="reg-pwd" oninput="updateStrength(this.value)" />
+              <button class="reg-eye" type="button" onclick="togglePwd('reg-pwd')">👁</button>
+            </div>
+            <div class="reg-strength">
+              <div class="reg-strength-bar" id="sb1"></div>
+              <div class="reg-strength-bar" id="sb2"></div>
+              <div class="reg-strength-bar" id="sb3"></div>
+              <div class="reg-strength-bar" id="sb4"></div>
+            </div>
+            <div class="reg-strength-label" id="reg-strength-label">กรอกรหัสผ่าน</div>
+          </div>
+
+          <div class="reg-form-group">
+            <label class="reg-label">ยืนยันรหัสผ่าน <span class="req">*</span></label>
+            <div class="reg-password-wrap">
+              <input class="reg-input" type="password" placeholder="กรอกรหัสผ่านอีกครั้ง" />
+              <button class="reg-eye" type="button">👁</button>
+            </div>
+          </div>
+
+          <div class="reg-btn-row">
+            <button class="reg-btn-back" onclick="regGoTo(3)">← ย้อนกลับ</button>
+            <button class="reg-btn-next" onclick="regGoTo(5)" style="background:linear-gradient(135deg,var(--success),#0D9A3B)">
+              ✓ สร้างบัญชีและส่งข้อมูล
+            </button>
+          </div>
+        </div>
+
+        <div class="reg-info-strip">
+          <div class="reg-info-grid">
+            <div class="reg-info-card">
+              <div class="reg-info-title">🔐 ความปลอดภัยของบัญชี</div>
+              <div class="reg-info-body">ใช้รหัสผ่านที่มีตัวอักษร ตัวเลข และอักขระพิเศษ อย่างน้อย 8 ตัว เพื่อความปลอดภัยสูงสุด</div>
+            </div>
+            <div class="reg-info-card">
+              <div class="reg-info-title">🔑 เข้าสู่ระบบด้วย LINE</div>
+              <div class="reg-info-body">คุณยังสามารถเข้าสู่ระบบด้วย LINE Account ได้หลังจากสร้างบัญชีแล้ว</div>
+            </div>
+            <div class="reg-info-card amber">
+              <div class="reg-amber-badge">
+                <div class="reg-amber-icon">⏰</div>
+                <div class="reg-amber-text">ทีมงานจะโทรกลับคุณ<br><strong>ภายใน 24 ชั่วโมง</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ STEP 5: SUCCESS ═════════════════════════════════════════ -->
+      <div id="reg-s5" style="display:none">
+        <div class="reg-content">
+          <div class="reg-success">
+            <div class="reg-success-icon">🎉</div>
+            <h1 class="reg-success-title">ส่งข้อมูลสำเร็จแล้ว!</h1>
+            <p class="reg-success-sub">ยินดีต้อนรับสู่ Pawtal, คุณ Chanasin!<br>บัญชีของคุณถูกสร้างแล้ว ทีมงานจะโทรกลับหาคุณภายใน 24 ชั่วโมง</p>
+
+            <div class="reg-success-timeline">
+              <div class="reg-success-step">
+                <div class="reg-success-step-num">✓</div>
+                <div class="reg-success-step-text">ข้อมูลของคุณถูกส่งเรียบร้อยแล้ว</div>
+              </div>
+              <div class="reg-success-step">
+                <div class="reg-success-step-num">2</div>
+                <div class="reg-success-step-text">ทีมงาน Pawtal จะโทรกลับภายใน 24 ชั่วโมง (จ–ศ 9:00–18:00)</div>
+              </div>
+              <div class="reg-success-step">
+                <div class="reg-success-step-num">3</div>
+                <div class="reg-success-step-text">ตั้งค่าโปรไฟล์ร้านและเริ่มรับการจอง</div>
+              </div>
+            </div>
+
+            <button class="reg-btn-next" style="max-width:320px;margin:0 auto" onclick="showScreen('s1')">
+              เข้าสู่ระบบ Provider Portal →
+            </button>
+            <div style="margin-top:12px;font-size:13px;color:var(--n500)">อีเมลยืนยันถูกส่งไปที่ cthiamph.magmatech@cpaxtra.co.th แล้ว</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- S1: LOGIN                                                         -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div class="screen" id="s1">
+    <div class="login-wrap">
+      <div class="login-left">
+        <div class="login-logo">
+          <span class="login-logo-icon" style="font-size:28px;font-weight:800;color:white;font-family:'Lexend Deca',sans-serif">Pawtal</span>
+          <span class="login-logo-text">Pawtal</span>
+        </div>
+        <h1 class="login-headline">จัดการธุรกิจสัตว์เลี้ยงของคุณ ในที่เดียว</h1>
+        <p class="login-sub">ดูการจอง จัดการลูกค้า ติดตามรายได้ และขยายธุรกิจของคุณได้ง่ายขึ้นกว่าเดิม</p>
+        <div class="login-pills">
+          <span class="login-pill">📅 จัดการการจอง</span>
+          <span class="login-pill">👥 ฐานข้อมูลลูกค้า</span>
+          <span class="login-pill">📊 รายงานรายได้</span>
+          <span class="login-pill">🔔 แจ้งเตือนทันที</span>
+        </div>
+      </div>
+
+      <div class="login-form-card" style="position:relative">
+        <div class="lfc-title">เข้าสู่ระบบ</div>
+        <div class="lfc-sub">สำหรับผู้ให้บริการสัตว์เลี้ยงที่ลงทะเบียนแล้ว</div>
+
+        <div class="form-group">
+          <label class="form-label">อีเมล</label>
+          <input class="form-input" type="email" value="nong@happypaws.th" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">รหัสผ่าน</label>
+          <input class="form-input" type="password" value="password123" />
+        </div>
+        <div class="form-options">
+          <a class="forgot-link" onclick="openForgot()">ลืมรหัสผ่าน?</a>
+        </div>
+        <button class="btn-primary-full" onclick="showScreen('s2')" style="margin-bottom:12px">
+          เข้าสู่ระบบ →
+        </button>
+        <button class="btn-register-full" onclick="showScreen('s-reg')">
+          ✏️ สมัครสมาชิก
+        </button>
+
+        <!-- Forgot Password Overlay -->
+        <div class="forgot-card" id="forgot-card">
+          <div class="forgot-inner">
+            <button class="forgot-close" onclick="closeForgot()">✕</button>
+            <div class="forgot-title">🔑 ลืมรหัสผ่าน?</div>
+            <div class="forgot-desc">กรอกอีเมลที่ลงทะเบียนไว้ เราจะส่งลิงก์รีเซ็ตรหัสผ่านให้คุณทันที</div>
+            <div class="forgot-success" id="forgot-success">✅ ส่งลิงก์เรียบร้อยแล้ว! กรุณาตรวจสอบกล่องจดหมายของคุณ</div>
+            <div class="form-group" id="forgot-email-group">
+              <label class="form-label">อีเมล</label>
+              <input class="form-input" type="email" placeholder="your@email.com" id="forgot-email-input" />
+            </div>
+            <button class="btn-primary-full" onclick="submitForgot()" id="forgot-submit-btn">
+              ส่งลิงก์รีเซ็ตรหัสผ่าน
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- S2–S5: APP SHELL (sidebar + main)                                -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div class="screen" id="s2-shell" style="display:none">
+    <div class="app-shell">
+
+      <!-- SIDEBAR -->
+      <aside class="sidebar">
+        <div class="sb-brand">
+          <div>
+            <div class="sb-brand-name" style="font-family:'Lexend Deca',sans-serif;letter-spacing:-0.5px">Pawtal</div>
+            <div class="sb-brand-sub">Provider Portal</div>
+          </div>
+        </div>
+
+        <div class="sb-section-label">เมนูหลัก</div>
+        <nav class="sb-nav">
+          <button class="sb-item" id="sb-dashboard" onclick="switchTab('dashboard')">
+            <span class="sb-icon">🏠</span> หน้าหลัก
+          </button>
+          <button class="sb-item" id="sb-bookings" onclick="switchTab('bookings')">
+            <span class="sb-icon">📅</span> การจอง
+            <span class="sb-badge sb-badge-alert">5</span>
+          </button>
+          <button class="sb-item" id="sb-customers" onclick="switchTab('customers')">
+            <span class="sb-icon">👥</span> ลูกค้า
+          </button>
+          <button class="sb-item" id="sb-services" onclick="alert('บริการ — Coming in MVP#2')">
+            <span class="sb-icon">✂️</span> บริการของฉัน
+          </button>
+          <button class="sb-item" id="sb-schedule" onclick="alert('ตารางเวลา — Coming in MVP#2')">
+            <span class="sb-icon">🗓</span> ตารางเวลา
+          </button>
+        </nav>
+
+        <div class="sb-section-label">รายงาน</div>
+        <nav class="sb-nav">
+          <button class="sb-item" onclick="alert('รายได้ — Coming in MVP#2')">
+            <span class="sb-icon">📊</span> รายได้และรายงาน
+          </button>
+          <button class="sb-item" onclick="alert('รีวิว — Coming in MVP#2')">
+            <span class="sb-icon">⭐</span> รีวิวลูกค้า
+            <span class="sb-badge">3</span>
+          </button>
+        </nav>
+
+        <div class="sb-section-label">ตั้งค่า</div>
+        <nav class="sb-nav">
+          <button class="sb-item" onclick="alert('โปรไฟล์ร้าน — Coming in MVP#2')">
+            <span class="sb-icon">🏪</span> โปรไฟล์ร้าน
+          </button>
+          <button class="sb-item" onclick="alert('การตั้งค่า — Coming in MVP#2')">
+            <span class="sb-icon">⚙️</span> การตั้งค่า
+          </button>
+        </nav>
+
+        <div class="sb-footer">
+          <div class="sb-profile" onclick="alert('โปรไฟล์ผู้ใช้')">
+            <div class="sb-avatar">น</div>
+            <div>
+              <div class="sb-profile-name">น้อง — Happy Paws</div>
+              <div class="sb-profile-sub">ผู้ให้บริการ · สุขุมวิท 49</div>
+            </div>
+            <span class="sb-profile-arrow">⋮</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- MAIN AREA -->
+      <main class="main-content">
+
+        <!-- TOP HEADER -->
+        <header class="top-header">
+          <div class="page-breadcrumb">
+            Pawtal / <span class="breadcrumb-current" id="breadcrumb-text">หน้าหลัก</span>
+          </div>
+          <div class="top-header-actions">
+            <span class="th-date">📅 วันเสาร์ที่ 28 มีนาคม 2026</span>
+            <button class="th-notif" onclick="alert('การแจ้งเตือน — 3 รายการใหม่')">
+              🔔 <div class="th-notif-dot"></div>
+            </button>
+            <button class="th-btn th-btn-primary" onclick="alert('สร้างการจองใหม่')">
+              + สร้างการจอง
+            </button>
+          </div>
+        </header>
+
+        <!-- PAGE CONTENT -->
+        <div class="page-content">
+
+          <!-- ─── TAB: DASHBOARD ──────────────────────────────────── -->
+          <div class="screen active" id="tab-dashboard">
+            <div class="page-head">
+              <h1>สวัสดีตอนเช้า, น้อง 👋</h1>
+              <p>นี่คือภาพรวมธุรกิจของคุณวันนี้ — 28 มีนาคม 2026</p>
+            </div>
+
+            <!-- Stats -->
+            <div class="stat-grid">
+              <div class="stat-card">
+                <div class="sc-top">
+                  <div class="sc-icon" style="background:#EFF6FF">📅</div>
+                  <span class="sc-delta sc-delta-up">↑ 3 จากเมื่อวาน</span>
+                </div>
+                <div class="sc-num">12</div>
+                <div class="sc-label">การจองวันนี้</div>
+              </div>
+              <div class="stat-card">
+                <div class="sc-top">
+                  <div class="sc-icon" style="background:#ECFDF5">💰</div>
+                  <span class="sc-delta sc-delta-up">↑ 12%</span>
+                </div>
+                <div class="sc-num">฿3,240</div>
+                <div class="sc-label">รายได้วันนี้</div>
+              </div>
+              <div class="stat-card">
+                <div class="sc-top">
+                  <div class="sc-icon" style="background:#FEF3C7">👥</div>
+                  <span class="sc-delta sc-delta-up">↑ 8 ใหม่เดือนนี้</span>
+                </div>
+                <div class="sc-num">38</div>
+                <div class="sc-label">ลูกค้าทั้งหมด</div>
+              </div>
+              <div class="stat-card">
+                <div class="sc-top">
+                  <div class="sc-icon" style="background:#FDF4FF">⭐</div>
+                  <span class="sc-delta sc-delta-up">128 รีวิว</span>
+                </div>
+                <div class="sc-num">4.9</div>
+                <div class="sc-label">คะแนนรีวิวเฉลี่ย</div>
+              </div>
+            </div>
+
+            <!-- Chart + Schedule -->
+            <div class="two-col">
+              <!-- Revenue Chart -->
+              <div class="card">
+                <div class="card-header">
+                  <div>
+                    <div class="card-title">รายได้รายสัปดาห์</div>
+                    <div class="card-sub">22 – 28 มีนาคม 2026</div>
+                  </div>
+                  <div style="text-align:right">
+                    <div style="font-size:22px;font-weight:800;color:var(--blue)">฿18,450</div>
+                    <div style="font-size:12px;color:var(--success)">↑ 18% จากสัปดาห์ก่อน</div>
+                  </div>
+                </div>
+                <div class="chart-wrap">
+                  <div class="chart-bars">
+                    <div class="cbar-group"><div class="cbar dim" style="height:42%"></div><div class="cbar-label">จ</div></div>
+                    <div class="cbar-group"><div class="cbar" style="height:62%"></div><div class="cbar-label">อ</div></div>
+                    <div class="cbar-group"><div class="cbar dim" style="height:48%"></div><div class="cbar-label">พ</div></div>
+                    <div class="cbar-group"><div class="cbar" style="height:78%"></div><div class="cbar-label">พฤ</div></div>
+                    <div class="cbar-group"><div class="cbar" style="height:88%"></div><div class="cbar-label">ศ</div></div>
+                    <div class="cbar-group"><div class="cbar" style="height:100%"></div><div class="cbar-label">ส</div></div>
+                    <div class="cbar-group"><div class="cbar today" style="height:38%"></div><div class="cbar-label" style="color:var(--teal);font-weight:700">วันนี้</div></div>
+                  </div>
+                  <div class="chart-legend">
+                    <div class="cl-item"><div class="cl-dot" style="background:linear-gradient(var(--teal),var(--blue))"></div>รายได้</div>
+                    <div class="cl-item"><div class="cl-dot" style="background:var(--n200)"></div>ต่ำกว่าเป้า</div>
+                    <div class="cl-item"><div class="cl-dot" style="background:#0EA5E9"></div>วันนี้</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Today's Schedule -->
+              <div class="card">
+                <div class="card-header">
+                  <div>
+                    <div class="card-title">ตารางวันนี้</div>
+                    <div class="card-sub">12 การนัดหมาย</div>
+                  </div>
+                  <button class="see-all" onclick="switchTab('bookings')">ดูทั้งหมด →</button>
+                </div>
+                <div class="schedule-list">
+                  <div class="schedule-item" onclick="switchTab('detail')">
+                    <div class="schedule-time">10:00</div>
+                    <div class="schedule-line active"></div>
+                    <div class="schedule-body">
+                      <div class="schedule-name">🐩 น้องมิลค์ — คุณแพท</div>
+                      <div class="schedule-service">ตัดขน + อาบน้ำ · ฿450</div>
+                    </div>
+                    <span class="badge badge-inprogress" style="margin-left:8px;flex-shrink:0">กำลังบริการ</span>
+                  </div>
+                  <div class="schedule-item" onclick="switchTab('detail')">
+                    <div class="schedule-time">13:00</div>
+                    <div class="schedule-line"></div>
+                    <div class="schedule-body">
+                      <div class="schedule-name">🐕 น้องโมจิ — คุณเมย์</div>
+                      <div class="schedule-service">อาบน้ำ + เป่าขน · ฿250</div>
+                    </div>
+                    <span class="badge badge-confirmed" style="margin-left:8px;flex-shrink:0">ยืนยัน</span>
+                  </div>
+                  <div class="schedule-item" onclick="switchTab('detail')">
+                    <div class="schedule-time">15:30</div>
+                    <div class="schedule-line"></div>
+                    <div class="schedule-body">
+                      <div class="schedule-name">🐈 น้องโซดา — คุณต้น</div>
+                      <div class="schedule-service">ตัดขน (แมว) · ฿350</div>
+                    </div>
+                    <span class="badge badge-pending" style="margin-left:8px;flex-shrink:0">รอยืนยัน</span>
+                  </div>
+                  <div class="schedule-item" onclick="switchTab('detail')">
+                    <div class="schedule-time">17:00</div>
+                    <div class="schedule-line"></div>
+                    <div class="schedule-body">
+                      <div class="schedule-name">🐶 น้องบัตเตอร์ — คุณเก๋</div>
+                      <div class="schedule-service">Full Package · ฿550</div>
+                    </div>
+                    <span class="badge badge-new" style="margin-left:8px;flex-shrink:0">ใหม่</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Bookings Table -->
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">การจองล่าสุด</div>
+                  <div class="card-sub">5 รายการล่าสุดจากทั้งหมด 24 รายการ</div>
+                </div>
+                <button class="see-all" onclick="switchTab('bookings')">ดูทั้งหมด →</button>
+              </div>
+              <table class="booking-table">
+                <thead class="bt-head">
+                  <tr>
+                    <th>รหัสการจอง</th>
+                    <th>สัตว์เลี้ยง / เจ้าของ</th>
+                    <th>บริการ</th>
+                    <th>เวลา</th>
+                    <th>ราคา</th>
+                    <th>การชำระ</th>
+                    <th>สถานะ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="bt-row" onclick="switchTab('detail')">
+                    <td><span class="td-id">#BK-2026-0312</span></td>
+                    <td><div class="td-pet"><span class="td-pet-icon">🐩</span><div><div class="td-pet-name">น้องมิลค์</div><div class="td-pet-owner">คุณแพท พัทธนันท์</div></div></div></td>
+                    <td>ตัดขน + อาบน้ำ + ตัดเล็บ</td>
+                    <td>10:00 – 11:30</td>
+                    <td class="td-price">฿450</td>
+                    <td><span class="badge badge-confirmed">ชำระแล้ว</span></td>
+                    <td><span class="badge badge-inprogress">กำลังบริการ</span></td>
+                  </tr>
+                  <tr class="bt-row" onclick="switchTab('detail')">
+                    <td><span class="td-id">#BK-2026-0313</span></td>
+                    <td><div class="td-pet"><span class="td-pet-icon">🐕</span><div><div class="td-pet-name">น้องโมจิ</div><div class="td-pet-owner">คุณเมย์ เมธาวี</div></div></div></td>
+                    <td>อาบน้ำ + เป่าขน</td>
+                    <td>13:00 – 14:00</td>
+                    <td class="td-price">฿250</td>
+                    <td><span class="badge badge-pending">ค้างชำระ</span></td>
+                    <td><span class="badge badge-confirmed">ยืนยันแล้ว</span></td>
+                  </tr>
+                  <tr class="bt-row" onclick="switchTab('detail')">
+                    <td><span class="td-id">#BK-2026-0314</span></td>
+                    <td><div class="td-pet"><span class="td-pet-icon">🐈</span><div><div class="td-pet-name">น้องโซดา</div><div class="td-pet-owner">คุณต้น ตันติวงศ์</div></div></div></td>
+                    <td>ตัดขน (แมว)</td>
+                    <td>15:30 – 16:30</td>
+                    <td class="td-price">฿350</td>
+                    <td><span class="badge" style="background:var(--n100);color:var(--n500)">ยังไม่ชำระ</span></td>
+                    <td><span class="badge badge-pending">รอยืนยัน</span></td>
+                  </tr>
+                  <tr class="bt-row" onclick="switchTab('detail')">
+                    <td><span class="td-id">#BK-2026-0315</span></td>
+                    <td><div class="td-pet"><span class="td-pet-icon">🐶</span><div><div class="td-pet-name">น้องบัตเตอร์</div><div class="td-pet-owner">คุณเก๋ กัลยา</div></div></div></td>
+                    <td>Full Grooming Package</td>
+                    <td>17:00 – 18:30</td>
+                    <td class="td-price">฿550</td>
+                    <td><span class="badge" style="background:var(--n100);color:var(--n500)">ยังไม่ชำระ</span></td>
+                    <td><span class="badge badge-new">ใหม่</span></td>
+                  </tr>
+                  <tr class="bt-row">
+                    <td><span class="td-id">#BK-2026-0308</span></td>
+                    <td><div class="td-pet"><span class="td-pet-icon">🐩</span><div><div class="td-pet-name">น้องครีม</div><div class="td-pet-owner">คุณนิ นิภาพร</div></div></div></td>
+                    <td>อาบน้ำ + ตัดขน</td>
+                    <td>เมื่อวาน 11:00</td>
+                    <td class="td-price">฿400</td>
+                    <td><span class="badge badge-confirmed">ชำระแล้ว</span></td>
+                    <td><span class="badge badge-done">เสร็จสิ้น</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ─── TAB: BOOKINGS ───────────────────────────────────── -->
+          <div class="screen" id="tab-bookings">
+            <div class="page-head">
+              <h1>การจองทั้งหมด</h1>
+              <p>จัดการและติดตามการจองทุกรายการของคุณ</p>
+            </div>
+
+            <div class="filter-bar">
+              <div class="filter-tabs-row">
+                <button class="ftab active">ทั้งหมด (24)</button>
+                <button class="ftab" onclick="this.parentElement.querySelectorAll('.ftab').forEach(b=>b.classList.remove('active'));this.classList.add('active')">รอยืนยัน (5)</button>
+                <button class="ftab" onclick="this.parentElement.querySelectorAll('.ftab').forEach(b=>b.classList.remove('active'));this.classList.add('active')">ยืนยันแล้ว (12)</button>
+                <button class="ftab" onclick="this.parentElement.querySelectorAll('.ftab').forEach(b=>b.classList.remove('active'));this.classList.add('active')">กำลังบริการ (2)</button>
+                <button class="ftab" onclick="this.parentElement.querySelectorAll('.ftab').forEach(b=>b.classList.remove('active'));this.classList.add('active')">เสร็จสิ้น (4)</button>
+                <button class="ftab" onclick="this.parentElement.querySelectorAll('.ftab').forEach(b=>b.classList.remove('active'));this.classList.add('active')">ยกเลิก (1)</button>
+              </div>
+              <div class="search-input-wrap filter-ml">
+                <span class="si-icon">🔍</span>
+                <input class="si-input" placeholder="ค้นหาชื่อ, รหัสการจอง, บริการ..." />
+              </div>
+              <button class="th-btn th-btn-outline">📅 วันที่</button>
+              <button class="th-btn th-btn-outline">⊞ ตัวกรอง</button>
+            </div>
+
+            <div class="bookings-table-card">
+              <table class="full-bt">
+                <thead>
+                  <tr>
+                    <th>รหัส</th>
+                    <th>สัตว์เลี้ยง / เจ้าของ</th>
+                    <th>บริการ</th>
+                    <th>วันที่ / เวลา</th>
+                    <th>ราคา</th>
+                    <th>การชำระ</th>
+                    <th>สถานะ</th>
+                    <th>การดำเนินการ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr onclick="switchTab('detail')">
+                    <td><span class="td-id">#BK-2026-0312</span></td>
+                    <td><div class="td-pet"><span class="td-pet-icon">🐩</span><div><div class="td-pet-name">น้องมิลค์ (Maltese, ♀ 3 ปี)</div><div class="td-pet-owner">คุณแพท พัทธนันท์ · 081-234-5678</div></div></div></td>
+                    <td>ตัดขน + อาบน้ำ + ตัดเล็บ</td>
+                    <td>28 มี.ค. 2026<br><span style="color:var(--n500);font-size:12px">10:00 – 11:30 น.</span></td>
+                    <td class="td-price">฿450</td>
+                    <td><span class="badge badge-confirmed">✓ ชำระแล้ว</span></td>
+                    <td><span class="badge badge-inprogress">🔄 กำลังบริการ</span></td>
+                    <td><div class="td-actions"><button class="act-btn act-primary" onclick="event.stopPropagation();alert('เสร็จสิ้นบริการ')">✓ เสร็จ</button><button class="act-btn act-ghost" onclick="event.stopPropagation();alert('หมายเหตุ')">📝</button></div></td>
+                  </tr>
+                  <tr onclick="switchTab('detail')">
+                    <td><span class="td-id">#BK-2026-0313</span></td>
+                    <td><div class="td-pet"><span class="td-pet-icon">🐕</span><div><div class="td-pet-name">น้องโมจิ (Golden Retriever, ♂ 2 ปี)</div><div class="td-pet-owner">คุณเมย์ เมธาวี · 089-456-7890</div></div></div></td>
+                    <td>อาบน้ำ + เป่าขน</td>
+                    <td>28 มี.ค. 2026<br><span style="color:var(--n500);font-size:12px">13:00 – 14:00 น.</span></td>
+                    <td class="td-price">฿250</td>
+                    <td><span class="badge badge-pending">⏳ ค้างชำระ</span></td>
+                    <td><span class="badge badge-confirmed">✓ ยืนยันแล้ว</span></td>
+                    <td><div class="td-actions"><button class="act-btn act-primary" onclick="event.stopPropagation();alert('เริ่มบริการ')">▶ เริ่ม</button><button class="act-btn act-outline" onclick="event.stopPropagation();alert('แชทลูกค้า')">💬</button><button class="act-btn act-ghost" onclick="event.stopPropagation();alert('เลื่อนนัด')">📆</button></div></td>
+                  </tr>
+                  <tr onclick="switchTab('detail')">
+                    <td><span class="td-id">#BK-2026-0314</span></td>
+                    <td><div class="td-pet"><span class="td-pet-icon">🐈</span><div><div class="td-pet-name">น้องโซดา (British Shorthair, ♀ 4 ปี)</div><div class="td-pet-owner">คุณต้น ตันติวงศ์ · 091-234-5678</div></div></div></td>
+                    <td>ตัดขน (แมว) + อาบน้ำ</td>
+                    <td>28 มี.ค. 2026<br><span style="color:var(--n500);font-size:12px">15:30 – 16:30 น.</span></td>
+                    <td class="td-price">฿350</td>
+                    <td><span class="badge" style="background:var(--n100);color:var(--n500)">ยังไม่ชำระ</span></td>
+                    <td><span class="badge badge-pending">⏳ รอยืนยัน</span></td>
+                    <td><div class="td-actions"><button class="act-btn act-primary" onclick="event.stopPropagation();alert('ยืนยันการจอง')">✓ ยืนยัน</button><button class="act-btn act-ghost" onclick="event.stopPropagation();alert('ปฏิเสธการจอง')">✕ ปฏิเสธ</button></div></td>
+                  </tr>
+                  <tr onclick="switchTab('detail')">
+                    <td><span class="td-id">#BK-2026-0315</span></td>
+                    <td><div class="td-pet"><span class="td-pet-icon">🐶</span><div><div class="td-pet-name">น้องบัตเตอร์ (Shih Tzu, ♂ 1 ปี)</div><div class="td-pet-owner">คุณเก๋ กัลยา · 082-345-6789</div></div></div></td>
+                    <td>Full Grooming Package</td>
+                    <td>28 มี.ค. 2026<br><span style="color:var(--n500);font-size:12px">17:00 – 18:30 น.</span></td>
+                    <td class="td-price">฿550</td>
+                    <td><span class="badge" style="background:var(--n100);color:var(--n500)">ยังไม่ชำระ</span></td>
+                    <td><span class="badge badge-new">🆕 ใหม่</span></td>
+                    <td><div class="td-actions"><button class="act-btn act-primary" onclick="event.stopPropagation();alert('ยืนยันการจอง')">✓ ยืนยัน</button><button class="act-btn act-ghost" onclick="event.stopPropagation();alert('ปฏิเสธ')">✕ ปฏิเสธ</button></div></td>
+                  </tr>
+                  <tr>
+                    <td><span class="td-id">#BK-2026-0311</span></td>
+                    <td><div class="td-pet"><span class="td-pet-icon">🐕</span><div><div class="td-pet-name">น้องช็อค (Labrador, ♂ 5 ปี)</div><div class="td-pet-owner">คุณบิ๊ก วิรัตน์ · 085-678-9012</div></div></div></td>
+                    <td>อาบน้ำ Full Size + เป่าขน</td>
+                    <td>28 มี.ค. 2026<br><span style="color:var(--n500);font-size:12px">09:00 – 10:30 น.</span></td>
+                    <td class="td-price">฿380</td>
+                    <td><span class="badge badge-confirmed">✓ ชำระแล้ว</span></td>
+                    <td><span class="badge badge-done">✅ เสร็จสิ้น</span></td>
+                    <td><div class="td-actions"><button class="act-btn act-ghost" onclick="alert('ดูรายละเอียด')">👁 ดู</button></div></td>
+                  </tr>
+                  <tr>
+                    <td><span class="td-id">#BK-2026-0308</span></td>
+                    <td><div class="td-pet"><span class="td-pet-icon">🐩</span><div><div class="td-pet-name">น้องครีม (Poodle, ♀ 5 ปี)</div><div class="td-pet-owner">คุณนิ นิภาพร · 092-890-1234</div></div></div></td>
+                    <td>อาบน้ำ + ตัดขน</td>
+                    <td>27 มี.ค. 2026<br><span style="color:var(--n500);font-size:12px">11:00 – 12:30 น.</span></td>
+                    <td class="td-price">฿400</td>
+                    <td><span class="badge badge-confirmed">✓ ชำระแล้ว</span></td>
+                    <td><span class="badge badge-done">✅ เสร็จสิ้น</span></td>
+                    <td><div class="td-actions"><button class="act-btn act-ghost">👁 ดู</button></div></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ─── TAB: CUSTOMERS ──────────────────────────────────── -->
+          <div class="screen" id="tab-customers">
+            <div class="page-head">
+              <h1>ฐานข้อมูลลูกค้า</h1>
+              <p>ลูกค้าทั้งหมดที่เคยใช้บริการ Happy Paws Salon</p>
+            </div>
+
+            <div class="summary-row">
+              <div class="sr-card"><div class="sr-icon" style="background:#EFF6FF">👥</div><div><div class="sr-num">38</div><div class="sr-label">ลูกค้าทั้งหมด</div></div></div>
+              <div class="sr-card"><div class="sr-icon" style="background:#ECFDF5">💰</div><div><div class="sr-num">฿52,400</div><div class="sr-label">รายได้รวมจากลูกค้า</div></div></div>
+              <div class="sr-card"><div class="sr-icon" style="background:#FEF3C7">🔄</div><div><div class="sr-num">4.2 ครั้ง</div><div class="sr-label">เข้าใช้บริการเฉลี่ย/คน</div></div></div>
+              <div class="sr-card"><div class="sr-icon" style="background:#FDF4FF">🆕</div><div><div class="sr-num">8 คน</div><div class="sr-label">ลูกค้าใหม่เดือนนี้</div></div></div>
+            </div>
+
+            <div class="filter-bar">
+              <div class="filter-tabs-row">
+                <button class="ftab active">ทั้งหมด (38)</button>
+                <button class="ftab" onclick="this.parentElement.querySelectorAll('.ftab').forEach(b=>b.classList.remove('active'));this.classList.add('active')">ประจำ ⭐ (14)</button>
+                <button class="ftab" onclick="this.parentElement.querySelectorAll('.ftab').forEach(b=>b.classList.remove('active'));this.classList.add('active')">ใหม่เดือนนี้ (8)</button>
+                <button class="ftab" onclick="this.parentElement.querySelectorAll('.ftab').forEach(b=>b.classList.remove('active'));this.classList.add('active')">ไม่มาแล้ว 60 วัน (6)</button>
+              </div>
+              <div class="search-input-wrap filter-ml">
+                <span class="si-icon">🔍</span>
+                <input class="si-input" placeholder="ค้นหาชื่อลูกค้าหรือสัตว์เลี้ยง..." />
+              </div>
+            </div>
+
+            <div class="customer-grid">
+              <div class="customer-card" onclick="alert('โปรไฟล์ลูกค้า: คุณแพท')">
+                <div class="cc-top">
+                  <div class="cc-avatar">🐩</div>
+                  <div>
+                    <div class="cc-name">คุณแพท พัทธนันท์</div>
+                    <div class="cc-pet">น้องมิลค์ — Maltese · 3 ปี</div>
+                    <div style="margin-top:6px"><span class="badge badge-confirmed" style="font-size:10px">ลูกค้าประจำ ⭐</span></div>
+                  </div>
+                </div>
+                <div class="cc-stats">
+                  <div class="cc-stat"><div class="cc-stat-num">12</div><div class="cc-stat-label">ครั้งที่มา</div></div>
+                  <div class="cc-stat"><div class="cc-stat-num">฿5,400</div><div class="cc-stat-label">ยอดรวม</div></div>
+                  <div class="cc-stat"><div class="cc-stat-num">4.9★</div><div class="cc-stat-label">ให้คะแนน</div></div>
+                </div>
+                <div class="cc-last">📅 เข้าล่าสุด: 28 มีนาคม 2026</div>
+              </div>
+
+              <div class="customer-card" onclick="alert('โปรไฟล์ลูกค้า: คุณเมย์')">
+                <div class="cc-top">
+                  <div class="cc-avatar">🐕</div>
+                  <div>
+                    <div class="cc-name">คุณเมย์ เมธาวี</div>
+                    <div class="cc-pet">น้องโมจิ — Golden Retriever · 2 ปี</div>
+                    <div style="margin-top:6px"><span class="badge badge-confirmed" style="font-size:10px">ลูกค้าประจำ ⭐</span></div>
+                  </div>
+                </div>
+                <div class="cc-stats">
+                  <div class="cc-stat"><div class="cc-stat-num">9</div><div class="cc-stat-label">ครั้งที่มา</div></div>
+                  <div class="cc-stat"><div class="cc-stat-num">฿2,250</div><div class="cc-stat-label">ยอดรวม</div></div>
+                  <div class="cc-stat"><div class="cc-stat-num">5.0★</div><div class="cc-stat-label">ให้คะแนน</div></div>
+                </div>
+                <div class="cc-last">📅 เข้าล่าสุด: 25 มีนาคม 2026</div>
+              </div>
+
+              <div class="customer-card" onclick="alert('โปรไฟล์ลูกค้า: คุณต้น')">
+                <div class="cc-top">
+                  <div class="cc-avatar">🐈</div>
+                  <div>
+                    <div class="cc-name">คุณต้น ตันติวงศ์</div>
+                    <div class="cc-pet">น้องโซดา — British Shorthair · 4 ปี</div>
+                    <div style="margin-top:6px"><span class="badge badge-confirmed" style="font-size:10px">ลูกค้าประจำ ⭐</span></div>
+                  </div>
+                </div>
+                <div class="cc-stats">
+                  <div class="cc-stat"><div class="cc-stat-num">7</div><div class="cc-stat-label">ครั้งที่มา</div></div>
+                  <div class="cc-stat"><div class="cc-stat-num">฿2,450</div><div class="cc-stat-label">ยอดรวม</div></div>
+                  <div class="cc-stat"><div class="cc-stat-num">4.8★</div><div class="cc-stat-label">ให้คะแนน</div></div>
+                </div>
+                <div class="cc-last">📅 เข้าล่าสุด: 20 มีนาคม 2026</div>
+              </div>
+
+              <div class="customer-card" onclick="alert('โปรไฟล์ลูกค้า: คุณเก๋')">
+                <div class="cc-top">
+                  <div class="cc-avatar">🐶</div>
+                  <div>
+                    <div class="cc-name">คุณเก๋ กัลยา</div>
+                    <div class="cc-pet">น้องบัตเตอร์ — Shih Tzu · 1 ปี</div>
+                    <div style="margin-top:6px"><span class="badge badge-new" style="font-size:10px">ลูกค้าใหม่ 🆕</span></div>
+                  </div>
+                </div>
+                <div class="cc-stats">
+                  <div class="cc-stat"><div class="cc-stat-num">2</div><div class="cc-stat-label">ครั้งที่มา</div></div>
+                  <div class="cc-stat"><div class="cc-stat-num">฿1,100</div><div class="cc-stat-label">ยอดรวม</div></div>
+                  <div class="cc-stat"><div class="cc-stat-num">—</div><div class="cc-stat-label">ยังไม่รีวิว</div></div>
+                </div>
+                <div class="cc-last">📅 เข้าล่าสุด: 15 มีนาคม 2026</div>
+              </div>
+
+              <div class="customer-card" onclick="alert('โปรไฟล์ลูกค้า: คุณนิ')">
+                <div class="cc-top">
+                  <div class="cc-avatar">🐩</div>
+                  <div>
+                    <div class="cc-name">คุณนิ นิภาพร</div>
+                    <div class="cc-pet">น้องครีม — Poodle · 5 ปี</div>
+                    <div style="margin-top:6px"><span class="badge badge-new" style="font-size:10px">ลูกค้าใหม่ 🆕</span></div>
+                  </div>
+                </div>
+                <div class="cc-stats">
+                  <div class="cc-stat"><div class="cc-stat-num">3</div><div class="cc-stat-label">ครั้งที่มา</div></div>
+                  <div class="cc-stat"><div class="cc-stat-num">฿1,200</div><div class="cc-stat-label">ยอดรวม</div></div>
+                  <div class="cc-stat"><div class="cc-stat-num">5.0★</div><div class="cc-stat-label">ให้คะแนน</div></div>
+                </div>
+                <div class="cc-last">📅 เข้าล่าสุด: 27 มีนาคม 2026</div>
+              </div>
+
+              <div class="customer-card" onclick="alert('โปรไฟล์ลูกค้า: คุณบิ๊ก')">
+                <div class="cc-top">
+                  <div class="cc-avatar">🐕</div>
+                  <div>
+                    <div class="cc-name">คุณบิ๊ก วิรัตน์</div>
+                    <div class="cc-pet">น้องช็อค — Labrador · 5 ปี</div>
+                    <div style="margin-top:6px"><span class="badge badge-pending" style="font-size:10px">ไม่มา 45 วัน ⚠️</span></div>
+                  </div>
+                </div>
+                <div class="cc-stats">
+                  <div class="cc-stat"><div class="cc-stat-num">5</div><div class="cc-stat-label">ครั้งที่มา</div></div>
+                  <div class="cc-stat"><div class="cc-stat-num">฿1,900</div><div class="cc-stat-label">ยอดรวม</div></div>
+                  <div class="cc-stat"><div class="cc-stat-num">4.7★</div><div class="cc-stat-label">ให้คะแนน</div></div>
+                </div>
+                <div class="cc-last" style="color:var(--warning)">⚠️ เข้าล่าสุด: 12 กุมภาพันธ์ 2026</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ─── TAB: BOOKING DETAIL ─────────────────────────────── -->
+          <div class="screen" id="tab-detail">
+            <div class="page-head" style="display:flex;align-items:center;gap:14px">
+              <button onclick="switchTab('bookings')" style="background:var(--n100);border:none;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px;font-weight:600;color:var(--n700);font-family:inherit">← กลับ</button>
+              <div>
+                <h1 style="font-size:20px">รายละเอียดการจอง #BK-2026-0312</h1>
+                <p>28 มีนาคม 2026 · น้องมิลค์ — คุณแพท พัทธนันท์</p>
+              </div>
+              <div style="margin-left:auto;display:flex;gap:10px">
+                <button class="th-btn th-btn-outline" onclick="alert('พิมพ์ใบเสร็จ')">🖨 พิมพ์</button>
+                <button class="th-btn th-btn-primary" onclick="alert('เสร็จสิ้นบริการ')">✓ เสร็จสิ้นบริการ</button>
+              </div>
+            </div>
+
+            <div class="detail-layout">
+              <div>
+                <!-- Hero Card -->
+                <div class="detail-hero">
+                  <div class="dh-left">
+                    <div class="dh-id">#BK-2026-0312 · สร้างเมื่อ 27 มี.ค. 2026 เวลา 18:30 น.</div>
+                    <div class="dh-amount">฿450</div>
+                    <div class="dh-service">ตัดขน + อาบน้ำ + ตัดเล็บ</div>
+                    <div style="margin-top:14px">
+                      <span class="badge" style="background:rgba(255,255,255,.2);color:white;font-size:12px;padding:6px 14px">🔄 กำลังให้บริการ</span>
+                    </div>
+                  </div>
+                  <div class="dh-right">
+                    <div style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:16px 20px;text-align:center">
+                      <div style="color:rgba(255,255,255,.65);font-size:11px;margin-bottom:4px">เวลานัด</div>
+                      <div style="color:white;font-size:18px;font-weight:800">10:00 – 11:30</div>
+                      <div style="color:rgba(255,255,255,.65);font-size:11px;margin-top:4px">28 มีนาคม 2026</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Pet + Customer -->
+                <div class="detail-card">
+                  <div class="dc-head"><div class="dc-head-title">🐩 ข้อมูลสัตว์เลี้ยงและเจ้าของ</div></div>
+                  <div class="dc-body">
+                    <div class="dc-row"><span class="dc-key">ชื่อสัตว์เลี้ยง</span><span class="dc-val">น้องมิลค์</span></div>
+                    <div class="dc-row"><span class="dc-key">สายพันธุ์</span><span class="dc-val">Maltese · ♀ · อายุ 3 ปี</span></div>
+                    <div class="dc-row"><span class="dc-key">เจ้าของ</span><span class="dc-val">คุณแพท พัทธนันท์</span></div>
+                    <div class="dc-row"><span class="dc-key">โทรศัพท์</span><span class="dc-val" style="color:var(--teal)">081-234-5678</span></div>
+                    <div class="dc-row"><span class="dc-key">อีเมล</span><span class="dc-val">pat@email.com</span></div>
+                    <div class="dc-row"><span class="dc-key">หมายเหตุพิเศษ</span><span class="dc-val" style="color:var(--warning)">⚠️ แพ้แชมพูสูตร sensitive</span></div>
+                    <div class="dc-row"><span class="dc-key">จำนวนครั้งที่มา</span><span class="dc-val">ครั้งที่ 12 · ลูกค้าประจำ ⭐</span></div>
+                  </div>
+                </div>
+
+                <!-- Services + Pricing -->
+                <div class="detail-card">
+                  <div class="dc-head"><div class="dc-head-title">✂️ รายการบริการและราคา</div></div>
+                  <div class="dc-body">
+                    <div class="dc-row"><span class="dc-key">ตัดขน (Maltese S)</span><span class="dc-val">฿280</span></div>
+                    <div class="dc-row"><span class="dc-key">อาบน้ำ + เป่าขน</span><span class="dc-val">฿120</span></div>
+                    <div class="dc-row"><span class="dc-key">ตัดเล็บ</span><span class="dc-val">฿50</span></div>
+                    <div class="dc-row dc-row-total"><span class="dc-key">รวมทั้งหมด</span><span class="dc-val">฿450</span></div>
+                    <div class="dc-row"><span class="dc-key">การชำระเงิน</span><span class="dc-val"><span class="badge badge-confirmed">✓ ชำระแล้ว — โอนพร้อมเพย์</span></span></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right Column: Timeline + Actions -->
+              <div>
+                <div class="detail-card" style="margin-bottom:16px">
+                  <div class="dc-head"><div class="dc-head-title">ขั้นตอนการให้บริการ</div></div>
+                  <div class="timeline" style="padding-top:16px">
+                    <div class="tl-item"><div class="tl-col"><div class="tl-dot done"></div><div class="tl-line done"></div></div><div class="tl-body"><div class="tl-title">รับการจอง</div><div class="tl-time">27 มี.ค. 18:30 น.</div></div></div>
+                    <div class="tl-item"><div class="tl-col"><div class="tl-dot done"></div><div class="tl-line done"></div></div><div class="tl-body"><div class="tl-title">ยืนยันการจอง</div><div class="tl-time">27 มี.ค. 19:05 น.</div></div></div>
+                    <div class="tl-item"><div class="tl-col"><div class="tl-dot done"></div><div class="tl-line done"></div></div><div class="tl-body"><div class="tl-title">ลูกค้ามาถึง</div><div class="tl-time">28 มี.ค. 10:05 น.</div></div></div>
+                    <div class="tl-item"><div class="tl-col"><div class="tl-dot active"></div><div class="tl-line"></div></div><div class="tl-body"><div class="tl-title" style="color:var(--teal)">กำลังให้บริการ ●</div><div class="tl-time">เริ่ม 10:10 น. · กำลังดำเนินการ</div></div></div>
+                    <div class="tl-item"><div class="tl-col"><div class="tl-dot"></div><div class="tl-line"></div></div><div class="tl-body"><div class="tl-title" style="color:var(--n500)">เสร็จสิ้น</div><div class="tl-time">ประมาณ 11:30 น.</div></div></div>
+                    <div class="tl-item"><div class="tl-col"><div class="tl-dot"></div></div><div class="tl-body"><div class="tl-title" style="color:var(--n500)">รอรับรีวิว</div><div class="tl-time">—</div></div></div>
+                  </div>
+                </div>
+
+                <div class="detail-card">
+                  <div class="dc-head"><div class="dc-head-title">การดำเนินการ</div></div>
+                  <div style="padding:16px;display:flex;flex-direction:column;gap:8px">
+                    <button class="btn-primary-full" style="border-radius:8px;height:44px;font-size:14px" onclick="alert('เสร็จสิ้นบริการ — อัปเดตสถานะ')">✓ บันทึกว่าเสร็จสิ้นบริการ</button>
+                    <button style="width:100%;height:40px;border-radius:8px;background:white;border:1.5px solid var(--blue);color:var(--blue);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="alert('แชทกับลูกค้า')">💬 แชทกับลูกค้า</button>
+                    <button style="width:100%;height:40px;border-radius:8px;background:white;border:1.5px solid var(--n300);color:var(--n500);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit" onclick="alert('เลื่อนการนัด')">📆 เลื่อนการนัด</button>
+                    <button style="width:100%;height:40px;border-radius:8px;background:var(--error-bg);border:none;color:var(--error);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit" onclick="alert('ยกเลิกการจอง')">✕ ยกเลิกการจอง</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /page-content -->
+      </main>
+    </div><!-- /app-shell -->
+  </div><!-- /s2-shell -->
+
+</div><!-- /browser-chrome -->
+
+<script>
+const urlMap = {
+  s0:        'pawtal-web.vercel.app/providers/join',
+  'sreg-1':  'pawtal-web.vercel.app/providers/join/register',
+  'sreg-2':  'pawtal-web.vercel.app/providers/join/register/step-2',
+  'sreg-3':  'pawtal-web.vercel.app/providers/join/register/step-3',
+  'sreg-4':  'pawtal-web.vercel.app/providers/join/register/create-account',
+  'sreg-5':  'pawtal-web.vercel.app/providers/join/register/success',
+  s1:        'pawtal-web.vercel.app/login',
+  dashboard: 'app.pawtal.co.th/dashboard',
+  bookings:  'app.pawtal.co.th/dashboard/bookings',
+  customers: 'app.pawtal.co.th/dashboard/customers',
+  detail:    'app.pawtal.co.th/dashboard/bookings/BK-2026-0312',
+};
+const breadcrumbMap = {
+  dashboard: 'หน้าหลัก',
+  bookings:  'การจอง',
+  customers: 'ลูกค้า',
+  detail:    'รายละเอียดการจอง',
+};
+const topScreenIds = ['s0', 's-reg', 's1', 's2-shell'];
+const protoScreens = ['s0', 'sreg', 's1', 's2', 's3', 's4', 's5'];
+
+function hideAll() {
+  document.getElementById('s0').classList.remove('active');
+  document.getElementById('s-reg').classList.remove('active');
+  document.getElementById('s1').classList.remove('active');
+  document.getElementById('s2-shell').classList.remove('active');
+  document.getElementById('s2-shell').style.display = 'none';
+}
+
+function openForgot() {
+  document.getElementById('forgot-card').classList.add('open');
+}
+function closeForgot() {
+  document.getElementById('forgot-card').classList.remove('open');
+  document.getElementById('forgot-success').style.display = 'none';
+  document.getElementById('forgot-email-group').style.display = '';
+  document.getElementById('forgot-submit-btn').style.display = '';
+  document.getElementById('forgot-email-input').value = '';
+}
+function submitForgot() {
+  const email = document.getElementById('forgot-email-input').value;
+  if (!email) { alert('กรุณากรอกอีเมล'); return; }
+  document.getElementById('forgot-email-group').style.display = 'none';
+  document.getElementById('forgot-submit-btn').style.display = 'none';
+  document.getElementById('forgot-success').style.display = 'block';
+}
+
+function showScreen(id) {
+  hideAll();
+  protoScreens.forEach(s => document.getElementById('btn-' + s)?.classList.remove('active'));
+
+  if (id === 's0') {
+    document.getElementById('s0').classList.add('active');
+    document.getElementById('url-text').textContent = urlMap.s0;
+    document.getElementById('btn-s0')?.classList.add('active');
+
+  } else if (id === 's-reg') {
+    document.getElementById('s-reg').classList.add('active');
+    regGoTo(1); // always start at step 1
+    document.getElementById('btn-sreg')?.classList.add('active');
+
+  } else if (id === 's1') {
+    document.getElementById('s1').classList.add('active');
+    document.getElementById('url-text').textContent = urlMap.s1;
+    document.getElementById('btn-s1')?.classList.add('active');
+
+  } else {
+    document.getElementById('s2-shell').classList.add('active');
+    document.getElementById('s2-shell').style.display = 'block';
+    const tabMap = { s2: 'dashboard', s3: 'bookings', s4: 'customers', s5: 'detail' };
+    switchTab(tabMap[id] || 'dashboard');
+  }
+}
+
+function regGoTo(step) {
+  // Show reg screen if not already
+  document.getElementById('s-reg').classList.add('active');
+
+  // Hide all reg steps
+  [1,2,3,4,5].forEach(n => {
+    const el = document.getElementById('reg-s' + n);
+    if (el) el.style.display = 'none';
+  });
+  // Show current step
+  const target = document.getElementById('reg-s' + step);
+  if (target) target.style.display = '';
+
+  // Update step pills
+  [1,2,3,4].forEach(n => {
+    const pill = document.getElementById('reg-pill-' + n);
+    const sep  = document.getElementById('reg-sep-' + n);
+    if (!pill) return;
+    pill.classList.remove('active','done');
+    if (sep) sep.classList.remove('done');
+    if (n < step) { pill.classList.add('done'); pill.querySelector('.sp-num').textContent = '✓'; if(sep) sep.classList.add('done'); }
+    else if (n === step) { pill.classList.add('active'); pill.querySelector('.sp-num').textContent = n; }
+    else { pill.querySelector('.sp-num').textContent = n; }
+  });
+
+  // Update URL
+  const stepKey = 'sreg-' + step;
+  document.getElementById('url-text').textContent = urlMap[stepKey] || urlMap['sreg-1'];
+
+  // If success screen, hide pill nav
+  document.getElementById('reg-step-indicator').style.display = step === 5 ? 'none' : '';
+
+  // Scroll reg wrap to top
+  const wrap = document.querySelector('.reg-wrap');
+  if (wrap) wrap.scrollTop = 0;
+}
+
+function togglePwd(id) {
+  const el = document.getElementById(id);
+  if (el) el.type = el.type === 'password' ? 'text' : 'password';
+}
+
+function updateStrength(val) {
+  let score = 0;
+  if (val.length >= 8) score++;
+  if (/[A-Z]/.test(val)) score++;
+  if (/[0-9]/.test(val)) score++;
+  if (/[^A-Za-z0-9]/.test(val)) score++;
+  const labels = ['', 'อ่อนมาก', 'อ่อน', 'ปานกลาง', 'แข็งแกร่ง'];
+  document.getElementById('reg-strength-label').textContent = val ? labels[score] || 'อ่อนมาก' : 'กรอกรหัสผ่าน';
+  [1,2,3,4].forEach(i => {
+    const bar = document.getElementById('sb' + i);
+    if (!bar) return;
+    bar.className = 'reg-strength-bar' + (i <= score ? ' s' + score : '');
+  });
+}
+
+function switchTab(tab) {
+  // Show app shell
+  hideAll();
+  document.getElementById('s2-shell').style.display = 'block';
+
+  // Switch inner tabs
+  ['dashboard','bookings','customers','detail'].forEach(t => {
+    const el = document.getElementById('tab-' + t);
+    if (el) el.classList.remove('active');
+  });
+  const target = document.getElementById('tab-' + tab);
+  if (target) target.classList.add('active');
+
+  // Sidebar active state
+  ['dashboard','bookings','customers'].forEach(t => {
+    const el = document.getElementById('sb-' + t);
+    if (el) el.classList.remove('active');
+  });
+  if (document.getElementById('sb-' + tab)) document.getElementById('sb-' + tab).classList.add('active');
+
+  // URL + breadcrumb
+  document.getElementById('url-text').textContent = urlMap[tab] || urlMap.dashboard;
+  document.getElementById('breadcrumb-text').textContent = breadcrumbMap[tab] || 'หน้าหลัก';
+
+  // Sync proto nav button
+  const tabToBtn = { dashboard: 's2', bookings: 's3', customers: 's4', detail: 's5' };
+  protoScreens.forEach(s => document.getElementById('btn-' + s)?.classList.remove('active'));
+  const btn = tabToBtn[tab];
+  if (btn) document.getElementById('btn-' + btn)?.classList.add('active');
+
+}
+</script>
+</body>
+</html>

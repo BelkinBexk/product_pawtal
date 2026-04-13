@@ -1,9 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { useLang } from "@/contexts/LanguageContext";
+
+const EN = {
+  badge: "For Pet Owners", headline: "Today's off-peak deals near you",
+  sub: "Premium grooming & care at up to 40% off — only during quiet hours. Book in seconds, pay upfront, love your pet more.",
+  footer: "© 2026 Pawtal · Sukhumvit, Bangkok",
+  title: "Log In", subtitle: "Welcome back, pet lover 🐾",
+  email: "Email", password: "Password",
+  showPw: "Show password", hidePw: "Hide password",
+  forgot: "Forgot password?", loggingIn: "Logging in…", logIn: "Log In",
+  createAccount: "Create a Pet Owner Account", backToHome: "← Back to home",
+  errRequired: "Please enter Email and Password.", errIncorrect: "Incorrect Email or Password.",
+};
+const TH = {
+  badge: "สำหรับเจ้าของสัตว์เลี้ยง", headline: "ดีลออฟพีคใกล้คุณวันนี้",
+  sub: "บริการกรูมมิ่งและดูแลสัตว์เลี้ยงลดสูงสุด 40% — เฉพาะช่วงเวลาว่างเท่านั้น จองได้ในไม่กี่วินาที ชำระล่วงหน้า รักสัตว์เลี้ยงของคุณมากขึ้น",
+  footer: "© 2026 Pawtal · สุขุมวิท, กรุงเทพฯ",
+  title: "เข้าสู่ระบบ", subtitle: "ยินดีต้อนรับกลับ เพื่อนรักสัตว์เลี้ยง 🐾",
+  email: "อีเมล", password: "รหัสผ่าน",
+  showPw: "แสดงรหัสผ่าน", hidePw: "ซ่อนรหัสผ่าน",
+  forgot: "ลืมรหัสผ่าน?", loggingIn: "กำลังเข้าสู่ระบบ…", logIn: "เข้าสู่ระบบ",
+  createAccount: "สมัครบัญชีเจ้าของสัตว์เลี้ยง", backToHome: "← กลับสู่หน้าหลัก",
+  errRequired: "กรุณากรอกอีเมลและรหัสผ่าน", errIncorrect: "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
+};
 
 // ── Deal previews ─────────────────────────────────────────────────────────────
 const PREVIEW_DEALS = [
@@ -34,29 +58,37 @@ const PREVIEW_DEALS = [
 ];
 
 // ── Page ──────────────────────────────────────────────────────────────────────
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = searchParams.get("next") ?? "/deals";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [lang] = useLang();
+  const T = lang === "en" ? EN : TH;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-    setLoading(false);
-
-    if (error) {
-      setError(error.message);
+    if (!email.trim() || !password.trim()) {
+      setError(T.errRequired);
       return;
     }
 
-    router.push("/deals");
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setLoading(false);
+
+    if (error) {
+      setError(T.errIncorrect);
+      return;
+    }
+
+    router.push(nextPath);
   };
 
   return (
@@ -68,13 +100,11 @@ export default function LoginPage() {
 
         <div className="login-left-badge">
           <div className="login-left-badge-dot" />
-          For Pet Owners
+          {T.badge}
         </div>
 
-        <h1 className="login-left-h1">Today&apos;s off-peak deals near you</h1>
-        <p className="login-left-sub">
-          Premium grooming &amp; care at up to 40% off — only during quiet hours. Book in seconds, pay upfront, love your pet more.
-        </p>
+        <h1 className="login-left-h1">{T.headline}</h1>
+        <p className="login-left-sub">{T.sub}</p>
 
         <div className="login-deal-list">
           {PREVIEW_DEALS.map((deal) => (
@@ -95,23 +125,18 @@ export default function LoginPage() {
           ))}
         </div>
 
-        <div className="login-left-footer">© 2026 Pawtal · Sukhumvit, Bangkok</div>
+        <div className="login-left-footer">{T.footer}</div>
       </div>
 
       {/* ── Right Panel ── */}
       <div className="login-right">
         <div className="login-card">
-          <div className="login-card-title">Log In</div>
-          <div className="login-card-sub">Welcome back, pet lover 🐾</div>
-
-          {/* Error banner */}
-          {error && (
-            <div className="login-error">{error}</div>
-          )}
+          <div className="login-card-title">{T.title}</div>
+          <div className="login-card-sub">{T.subtitle}</div>
 
           <form onSubmit={handleLogin}>
             <div className="login-field">
-              <label htmlFor="email">Email</label>
+              <label htmlFor="email">{T.email}</label>
               <input
                 id="email"
                 type="email"
@@ -119,13 +144,12 @@ export default function LoginPage() {
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
                 autoComplete="email"
               />
             </div>
 
             <div className="login-field">
-              <label htmlFor="password">Password</label>
+              <label htmlFor="password">{T.password}</label>
               <div className="login-input-wrap">
                 <input
                   id="password"
@@ -134,14 +158,13 @@ export default function LoginPage() {
                   placeholder="••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  required
                   autoComplete="current-password"
                 />
                 <button
                   type="button"
                   className="login-eye"
                   onClick={() => setShowPw((v) => !v)}
-                  aria-label={showPw ? "Hide password" : "Show password"}
+                  aria-label={showPw ? T.hidePw : T.showPw}
                 >
                   {showPw ? (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -157,22 +180,32 @@ export default function LoginPage() {
                   )}
                 </button>
               </div>
-              <Link href="/forgot-password" className="login-forgot">Forgot password?</Link>
+              <Link href="/forgot-password" className="login-forgot">{T.forgot}</Link>
             </div>
 
+            {error && <div className="login-error">{error}</div>}
+
             <button type="submit" className="login-btn" disabled={loading}>
-              {loading ? "Logging in…" : "Log In"}
+              {loading ? T.loggingIn : T.logIn}
             </button>
           </form>
 
           <button type="button" className="login-create-btn" onClick={() => router.push("/signup")}>
-            Create a Pet Owner Account
+            {T.createAccount}
           </button>
 
-          <Link href="/" className="login-back">← Back to home</Link>
+          <Link href="/" className="login-back">{T.backToHome}</Link>
         </div>
       </div>
 
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

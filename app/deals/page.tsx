@@ -2,6 +2,25 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
+import CustomerNav from "@/components/CustomerNav";
+import { useLang } from "@/contexts/LanguageContext";
+
+const EN = {
+  badge: "TODAY ONLY", h1: "Flash deals near you",
+  sub: "Limited-time offers from top-rated vendors in Sukhumvit and surrounding areas.",
+  search: "Search shops or services…", allAreas: "All Areas",
+  bookNow: "Book now", save: "Save ฿",
+  noDeals: "No deals found", noDealsHint: "Try a different location, category, or search term.",
+  clearFilters: "Clear filters", prev: "← Prev", next: "Next →",
+};
+const TH = {
+  badge: "วันนี้เท่านั้น", h1: "ดีลสุดคุ้มใกล้คุณ",
+  sub: "ข้อเสนอจำกัดเวลาจากร้านชั้นนำในสุขุมวิทและพื้นที่ใกล้เคียง",
+  search: "ค้นหาร้านหรือบริการ…", allAreas: "ทุกพื้นที่",
+  bookNow: "จองเลย", save: "ประหยัด ฿",
+  noDeals: "ไม่พบดีล", noDealsHint: "ลองเปลี่ยนพื้นที่ หมวดหมู่ หรือคำค้นหา",
+  clearFilters: "ล้างตัวกรอง", prev: "← ก่อนหน้า", next: "ถัดไป →",
+};
 
 const DEALS_PER_PAGE = 4;
 
@@ -12,6 +31,7 @@ const CATEGORIES = ["All", "Grooming", "Day Care", "Training", "Boarding", "Vet 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface Deal {
   id: number;
+  slotId: string;
   service: string;
   shop: string;
   category: string;
@@ -31,6 +51,7 @@ interface Deal {
 const MOCK_DEALS: Deal[] = [
   {
     id: 1,
+    slotId: "c3000001-0000-0000-0000-000000000001",
     service: "Full Grooming Package",
     shop: "Happy Paws Grooming",
     category: "Grooming",
@@ -61,6 +82,7 @@ const MOCK_DEALS: Deal[] = [
   },
   {
     id: 2,
+    slotId: "c3000001-0000-0000-0000-000000000002",
     service: "Dog Day Care (Full Day)",
     shop: "Furever Friends",
     category: "Day Care",
@@ -92,6 +114,7 @@ const MOCK_DEALS: Deal[] = [
   },
   {
     id: 3,
+    slotId: "c3000001-0000-0000-0000-000000000003",
     service: "Basic Training Session",
     shop: "Paws Academy",
     category: "Training",
@@ -124,6 +147,7 @@ const MOCK_DEALS: Deal[] = [
   },
   {
     id: 4,
+    slotId: "c3000001-0000-0000-0000-000000000004",
     service: "Cat Spa & Grooming",
     shop: "Paw & Relax Spa",
     category: "Grooming",
@@ -158,6 +182,7 @@ const MOCK_DEALS: Deal[] = [
   },
   {
     id: 5,
+    slotId: "c3000001-0000-0000-0000-000000000005",
     service: "Dog Boarding (1 Night)",
     shop: "Cozy Paws Hotel",
     category: "Boarding",
@@ -189,6 +214,7 @@ const MOCK_DEALS: Deal[] = [
   },
   {
     id: 6,
+    slotId: "c3000001-0000-0000-0000-000000000006",
     service: "Vet Health Checkup",
     shop: "Dr. Pet Clinic",
     category: "Vet Checkup",
@@ -214,6 +240,7 @@ const MOCK_DEALS: Deal[] = [
   },
   {
     id: 7,
+    slotId: "c3000001-0000-0000-0000-000000000007",
     service: "Dog Walking (1 hr)",
     shop: "Walk & Wag",
     category: "Dog Walking",
@@ -244,6 +271,7 @@ const MOCK_DEALS: Deal[] = [
   },
   {
     id: 8,
+    slotId: "c3000001-0000-0000-0000-000000000008",
     service: "Pet Taxi (One-way)",
     shop: "Pawmobile",
     category: "Pet Taxi",
@@ -271,7 +299,7 @@ const MOCK_DEALS: Deal[] = [
 ];
 
 // ── Deal Card ─────────────────────────────────────────────────────────────────
-function DealCard({ deal }: { deal: Deal }) {
+function DealCard({ deal, T }: { deal: Deal; T: typeof EN }) {
   const save = deal.originalPrice - deal.dealPrice;
   return (
     <div className="deal-card">
@@ -290,13 +318,13 @@ function DealCard({ deal }: { deal: Deal }) {
         <div className="deal-card-pricing">
           <span className="deal-card-old">฿{deal.originalPrice.toLocaleString()}</span>
           <span className="deal-card-new">฿{deal.dealPrice.toLocaleString()}</span>
-          <span className="deal-card-save">Save ฿{save}</span>
+          <span className="deal-card-save">{T.save}{save}</span>
         </div>
         <div className={`deal-card-timer ${deal.timeType}`}>
           <span className="deal-card-timer-dot" />
           {deal.timeLabel}
         </div>
-        <button className="deal-card-btn">Book now</button>
+        <Link href={`/book?slotId=${deal.slotId}`} className="deal-card-btn" style={{ textDecoration: "none", display: "block", textAlign: "center" }}>{T.bookNow}</Link>
       </div>
     </div>
   );
@@ -304,6 +332,8 @@ function DealCard({ deal }: { deal: Deal }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function DealsPage() {
+  const [lang] = useLang();
+  const T = lang === "en" ? EN : TH;
   const [search, setSearch]       = useState("");
   const [location, setLocation]   = useState("All Areas");
   const [category, setCategory]   = useState("All");
@@ -341,57 +371,14 @@ export default function DealsPage() {
   return (
     <div className="deals-page">
 
-      {/* ── Nav ── */}
-      <nav className="deals-nav">
-        <div className="deals-nav-inner">
-          <Link href="/" className="deals-nav-logo">Pawtal</Link>
-          <div />
-          {/* My Account with dropdown */}
-          <div className="deals-nav-account-wrap" ref={accountRef}>
-            <button
-              className={`deals-nav-account${dropdownOpen ? " open" : ""}`}
-              onClick={() => setDropdownOpen((v) => !v)}
-            >
-              <div className="deals-nav-avatar">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                  <circle cx="12" cy="7" r="4"/>
-                </svg>
-              </div>
-              My Account
-              <svg className="deals-nav-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="6 9 12 15 18 9"/>
-              </svg>
-            </button>
-            {dropdownOpen && (
-              <div className="deals-nav-dropdown">
-                <Link href="/bookings" className="deals-nav-dropdown-item" onClick={() => setDropdownOpen(false)}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                  </svg>
-                  My Bookings
-                </Link>
-                <div className="deals-nav-dropdown-divider" />
-                <Link href="/profile" className="deals-nav-dropdown-item" onClick={() => setDropdownOpen(false)}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-                  </svg>
-                  Profile Settings
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-      </nav>
+      <CustomerNav />
 
       {/* ── Hero ── */}
       <div className="deals-hero">
         <div className="deals-hero-inner">
-          <div className="deals-hero-badge">TODAY ONLY</div>
-          <h1 className="deals-hero-h1">Flash deals near you</h1>
-          <p className="deals-hero-sub">
-            Limited-time offers from top-rated vendors in Sukhumvit and surrounding areas.
-          </p>
+          <div className="deals-hero-badge">{T.badge}</div>
+          <h1 className="deals-hero-h1">{T.h1}</h1>
+          <p className="deals-hero-sub">{T.sub}</p>
         </div>
       </div>
 
@@ -407,7 +394,7 @@ export default function DealsPage() {
               <input
                 type="text"
                 className="deals-search-input"
-                placeholder="Search shops or services…"
+                placeholder={T.search}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -415,13 +402,30 @@ export default function DealsPage() {
                 <button className="deals-search-clear" onClick={() => setSearch("")}>✕</button>
               )}
             </div>
-            <div className="deals-loc-wrap">
+            <div className={`deals-loc-wrap${dropdownOpen ? " open" : ""}`} ref={accountRef}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, color: "#7eb5d6" }}>
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
               </svg>
-              <select className="deals-loc-select" value={location} onChange={(e) => setLocation(e.target.value)}>
-                {LOCATIONS.map((l) => <option key={l} value={l}>{l}</option>)}
-              </select>
+              <button className="deals-loc-btn" onClick={() => setDropdownOpen((o) => !o)}>
+                {location}
+                <svg className={`deals-loc-chevron${dropdownOpen ? " flipped" : ""}`} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              {dropdownOpen && (
+                <div className="deals-loc-dropdown">
+                  {LOCATIONS.map((l) => (
+                    <button
+                      key={l}
+                      className={`deals-loc-dropdown-item${location === l ? " selected" : ""}`}
+                      onClick={() => { setLocation(l); setDropdownOpen(false); }}
+                    >
+                      {location === l && <span className="deals-loc-check">✓</span>}
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
           {/* Row 2: category pills */}
@@ -445,7 +449,7 @@ export default function DealsPage() {
           <>
             <div className="deals-grid">
               {paginated.map((deal) => (
-                <DealCard key={deal.id} deal={deal} />
+                <DealCard key={deal.id} deal={deal} T={T} />
               ))}
             </div>
 
@@ -457,7 +461,7 @@ export default function DealsPage() {
                   disabled={currentPage === 1}
                   onClick={() => setCurrentPage((p) => p - 1)}
                 >
-                  ← Prev
+                  {T.prev}
                 </button>
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
                   <button
@@ -473,7 +477,7 @@ export default function DealsPage() {
                   disabled={currentPage === totalPages}
                   onClick={() => setCurrentPage((p) => p + 1)}
                 >
-                  Next →
+                  {T.next}
                 </button>
               </div>
             )}
@@ -481,10 +485,10 @@ export default function DealsPage() {
         ) : (
           <div className="deals-empty">
             <div className="deals-empty-icon">🔍</div>
-            <div className="deals-empty-title">No deals found</div>
-            <div className="deals-empty-sub">Try a different location, category, or search term.</div>
+            <div className="deals-empty-title">{T.noDeals}</div>
+            <div className="deals-empty-sub">{T.noDealsHint}</div>
             <button className="deals-empty-reset" onClick={() => { setSearch(""); setLocation("All Areas"); setCategory("All"); }}>
-              Clear filters
+              {T.clearFilters}
             </button>
           </div>
         )}

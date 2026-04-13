@@ -125,7 +125,7 @@ export default function LandingPage() {
             <a className="nav-link" href="#deals">Services</a>
             <a className="nav-link" href="#how">How it works</a>
             <a className="nav-link" href="#faq">FAQ</a>
-            <a className="nav-link" href="#vendor">For Business</a>
+            <a className="nav-link" href="/for-business">For Business</a>
           </div>
           <div className="nav-right">
             <button className="nav-login" onClick={() => router.push("/login")}>Sign in</button>
@@ -539,7 +539,7 @@ export default function LandingPage() {
             <div className="footer-col">
               <h4>Company</h4>
               <a href="#">About us</a>
-              <a href="#">For Business</a>
+              <a href="/for-business">For Business</a>
               <a href="#">Blog</a>
               <a href="#">Careers</a>
             </div>

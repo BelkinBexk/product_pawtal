@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pawtal — Bangkok's Pet Services Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue: #17A8FF;
+    --blue-hover: #0B93E8;
+    --blue-light: #e8f4ff;
+    --blue-mid: #d0eaff;
+    --navy: #003459;
+    --dark: #00171F;
+    --muted: #5a8fa8;
+    --hint: #7eb5d6;
+    --surface: #f0f9ff;
+    --border: #e8f4ff;
+    --border2: #e0f0ff;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Lexend Deca', sans-serif;
+    background: #fff;
+    color: var(--dark);
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  .nav {
+    height: 72px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 200;
+  }
+  .nav-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 48px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .nav-logo { font-size: 22px; font-weight: 700; color: var(--blue); letter-spacing: -0.5px; cursor: pointer; }
+  .nav-center { display: flex; align-items: center; gap: 4px; }
+  .nav-link {
+    font-size: 14px; font-weight: 400; color: var(--navy);
+    padding: 8px 18px; border-radius: 8px; cursor: pointer;
+    text-decoration: none; transition: background 0.15s;
+  }
+  .nav-link:hover { background: var(--surface); }
+  .nav-right { display: flex; align-items: center; gap: 12px; }
+  .nav-login {
+    font-size: 14px; font-weight: 500; color: var(--navy);
+    padding: 9px 20px; border-radius: 100px;
+    border: 1.5px solid var(--border2); cursor: pointer;
+    transition: background 0.15s;
+  }
+  .nav-login:hover { background: var(--surface); }
+  .nav-cta {
+    background: var(--blue); color: #fff;
+    font-size: 14px; font-weight: 600; padding: 10px 24px;
+    border-radius: 100px; cursor: pointer; transition: background 0.15s;
+    font-family: 'Lexend Deca', sans-serif;
+  }
+  .nav-cta:hover { background: var(--blue-hover); }
+
+  /* ── HERO ── */
+  .hero { background: var(--surface); padding: 96px 48px 80px; }
+  .hero-inner {
+    max-width: 1200px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 72px; align-items: center;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--blue-light); color: #0B8BD4;
+    font-size: 13px; font-weight: 500;
+    padding: 6px 16px; border-radius: 100px; margin-bottom: 28px;
+  }
+  .hero-badge-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); }
+  .hero-h1 {
+    font-size: 56px; font-weight: 700; color: var(--dark);
+    line-height: 1.08; letter-spacing: -2px; margin-bottom: 24px;
+  }
+  .hero-h1 span { color: var(--blue); }
+  .hero-sub {
+    font-size: 17px; font-weight: 300; color: #3a6a80;
+    line-height: 1.75; margin-bottom: 40px;
+  }
+  .hero-search {
+    display: flex; align-items: center;
+    background: #fff; border: 1.5px solid var(--border2);
+    border-radius: 100px; padding: 6px 6px 6px 24px;
+    margin-bottom: 40px; cursor: text;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .hero-search:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(23,168,255,0.12); }
+  .hero-search-input {
+    font-size: 14px; color: var(--dark); flex: 1; border: none; outline: none;
+    background: transparent; font-family: 'Lexend Deca', sans-serif;
+  }
+  .hero-search-input::placeholder { color: #9ec9e0; }
+  .hero-search-sep { width: 1px; height: 22px; background: var(--border2); margin: 0 16px; }
+  .hero-search-loc { font-size: 14px; color: var(--navy); font-weight: 500; white-space: nowrap; cursor: pointer; }
+  .hero-search-btn {
+    background: var(--blue); color: #fff; font-size: 14px; font-weight: 600;
+    padding: 11px 28px; border-radius: 100px; cursor: pointer; margin-left: 12px;
+    font-family: 'Lexend Deca', sans-serif; border: none; transition: background 0.15s;
+  }
+  .hero-search-btn:hover { background: var(--blue-hover); }
+  .hero-stats { display: flex; align-items: center; gap: 32px; }
+  .stat-num { font-size: 24px; font-weight: 700; color: var(--dark); }
+  .stat-label { font-size: 12px; color: var(--hint); font-weight: 400; margin-top: 3px; }
+  .stat-divider { width: 1px; height: 36px; background: var(--border2); }
+
+  /* HERO COLLAGE */
+  .hero-collage { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; gap: 12px; }
+  .collage-img { border-radius: 20px; overflow: hidden; position: relative; }
+  .collage-img .mock-panel { transition: transform 0.4s; }
+
+  .collage-img:nth-child(1) { grid-row: span 2; height: 380px; margin-top: 40px; }
+  .collage-img:nth-child(2) { height: 176px; }
+  .collage-img:nth-child(3) { height: 176px; }
+  .collage-badge {
+    position: absolute; bottom: 12px; left: 12px;
+    background: #fff; border-radius: 12px; padding: 8px 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .cb-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .cb-text { font-size: 11px; font-weight: 600; color: var(--dark); }
+  .collage-pill {
+    position: absolute; top: 12px; right: 12px;
+    background: #FF3B30; color: #fff; font-size: 10px; font-weight: 700;
+    padding: 4px 10px; border-radius: 100px;
+  }
+
+  /* ── SERVICES STRIP ── */
+  .services-strip {
+    background: #fff;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 48px;
+  }
+  .services-strip-inner {
+    max-width: 1200px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .svc-item {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 10px; cursor: pointer; flex: 1; padding: 10px 0;
+    border-radius: 16px; transition: background 0.15s;
+  }
+  .svc-item:hover { background: var(--surface); }
+  .svc-item.active { background: var(--blue-light); }
+  .svc-item.active .svc-name { color: var(--blue); }
+  .svc-icon {
+    width: 52px; height: 52px; border-radius: 50%;
+    overflow: hidden; border: 2px solid var(--border);
+    transition: border-color 0.15s;
+  }
+  .svc-item:hover .svc-icon, .svc-item.active .svc-icon { border-color: var(--blue); }
+  .svc-icon svg, .svc-icon .svc-svg { width:52px; height:52px; border-radius:50%; overflow:hidden; display:block; }
+  .svc-name { font-size: 12px; font-weight: 500; color: var(--navy); }
+
+  /* ── SECTION COMMONS ── */
+  .section { padding: 80px 0; }
+  .section-wrap { max-width: 1200px; margin: 0 auto; padding: 0 48px; }
+  .section-label {
+    font-size: 12px; font-weight: 500; color: var(--blue);
+    letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px;
+  }
+  .section-h2 { font-size: 36px; font-weight: 700; color: var(--dark); letter-spacing: -1px; margin-bottom: 14px; }
+  .section-sub { font-size: 15px; color: var(--muted); font-weight: 300; line-height: 1.7; max-width: 520px; }
+  .section-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 36px; }
+  .see-all { font-size: 14px; color: var(--blue); font-weight: 500; cursor: pointer; }
+  .see-all:hover { text-decoration: underline; }
+
+  /* CATEGORY PILLS */
+  .category-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 40px; }
+  .cat-pill {
+    padding: 10px 22px; border-radius: 100px;
+    border: 1.5px solid var(--border2); background: #fff;
+    cursor: pointer; font-size: 13px; font-weight: 500; color: var(--navy);
+    transition: all 0.15s; font-family: 'Lexend Deca', sans-serif;
+  }
+  .cat-pill.active, .cat-pill:hover { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+  /* CARDS */
+  .cards-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  .card {
+    background: #fff; border: 1px solid var(--border);
+    border-radius: 20px; overflow: hidden; cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .card:hover { transform: translateY(-5px); box-shadow: 0 12px 40px rgba(23,168,255,0.13); }
+  .card-img { height: 160px; position: relative; overflow: hidden; background: #f8fcff; }
+  .card-img svg { width: 100%; height: 100%; transition: transform 0.4s; }
+  .card:hover .card-img svg { transform: scale(1.06); }
+  .card-badge {
+    position: absolute; top: 12px; right: 12px;
+    background: #FF3B30; color: #fff; font-size: 10px; font-weight: 700;
+    padding: 4px 10px; border-radius: 100px;
+  }
+  .card-body { padding: 16px 16px 18px; }
+  .card-title { font-size: 14px; font-weight: 600; color: var(--dark); margin-bottom: 6px; }
+  .card-meta { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--hint); margin-bottom: 12px; }
+  .card-rating { color: #F5A623; font-weight: 600; }
+  .card-price { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; }
+  .price-old { font-size: 12px; color: #aac8d8; text-decoration: line-through; }
+  .price-new { font-size: 18px; font-weight: 700; color: var(--dark); }
+  .price-save { font-size: 11px; background: var(--blue-light); color: var(--blue); padding: 3px 9px; border-radius: 100px; font-weight: 500; }
+  .card-timer { font-size: 12px; color: #FF6B35; margin-bottom: 14px; display: flex; align-items: center; gap: 5px; }
+  .timer-dot { width: 5px; height: 5px; border-radius: 50%; background: #FF6B35; }
+  .book-btn {
+    width: 100%; background: var(--blue); color: #fff; border: none;
+    border-radius: 100px; padding: 11px; font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: 'Lexend Deca', sans-serif; transition: background 0.15s;
+  }
+  .book-btn:hover { background: var(--blue-hover); }
+
+  /* ── HOW IT WORKS ── */
+  .how-section { background: var(--surface); padding: 80px 0; }
+  .how-inner { max-width: 1200px; margin: 0 auto; padding: 0 48px; }
+  .how-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+  .how-image { border-radius: 24px; overflow: hidden; height: 480px; position: relative; }
+  .how-image .mock-panel { width:100%; height:100%; }
+  .how-image-badge {
+    position: absolute; bottom: 24px; left: 24px; right: 24px;
+    background: #fff; border-radius: 16px; padding: 16px 20px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .hib-avatar { width: 44px; height: 44px; border-radius: 50%; overflow: hidden; flex-shrink: 0; }
+  .hib-avatar svg { width:44px; height:44px; display:block; }
+  .hib-name { font-size: 13px; font-weight: 600; color: var(--dark); }
+  .hib-meta { font-size: 11px; color: var(--hint); margin-top: 2px; }
+  .hib-rating { margin-left: auto; font-size: 14px; font-weight: 700; color: #F5A623; }
+  .step-item { display: flex; gap: 20px; padding: 24px 0; border-bottom: 1px solid var(--border2); }
+  .step-item:last-child { border-bottom: none; }
+  .step-num-circle {
+    width: 40px; height: 40px; border-radius: 50%; background: var(--blue);
+    color: #fff; font-size: 15px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;
+  }
+  .step-content-title { font-size: 16px; font-weight: 600; color: var(--dark); margin-bottom: 8px; }
+  .step-content-desc { font-size: 14px; color: var(--muted); font-weight: 300; line-height: 1.7; }
+
+  /* ── TESTIMONIALS ── */
+  .testi-section { padding: 80px 0; background: #fff; }
+  .testi-inner { max-width: 1200px; margin: 0 auto; padding: 0 48px; }
+  .testi-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 48px; }
+  .testi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .testi-card {
+    background: #f8fcff; border: 1px solid var(--border2);
+    border-radius: 20px; padding: 28px;
+    transition: transform 0.2s;
+  }
+  .testi-card:hover { transform: translateY(-3px); }
+  .testi-stars { color: #F5A623; font-size: 14px; letter-spacing: 2px; margin-bottom: 14px; }
+  .testi-text { font-size: 14px; color: var(--navy); line-height: 1.8; font-weight: 300; margin-bottom: 20px; }
+  .testi-author { display: flex; align-items: center; gap: 12px; }
+  .testi-avatar { width: 44px; height: 44px; border-radius: 50%; overflow: hidden; flex-shrink: 0; }
+  .testi-avatar svg { width:44px; height:44px; display:block; }
+  .testi-name { font-size: 14px; font-weight: 600; color: var(--dark); }
+  .testi-pet { font-size: 12px; color: var(--hint); margin-top: 2px; }
+
+  /* ── FAQ ── */
+  .faq-section { padding: 80px 0; background: #fff; }
+  .faq-inner { max-width: 1200px; margin: 0 auto; padding: 0 48px; }
+  .faq-layout { display: grid; grid-template-columns: 360px 1fr; gap: 80px; align-items: start; }
+  .faq-sidebar-label { font-size: 12px; font-weight: 500; color: var(--blue); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; }
+  .faq-sidebar-h2 { font-size: 34px; font-weight: 700; color: var(--dark); letter-spacing: -0.8px; line-height: 1.2; margin-bottom: 18px; }
+  .faq-sidebar-sub { font-size: 14px; color: var(--muted); font-weight: 300; line-height: 1.75; margin-bottom: 28px; }
+  .faq-img { border-radius: 20px; overflow: hidden; height: 220px; margin-bottom: 28px; }
+  .faq-img .mock-panel { width:100%; height:100%; }
+  .faq-contact-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1.5px solid var(--border2);
+    color: var(--navy); font-size: 14px; font-weight: 500;
+    padding: 12px 24px; border-radius: 100px; cursor: pointer;
+    font-family: 'Lexend Deca', sans-serif; transition: background 0.15s;
+  }
+  .faq-contact-btn:hover { background: var(--border2); }
+  .faq-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 28px; }
+  .faq-tab {
+    font-size: 13px; font-weight: 500; padding: 8px 18px;
+    border-radius: 100px; border: 1.5px solid var(--border2);
+    color: var(--muted); cursor: pointer; transition: all 0.15s;
+    font-family: 'Lexend Deca', sans-serif; background: #fff;
+  }
+  .faq-tab.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .faq-item { border-bottom: 1px solid var(--border); }
+  .faq-item:first-child { border-top: 1px solid var(--border); }
+  .faq-q {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 0; cursor: pointer; gap: 20px;
+  }
+  .faq-q-text { font-size: 15px; font-weight: 500; color: var(--dark); line-height: 1.5; }
+  .faq-icon {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--surface); border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: background 0.2s;
+  }
+  .faq-icon svg { width: 12px; height: 12px; transition: transform 0.25s; }
+  .faq-item.open .faq-icon { background: var(--blue); border-color: var(--blue); }
+  .faq-item.open .faq-icon svg { transform: rotate(45deg); }
+  .faq-item.open .faq-icon svg path { stroke: #fff; }
+  .faq-a {
+    font-size: 14px; color: var(--muted); font-weight: 300;
+    line-height: 1.85; max-height: 0; overflow: hidden;
+    transition: max-height 0.35s ease, padding 0.35s ease;
+  }
+  .faq-item.open .faq-a { max-height: 300px; padding-bottom: 20px; }
+
+  /* ── VENDOR STRIP ── */
+  .vendor-strip { position: relative; overflow: hidden; }
+  .vendor-bg { position: absolute; inset: 0; }
+  .vendor-bg img { width: 100%; height: 100%; object-fit: cover; }
+  .vendor-bg-overlay { position: absolute; inset: 0; background: rgba(0,52,89,0.92); }
+  .vendor-inner {
+    position: relative; z-index: 2;
+    max-width: 1200px; margin: 0 auto; padding: 80px 48px;
+    display: flex; align-items: center; justify-content: space-between; gap: 40px;
+  }
+  .vendor-text h2 { font-size: 36px; font-weight: 700; color: #fff; letter-spacing: -0.8px; margin-bottom: 14px; }
+  .vendor-text p { font-size: 15px; color: #a8d4ee; font-weight: 300; max-width: 540px; line-height: 1.7; }
+  .vendor-btn {
+    background: var(--blue); color: #fff; border: none;
+    border-radius: 100px; padding: 16px 36px; font-size: 15px; font-weight: 600;
+    cursor: pointer; font-family: 'Lexend Deca', sans-serif; white-space: nowrap;
+    transition: background 0.15s, transform 0.15s;
+  }
+  .vendor-btn:hover { background: var(--blue-hover); transform: scale(1.03); }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,23,31,0.5); z-index: 500;
+    align-items: center; justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #fff; border-radius: 24px; padding: 40px;
+    width: 480px; max-width: 90vw; position: relative;
+    animation: modalIn 0.25s ease;
+  }
+  @keyframes modalIn { from { transform: scale(0.95) translateY(10px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+  .modal-close {
+    position: absolute; top: 16px; right: 16px;
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--surface); border: none; cursor: pointer;
+    font-size: 16px; display: flex; align-items: center; justify-content: center;
+    color: var(--muted); transition: background 0.15s;
+  }
+  .modal-close:hover { background: var(--border2); }
+  .modal-img { width: 100%; height: 200px; border-radius: 16px; overflow: hidden; margin-bottom: 20px; }
+  .modal-img img { width: 100%; height: 100%; object-fit: cover; }
+  .modal-badge { display: inline-block; background: #FF3B30; color: #fff; font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 100px; margin-bottom: 12px; }
+  .modal-title { font-size: 22px; font-weight: 700; color: var(--dark); letter-spacing: -0.5px; margin-bottom: 6px; }
+  .modal-meta { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--hint); margin-bottom: 16px; }
+  .modal-rating { color: #F5A623; font-weight: 600; }
+  .modal-desc { font-size: 14px; color: var(--muted); line-height: 1.7; font-weight: 300; margin-bottom: 24px; }
+  .modal-price-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .modal-price { display: flex; align-items: baseline; gap: 10px; }
+  .modal-old { font-size: 14px; color: #aac8d8; text-decoration: line-through; }
+  .modal-new { font-size: 28px; font-weight: 700; color: var(--dark); }
+  .modal-save { font-size: 12px; background: var(--blue-light); color: var(--blue); padding: 4px 12px; border-radius: 100px; font-weight: 500; }
+  .modal-timer { font-size: 13px; color: #FF6B35; display: flex; align-items: center; gap: 6px; }
+  .modal-timer-dot { width: 6px; height: 6px; border-radius: 50%; background: #FF6B35; }
+  .modal-book-btn {
+    width: 100%; background: var(--blue); color: #fff; border: none;
+    border-radius: 100px; padding: 16px; font-size: 15px; font-weight: 700;
+    cursor: pointer; font-family: 'Lexend Deca', sans-serif; transition: background 0.15s;
+  }
+  .modal-book-btn:hover { background: var(--blue-hover); }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--dark); color: #fff; font-size: 14px; font-weight: 500;
+    padding: 14px 28px; border-radius: 100px; z-index: 999;
+    transition: transform 0.3s ease, opacity 0.3s ease; opacity: 0;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* ── FOOTER ── */
+  .footer { background: var(--dark); padding: 64px 0 32px; }
+  .footer-inner { max-width: 1200px; margin: 0 auto; padding: 0 48px; }
+  .footer-top { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 48px; }
+  .footer-brand-desc { font-size: 14px; color: var(--muted); font-weight: 300; margin-top: 14px; max-width: 260px; line-height: 1.7; }
+  .footer-logo { font-size: 24px; font-weight: 700; color: var(--blue); }
+  .footer-img { margin-top: 20px; border-radius: 14px; overflow: hidden; height: 100px; }
+  .footer-img .mock-panel { width:100%; height:100%; }
+  .footer-col h4 { font-size: 11px; font-weight: 600; color: #fff; letter-spacing: 1px; margin-bottom: 18px; text-transform: uppercase; }
+  .footer-col a { display: block; font-size: 14px; color: var(--muted); font-weight: 300; text-decoration: none; margin-bottom: 10px; cursor: pointer; transition: color 0.15s; }
+  .footer-col a:hover { color: var(--blue); }
+  .footer-bottom { border-top: 1px solid var(--navy); padding-top: 28px; display: flex; justify-content: space-between; align-items: center; }
+  .footer-copy { font-size: 13px; color: #3a6a80; font-weight: 300; }
+
+  /* ── SCROLL REVEAL ── */
+  .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.5s ease, transform 0.5s ease; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  .mock-panel { width:100%; height:100%; }
+  .svc-svg { width:52px; height:52px; border-radius:50%; overflow:hidden; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-logo" onclick="scrollTo({top:0,behavior:'smooth'})">PAWTAL</div>
+    <div class="nav-center">
+      <a class="nav-link" href="#deals">Services</a>
+      <a class="nav-link" href="#how">How it works</a>
+      <a class="nav-link" href="#faq">FAQ</a>
+      <a class="nav-link" href="#vendor">For Business</a>
+    </div>
+    <div class="nav-right">
+      <div class="nav-login" onclick="showToast('Sign in coming soon!')">Sign in</div>
+      <div class="nav-cta" onclick="showToast('Welcome to Pawtal! Sign up coming soon.')">Get started</div>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-badge"><div class="hero-badge-dot"></div>Bangkok's trusted pet services platform</div>
+      <h1 class="hero-h1">Your pet deserves<br><span>the best care</span>,<br>close to home.</h1>
+      <p class="hero-sub">Find vetted groomers, sitters, trainers and more — book instantly or take your time to choose the right fit for your furry family.</p>
+      <div class="hero-search">
+        <input class="hero-search-input" type="text" placeholder="What service are you looking for?" id="heroSearch">
+        <div class="hero-search-sep"></div>
+        <div class="hero-search-loc" onclick="showToast('Location selector coming soon!')">Sukhumvit</div>
+        <button class="hero-search-btn" onclick="handleSearch()">Search</button>
+      </div>
+      <div class="hero-stats">
+        <div class="stat"><div class="stat-num">1,200+</div><div class="stat-label">Verified vendors</div></div>
+        <div class="stat-divider"></div>
+        <div class="stat"><div class="stat-num">48,000+</div><div class="stat-label">Happy pets served</div></div>
+        <div class="stat-divider"></div>
+        <div class="stat"><div class="stat-num">4.9</div><div class="stat-label">Avg. rating</div></div>
+        <div class="stat-divider"></div>
+        <div class="stat"><div class="stat-num">25+</div><div class="stat-label">Districts</div></div>
+      </div>
+    </div>
+    <div class="hero-collage">
+      <div class="collage-img">
+        <div class="mock-panel" style="background:#d7f0e4;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+  <svg width="72" height="72" viewBox="0 0 72 72" fill="none"><circle cx="36" cy="36" r="36" fill="#b2e8cd"/>
+  <path d="M24 46c0-5 3-8 7-10s6-4 6-7c0-3-2-5-4-5s-3 2-3 5" stroke="#1a7a4a" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="46" cy="26" r="5" fill="#1a7a4a"/>
+  <path d="M30 46c1-3 4-5 6-5s5 2 6 5" stroke="#1a7a4a" stroke-width="2" stroke-linecap="round"/>
+  <path d="M26 52 C28 50 32 49 36 49 C40 49 44 50 46 52" stroke="#1a7a4a" stroke-width="2" stroke-linecap="round"/>
+  </svg></div>
+        <div class="collage-badge"><div class="cb-dot"></div><div class="cb-text">Now available nearby</div></div>
+      </div>
+      <div class="collage-img">
+        <div class="mock-panel" style="background:#fff3cd;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+  <svg width="56" height="56" viewBox="0 0 56 56" fill="none"><circle cx="28" cy="28" r="28" fill="#ffe8a0"/>
+  <ellipse cx="20" cy="26" rx="7" ry="8" fill="#c48a00"/>
+  <ellipse cx="36" cy="26" rx="7" ry="8" fill="#c48a00"/>
+  <rect x="16" y="30" width="24" height="12" rx="4" fill="#c48a00"/>
+  <circle cx="22" cy="24" r="3" fill="#fff3cd"/><circle cx="34" cy="24" r="3" fill="#fff3cd"/>
+  <circle cx="23" cy="24" r="1.5" fill="#333"/><circle cx="35" cy="24" r="1.5" fill="#333"/>
+  </svg></div>
+        <div class="collage-pill">-30%</div>
+      </div>
+      <div class="collage-img">
+        <div class="mock-panel" style="background:#f0e8ff;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+  <svg width="56" height="56" viewBox="0 0 56 56" fill="none"><circle cx="28" cy="28" r="28" fill="#ddd0ff"/>
+  <ellipse cx="28" cy="30" rx="10" ry="9" fill="#6a3fbf"/>
+  <ellipse cx="20" cy="22" rx="4" ry="5" fill="#6a3fbf"/>
+  <ellipse cx="36" cy="22" rx="4" ry="5" fill="#6a3fbf"/>
+  <circle cx="24" cy="29" r="2" fill="#fff"/><circle cx="32" cy="29" r="2" fill="#fff"/>
+  <circle cx="24.5" cy="29.5" r="1" fill="#333"/><circle cx="32.5" cy="29.5" r="1" fill="#333"/>
+  <path d="M24 34 Q28 37 32 34" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+  </svg></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES STRIP -->
+<div class="services-strip">
+  <div class="services-strip-inner" id="svcStrip"></div>
+</div>
+
+<!-- DEALS -->
+<div class="section reveal" id="deals">
+  <div class="section-wrap">
+    <div class="section-header">
+      <div>
+        <div class="section-label">Today only</div>
+        <h2 class="section-h2">Flash deals near you</h2>
+        <p class="section-sub">Limited-time offers from top-rated vendors in Sukhumvit and surrounding areas.</p>
+      </div>
+      <div class="see-all" onclick="showToast('Explore all deals coming soon!')">Explore all deals &rsaquo;</div>
+    </div>
+    <div class="category-row" id="catRow"></div>
+    <div class="cards-grid" id="cardsGrid"></div>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<section class="how-section reveal" id="how">
+  <div class="how-inner">
+    <div class="how-layout">
+      <div class="how-image">
+        <div class="mock-panel" style="background:#dff0ea;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+  <svg width="100" height="100" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="50" fill="#b5e3d0"/>
+  <ellipse cx="50" cy="40" rx="16" ry="18" fill="#1a7a4a"/>
+  <ellipse cx="50" cy="72" rx="22" ry="14" fill="#1a7a4a"/>
+  <circle cx="45" cy="38" r="3" fill="#fff"/><circle cx="55" cy="38" r="3" fill="#fff"/>
+  <circle cx="45.5" cy="38.5" r="1.5" fill="#333"/><circle cx="55.5" cy="38.5" r="1.5" fill="#333"/>
+  <path d="M44 46 Q50 50 56 46" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+  <path d="M28 72 Q35 60 50 58 Q65 60 72 72" fill="#0f5c38"/>
+  </svg>
+  <div style="font-size:13px;font-weight:600;color:#0f5c38;letter-spacing:0.3px;">Professional Pet Care</div>
+</div>
+        <div class="how-image-badge">
+          <div class="hib-avatar"><svg viewBox="0 0 44 44" fill="none"><circle cx="22" cy="22" r="22" fill="#1a7a4a"/><text x="22" y="27" text-anchor="middle" font-family="Lexend Deca,sans-serif" font-size="14" font-weight="600" fill="#fff">NP</text></svg></div>
+          <div><div class="hib-name">Nong's Pet Spa</div><div class="hib-meta">Sukhumvit 23 · Verified vendor</div></div>
+          <div class="hib-rating">★ 4.9</div>
+        </div>
+      </div>
+      <div>
+        <div style="margin-bottom:40px;">
+          <div class="section-label">Simple process</div>
+          <h2 class="section-h2">Booking in 3 easy steps</h2>
+          <p class="section-sub">We take the hassle out of finding great pet care — so you can focus on the tail wags.</p>
+        </div>
+        <div>
+          <div class="step-item"><div class="step-num-circle">1</div><div><div class="step-content-title">Browse &amp; filter</div><p class="step-content-desc">Search by service type, location, and price. Read real reviews from verified pet owners in your area.</p></div></div>
+          <div class="step-item"><div class="step-num-circle">2</div><div><div class="step-content-title">Choose how to book</div><p class="step-content-desc">Instant Book for convenience, Request to Book if the vendor needs to approve, or chat first before committing.</p></div></div>
+          <div class="step-item"><div class="step-num-circle">3</div><div><div class="step-content-title">Confirm &amp; go</div><p class="step-content-desc">Pay securely through Pawtal and receive booking confirmation instantly. Post-service, leave a review for the community.</p></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="testi-section reveal">
+  <div class="testi-inner">
+    <div class="testi-header">
+      <div><div class="section-label">What owners say</div><h2 class="section-h2">Trusted by thousands of pet families</h2></div>
+      <div class="see-all" onclick="showToast('All reviews coming soon!')">Read all reviews &rsaquo;</div>
+    </div>
+    <div class="testi-grid">
+      <div class="testi-card"><div class="testi-stars">★★★★★</div><p class="testi-text">"Found an amazing groomer for Mochi right in Thonglor. The booking was smooth, the vendor responded fast, and Mochi came back looking incredible. Will definitely use Pawtal again."</p><div class="testi-author"><div class="testi-avatar"><svg viewBox="0 0 44 44" fill="none"><circle cx="22" cy="22" r="22" fill="#17A8FF"/><text x="22" y="27" text-anchor="middle" font-family="Lexend Deca,sans-serif" font-size="14" font-weight="600" fill="#fff">N</text></svg></div><div><div class="testi-name">Natthida P.</div><div class="testi-pet">Shiba Inu owner, Thonglor</div></div></div></div>
+      <div class="testi-card"><div class="testi-stars">★★★★★</div><p class="testi-text">"I love that vendors can set up questionnaires. Our trainer took time to understand Luna's anxiety before the first session. This is how pet care should work."</p><div class="testi-author"><div class="testi-avatar"><svg viewBox="0 0 44 44" fill="none"><circle cx="22" cy="22" r="22" fill="#003459"/><text x="22" y="27" text-anchor="middle" font-family="Lexend Deca,sans-serif" font-size="14" font-weight="600" fill="#fff">K</text></svg></div><div><div class="testi-name">Krit W.</div><div class="testi-pet">Border Collie owner, Ekkamai</div></div></div></div>
+      <div class="testi-card"><div class="testi-stars">★★★★★</div><p class="testi-text">"Used Pawtal for boarding during Songkran. The vendor sent daily updates and photos. Came back to a happy, well-rested cat. Highly recommend for peace of mind."</p><div class="testi-author"><div class="testi-avatar"><svg viewBox="0 0 44 44" fill="none"><circle cx="22" cy="22" r="22" fill="#0B93E8"/><text x="22" y="27" text-anchor="middle" font-family="Lexend Deca,sans-serif" font-size="14" font-weight="600" fill="#fff">P</text></svg></div><div><div class="testi-name">Ploy S.</div><div class="testi-pet">Scottish Fold owner, Ari</div></div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq-section reveal" id="faq">
+  <div class="faq-inner">
+    <div class="faq-layout">
+      <div>
+        <div class="faq-img"><div class="mock-panel" style="background:#fff3cd;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+  <svg width="80" height="80" viewBox="0 0 80 80" fill="none"><circle cx="40" cy="40" r="40" fill="#ffe8a0"/>
+  <ellipse cx="40" cy="46" rx="18" ry="16" fill="#c48a00"/>
+  <ellipse cx="28" cy="32" rx="8" ry="10" fill="#c48a00"/>
+  <ellipse cx="52" cy="32" rx="8" ry="10" fill="#c48a00"/>
+  <circle cx="30" cy="30" r="4" fill="#fff3cd"/><circle cx="50" cy="30" r="4" fill="#fff3cd"/>
+  <circle cx="31" cy="30.5" r="2" fill="#333"/><circle cx="51" cy="30.5" r="2" fill="#333"/>
+  <path d="M33 42 Q40 47 47 42" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+  <ellipse cx="40" cy="54" rx="6" ry="4" fill="#a06800"/>
+  </svg></div></div>
+        <div class="faq-sidebar-label">Got questions?</div>
+        <h2 class="faq-sidebar-h2">Everything you need to know</h2>
+        <p class="faq-sidebar-sub">Can't find what you're looking for? Our support team is happy to help.</p>
+        <div class="faq-contact-btn" onclick="showToast('Support chat opening soon!')">Contact support &rsaquo;</div>
+      </div>
+      <div>
+        <div class="faq-tabs" id="faqTabs"></div>
+        <div id="faqList"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- VENDOR CTA -->
+<div class="vendor-strip reveal" id="vendor">
+  <div class="vendor-bg">
+    <div style="background:#003459;width:100%;height:100%;"></div>
+    <div class="vendor-bg-overlay"></div>
+  </div>
+  <div class="vendor-inner">
+    <div class="vendor-text">
+      <h2>Are you a pet service provider?</h2>
+      <p>Join 1,200+ vendors already growing their business on Pawtal. Set your own schedule, manage bookings your way, and reach thousands of pet owners across Bangkok.</p>
+    </div>
+    <button class="vendor-btn" onclick="showToast('Vendor onboarding coming soon!')">Start your free listing</button>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div>
+        <div class="footer-logo">PAWTAL</div>
+        <p class="footer-brand-desc">Bangkok's most trusted platform for pet services. Connecting loving owners with verified professionals.</p>
+        <div class="footer-img"><div class="mock-panel" style="background:#e8f4ff;width:100%;height:100%;display:flex;align-items:center;justify-content:center;gap:12px;">
+  <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="24" fill="#b8d8f8"/>
+  <ellipse cx="24" cy="28" rx="10" ry="9" fill="#1a6fba"/>
+  <ellipse cx="16" cy="20" rx="5" ry="6" fill="#1a6fba"/><ellipse cx="32" cy="20" rx="5" ry="6" fill="#1a6fba"/>
+  <circle cx="20" cy="27" r="2" fill="#fff"/><circle cx="28" cy="27" r="2" fill="#fff"/>
+  <circle cx="20.5" cy="27.5" r="1" fill="#333"/><circle cx="28.5" cy="27.5" r="1" fill="#333"/>
+  </svg>
+  <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="20" fill="#ddd0ff"/>
+  <ellipse cx="20" cy="22" rx="8" ry="7" fill="#6a3fbf"/>
+  <ellipse cx="14" cy="15" rx="3.5" ry="4" fill="#6a3fbf"/><ellipse cx="26" cy="15" rx="3.5" ry="4" fill="#6a3fbf"/>
+  <circle cx="17" cy="21" r="1.5" fill="#fff"/><circle cx="23" cy="21" r="1.5" fill="#fff"/>
+  </svg>
+</div></div>
+      </div>
+      <div class="footer-col"><h4>Services</h4><a href="#">Grooming</a><a href="#">Day Care</a><a href="#">Training</a><a href="#">Boarding</a><a href="#">Vet Checkup</a></div>
+      <div class="footer-col"><h4>Company</h4><a href="#">About us</a><a href="#">For Business</a><a href="#">Blog</a><a href="#">Careers</a></div>
+      <div class="footer-col"><h4>Support</h4><a href="#">Help Center</a><a href="#">Contact us</a><a href="#">Privacy policy</a><a href="#">Terms of service</a></div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-copy">2025 Pawtal. All rights reserved.</div>
+      <div class="footer-copy">Made with care, for pets everywhere.</div>
+    </div>
+  </div>
+</footer>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModalBtn()">&#x2715;</button>
+    <div class="modal-img" id="modalImgWrap" style="display:flex;align-items:center;justify-content:center;overflow:hidden;"></div>
+    <div class="modal-badge" id="modalBadge"></div>
+    <div class="modal-title" id="modalTitle"></div>
+    <div class="modal-meta"><span class="modal-rating" id="modalRating"></span><span id="modalLocation"></span></div>
+    <p class="modal-desc" id="modalDesc"></p>
+    <div class="modal-price-row">
+      <div class="modal-price"><span class="modal-old" id="modalOld"></span><span class="modal-new" id="modalNew"></span><span class="modal-save" id="modalSave"></span></div>
+      <div class="modal-timer"><div class="modal-timer-dot"></div><span id="modalTimer"></span></div>
+    </div>
+    <button class="modal-book-btn" id="modalBookBtn">Confirm Booking</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+const services = [
+  { name:"Grooming", svg:"<svg viewBox=\"0 0 80 60\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"80\" height=\"60\" fill=\"#d7f0e4\"/><circle cx=\"40\" cy=\"30\" r=\"20\" fill=\"#b2e8cd\"/><path d=\"M30 36c0-4 2-6 5-8s5-3 5-5c0-2-1-4-3-4s-2 2-2 4\" stroke=\"#1a7a4a\" stroke-width=\"1.5\" stroke-linecap=\"round\"/><circle cx=\"48\" cy=\"22\" r=\"4\" fill=\"#1a7a4a\"/><path d=\"M33 36c1-2 3-4 4-4s3 2 4 4\" stroke=\"#1a7a4a\" stroke-width=\"1.5\" stroke-linecap=\"round\"/></svg>" },
+  { name:"Day Care", svg:"<svg viewBox=\"0 0 80 60\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"80\" height=\"60\" fill=\"#fff3cd\"/><circle cx=\"40\" cy=\"30\" r=\"20\" fill=\"#ffe8a0\"/><ellipse cx=\"32\" cy=\"28\" rx=\"6\" ry=\"7\" fill=\"#c48a00\"/><ellipse cx=\"48\" cy=\"28\" rx=\"6\" ry=\"7\" fill=\"#c48a00\"/><rect x=\"28\" y=\"31\" width=\"24\" height=\"10\" rx=\"3\" fill=\"#c48a00\"/><circle cx=\"34\" cy=\"26\" r=\"2.5\" fill=\"#fff3cd\"/><circle cx=\"46\" cy=\"26\" r=\"2.5\" fill=\"#fff3cd\"/><circle cx=\"34.5\" cy=\"26.5\" r=\"1.2\" fill=\"#333\"/><circle cx=\"46.5\" cy=\"26.5\" r=\"1.2\" fill=\"#333\"/></svg>" },
+  { name:"Training", svg:"<svg viewBox=\"0 0 80 60\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"80\" height=\"60\" fill=\"#ddeeff\"/><circle cx=\"40\" cy=\"30\" r=\"20\" fill=\"#b8d8f8\"/><path d=\"M40 16c-7 0-12 5-12 12 0 4 2 7.5 5 9.5v3h14v-3c3-2 5-5.5 5-9.5 0-7-5-12-12-12z\" fill=\"#1a6fba\"/><rect x=\"35\" y=\"42\" width=\"10\" height=\"2.5\" rx=\"1\" fill=\"#1a6fba\"/><circle cx=\"36\" cy=\"27\" r=\"2\" fill=\"#fff\"/><circle cx=\"44\" cy=\"27\" r=\"2\" fill=\"#fff\"/></svg>" },
+  { name:"Cat Care", svg:"<svg viewBox=\"0 0 80 60\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"80\" height=\"60\" fill=\"#f0e8ff\"/><circle cx=\"40\" cy=\"30\" r=\"20\" fill=\"#ddd0ff\"/><ellipse cx=\"40\" cy=\"32\" rx=\"11\" ry=\"10\" fill=\"#6a3fbf\"/><ellipse cx=\"30\" cy=\"22\" rx=\"5\" ry=\"6\" fill=\"#6a3fbf\"/><ellipse cx=\"50\" cy=\"22\" rx=\"5\" ry=\"6\" fill=\"#6a3fbf\"/><circle cx=\"36\" cy=\"31\" r=\"2.5\" fill=\"#fff\"/><circle cx=\"44\" cy=\"31\" r=\"2.5\" fill=\"#fff\"/><circle cx=\"36.5\" cy=\"31.5\" r=\"1.2\" fill=\"#333\"/><circle cx=\"44.5\" cy=\"31.5\" r=\"1.2\" fill=\"#333\"/><path d=\"M36 37 Q40 40 44 37\" stroke=\"#fff\" stroke-width=\"1.5\" stroke-linecap=\"round\"/></svg>" },
+  { name:"Boarding", svg:"<svg viewBox=\"0 0 80 60\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"80\" height=\"60\" fill=\"#ffeee8\"/><circle cx=\"40\" cy=\"30\" r=\"20\" fill=\"#ffd0c0\"/><rect x=\"28\" y=\"30\" width=\"24\" height=\"14\" rx=\"4\" fill=\"#c04a00\"/><circle cx=\"34\" cy=\"26\" r=\"6\" fill=\"#c04a00\"/><circle cx=\"46\" cy=\"26\" r=\"6\" fill=\"#c04a00\"/><circle cx=\"36\" cy=\"30\" r=\"2.5\" fill=\"#fff\"/><circle cx=\"44\" cy=\"30\" r=\"2.5\" fill=\"#fff\"/><circle cx=\"36.5\" cy=\"30.5\" r=\"1.2\" fill=\"#333\"/><circle cx=\"44.5\" cy=\"30.5\" r=\"1.2\" fill=\"#333\"/></svg>" },
+  { name:"Vet Checkup", svg:"<svg viewBox=\"0 0 80 60\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"80\" height=\"60\" fill=\"#e8f4ff\"/><circle cx=\"40\" cy=\"30\" r=\"20\" fill=\"#b8d8f8\"/><rect x=\"36\" y=\"20\" width=\"8\" height=\"20\" rx=\"2\" fill=\"#1a6fba\"/><rect x=\"30\" y=\"26\" width=\"20\" height=\"8\" rx=\"2\" fill=\"#1a6fba\"/></svg>" },
+  { name:"Pet Taxi", svg:"<svg viewBox=\"0 0 80 60\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"80\" height=\"60\" fill=\"#fffde8\"/><circle cx=\"40\" cy=\"30\" r=\"20\" fill=\"#fff5b0\"/><rect x=\"24\" y=\"28\" width=\"32\" height=\"14\" rx=\"4\" fill=\"#b8a000\"/><rect x=\"28\" y=\"22\" width=\"24\" height=\"10\" rx=\"3\" fill=\"#b8a000\"/><circle cx=\"30\" cy=\"42\" r=\"4\" fill=\"#555\"/><circle cx=\"50\" cy=\"42\" r=\"4\" fill=\"#555\"/><circle cx=\"30\" cy=\"42\" r=\"2\" fill=\"#999\"/><circle cx=\"50\" cy=\"42\" r=\"2\" fill=\"#999\"/></svg>" },
+  { name:"Dog Walking", svg:"<svg viewBox=\"0 0 80 60\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"80\" height=\"60\" fill=\"#e8fff0\"/><circle cx=\"40\" cy=\"30\" r=\"20\" fill=\"#b0f0c8\"/><ellipse cx=\"40\" cy=\"32\" rx=\"10\" ry=\"9\" fill=\"#0f7a3a\"/><ellipse cx=\"30\" cy=\"22\" rx=\"5\" ry=\"6\" fill=\"#0f7a3a\"/><ellipse cx=\"50\" cy=\"22\" rx=\"5\" ry=\"6\" fill=\"#0f7a3a\"/><path d=\"M35 38 Q40 42 45 38\" stroke=\"#fff\" stroke-width=\"1.5\" stroke-linecap=\"round\"/><line x1=\"40\" y1=\"44\" x2=\"38\" y2=\"52\" stroke=\"#0f7a3a\" stroke-width=\"2\" stroke-linecap=\"round\"/><line x1=\"40\" y1=\"48\" x2=\"44\" y2=\"54\" stroke=\"#0f7a3a\" stroke-width=\"2\" stroke-linecap=\"round\"/></svg>" },
+];
+
+const deals = [
+  { id:1, title:'Full Grooming Package', cat:'Grooming', rating:'4.9 (128)', location:'Sukhumvit', old:'฿900', new:'฿630', save:'Save ฿270', discount:'-30%', timer:'Ends in 3h 42min', svg:"<svg viewBox=\"0 0 80 60\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"80\" height=\"60\" fill=\"#d7f0e4\"/><circle cx=\"40\" cy=\"30\" r=\"20\" fill=\"#b2e8cd\"/><path d=\"M30 36c0-4 2-6 5-8s5-3 5-5c0-2-1-4-3-4s-2 2-2 4\" stroke=\"#1a7a4a\" stroke-width=\"1.5\" stroke-linecap=\"round\"/><circle cx=\"48\" cy=\"22\" r=\"4\" fill=\"#1a7a4a\"/><path d=\"M33 36c1-2 3-4 4-4s3 2 4 4\" stroke=\"#1a7a4a\" stroke-width=\"1.5\" stroke-linecap=\"round\"/></svg>", desc:'A complete grooming experience including bath, blowdry, haircut, nail trim, and ear cleaning. Perfect for dogs of all sizes.' },
+  { id:2, title:'Dog Day Care (Full Day)', cat:'Day Care', rating:'4.8 (94)', location:'Thonglor', old:'฿1,000', new:'฿800', save:'Save ฿200', discount:'-20%', timer:'Starts in 17min', svg:"<svg viewBox=\"0 0 80 60\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"80\" height=\"60\" fill=\"#fff3cd\"/><circle cx=\"40\" cy=\"30\" r=\"20\" fill=\"#ffe8a0\"/><ellipse cx=\"32\" cy=\"28\" rx=\"6\" ry=\"7\" fill=\"#c48a00\"/><ellipse cx=\"48\" cy=\"28\" rx=\"6\" ry=\"7\" fill=\"#c48a00\"/><rect x=\"28\" y=\"31\" width=\"24\" height=\"10\" rx=\"3\" fill=\"#c48a00\"/><circle cx=\"34\" cy=\"26\" r=\"2.5\" fill=\"#fff3cd\"/><circle cx=\"46\" cy=\"26\" r=\"2.5\" fill=\"#fff3cd\"/><circle cx=\"34.5\" cy=\"26.5\" r=\"1.2\" fill=\"#333\"/><circle cx=\"46.5\" cy=\"26.5\" r=\"1.2\" fill=\"#333\"/></svg>", desc:'Full-day supervised care with playtime, meals, and rest. Drop off from 7am, pickup until 8pm. Limited spots available daily.' },
+  { id:3, title:'Basic Training Session', cat:'Training', rating:'5.0 (47)', location:'Ekkamai', old:'฿800', new:'฿680', save:'Save ฿120', discount:'-15%', timer:'Ends in 5h 10min', svg:"<svg viewBox=\"0 0 80 60\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"80\" height=\"60\" fill=\"#ddeeff\"/><circle cx=\"40\" cy=\"30\" r=\"20\" fill=\"#b8d8f8\"/><path d=\"M40 16c-7 0-12 5-12 12 0 4 2 7.5 5 9.5v3h14v-3c3-2 5-5.5 5-9.5 0-7-5-12-12-12z\" fill=\"#1a6fba\"/><rect x=\"35\" y=\"42\" width=\"10\" height=\"2.5\" rx=\"1\" fill=\"#1a6fba\"/><circle cx=\"36\" cy=\"27\" r=\"2\" fill=\"#fff\"/><circle cx=\"44\" cy=\"27\" r=\"2\" fill=\"#fff\"/></svg>", desc:'1-hour one-on-one training session covering basic commands: sit, stay, come, heel. Suitable for puppies and adult dogs.' },
+  { id:4, title:'Cat Spa & Grooming', cat:'Grooming', rating:'4.7 (63)', location:'Phrom Phong', old:'฿700', new:'฿525', save:'Save ฿175', discount:'-25%', timer:'Ends in 2h 15min', svg:"<svg viewBox=\"0 0 80 60\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"80\" height=\"60\" fill=\"#f0e8ff\"/><circle cx=\"40\" cy=\"30\" r=\"20\" fill=\"#ddd0ff\"/><ellipse cx=\"40\" cy=\"32\" rx=\"11\" ry=\"10\" fill=\"#6a3fbf\"/><ellipse cx=\"30\" cy=\"22\" rx=\"5\" ry=\"6\" fill=\"#6a3fbf\"/><ellipse cx=\"50\" cy=\"22\" rx=\"5\" ry=\"6\" fill=\"#6a3fbf\"/><circle cx=\"36\" cy=\"31\" r=\"2.5\" fill=\"#fff\"/><circle cx=\"44\" cy=\"31\" r=\"2.5\" fill=\"#fff\"/><circle cx=\"36.5\" cy=\"31.5\" r=\"1.2\" fill=\"#333\"/><circle cx=\"44.5\" cy=\"31.5\" r=\"1.2\" fill=\"#333\"/><path d=\"M36 37 Q40 40 44 37\" stroke=\"#fff\" stroke-width=\"1.5\" stroke-linecap=\"round\"/></svg>", desc:'Gentle cat grooming session including brush out, nail trim, and ear cleaning. Our cat-specialist groomers ensure a stress-free experience.' },
+  { id:5, title:'Overnight Boarding', cat:'Boarding', rating:'4.9 (82)', location:'Ari', old:'฿1,200', new:'฿900', save:'Save ฿300', discount:'-25%', timer:'Ends today', svg:"<svg viewBox=\"0 0 80 60\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"80\" height=\"60\" fill=\"#ffeee8\"/><circle cx=\"40\" cy=\"30\" r=\"20\" fill=\"#ffd0c0\"/><rect x=\"28\" y=\"30\" width=\"24\" height=\"14\" rx=\"4\" fill=\"#c04a00\"/><circle cx=\"34\" cy=\"26\" r=\"6\" fill=\"#c04a00\"/><circle cx=\"46\" cy=\"26\" r=\"6\" fill=\"#c04a00\"/><circle cx=\"36\" cy=\"30\" r=\"2.5\" fill=\"#fff\"/><circle cx=\"44\" cy=\"30\" r=\"2.5\" fill=\"#fff\"/><circle cx=\"36.5\" cy=\"30.5\" r=\"1.2\" fill=\"#333\"/><circle cx=\"44.5\" cy=\"30.5\" r=\"1.2\" fill=\"#333\"/></svg>", desc:'Safe and comfortable overnight stay at a certified boarding facility. Includes 2 meals, walks, and playtime. Daily photo updates.' },
+  { id:6, title:'Vet Health Check', cat:'Vet Checkup', rating:'4.8 (115)', location:'Silom', old:'฿600', new:'฿480', save:'Save ฿120', discount:'-20%', timer:'Ends in 6h', svg:"<svg viewBox=\"0 0 80 60\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"80\" height=\"60\" fill=\"#e8f4ff\"/><circle cx=\"40\" cy=\"30\" r=\"20\" fill=\"#b8d8f8\"/><rect x=\"36\" y=\"20\" width=\"8\" height=\"20\" rx=\"2\" fill=\"#1a6fba\"/><rect x=\"30\" y=\"26\" width=\"20\" height=\"8\" rx=\"2\" fill=\"#1a6fba\"/></svg>", desc:'Full health examination including weight check, dental inspection, and general wellness assessment. Certificate issued on request.' },
+  { id:7, title:'Dog Walking (60 min)', cat:'Dog Walking', rating:'4.9 (203)', location:'Sukhumvit', old:'฿350', new:'฿280', save:'Save ฿70', discount:'-20%', timer:'Ends in 4h', svg:"<svg viewBox=\"0 0 80 60\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"80\" height=\"60\" fill=\"#e8fff0\"/><circle cx=\"40\" cy=\"30\" r=\"20\" fill=\"#b0f0c8\"/><ellipse cx=\"40\" cy=\"32\" rx=\"10\" ry=\"9\" fill=\"#0f7a3a\"/><ellipse cx=\"30\" cy=\"22\" rx=\"5\" ry=\"6\" fill=\"#0f7a3a\"/><ellipse cx=\"50\" cy=\"22\" rx=\"5\" ry=\"6\" fill=\"#0f7a3a\"/><path d=\"M35 38 Q40 42 45 38\" stroke=\"#fff\" stroke-width=\"1.5\" stroke-linecap=\"round\"/><line x1=\"40\" y1=\"44\" x2=\"38\" y2=\"52\" stroke=\"#0f7a3a\" stroke-width=\"2\" stroke-linecap=\"round\"/><line x1=\"40\" y1=\"48\" x2=\"44\" y2=\"54\" stroke=\"#0f7a3a\" stroke-width=\"2\" stroke-linecap=\"round\"/></svg>", desc:'Professional 60-minute dog walk with GPS tracking and post-walk report. Our walkers are insured and background-checked.' },
+  { id:8, title:'Pet Taxi (per trip)', cat:'Pet Taxi', rating:'4.7 (56)', location:'Bangkok-wide', old:'฿250', new:'฿190', save:'Save ฿60', discount:'-24%', timer:'Ends in 8h', svg:"<svg viewBox=\"0 0 80 60\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"80\" height=\"60\" fill=\"#fffde8\"/><circle cx=\"40\" cy=\"30\" r=\"20\" fill=\"#fff5b0\"/><rect x=\"24\" y=\"28\" width=\"32\" height=\"14\" rx=\"4\" fill=\"#b8a000\"/><rect x=\"28\" y=\"22\" width=\"24\" height=\"10\" rx=\"3\" fill=\"#b8a000\"/><circle cx=\"30\" cy=\"42\" r=\"4\" fill=\"#555\"/><circle cx=\"50\" cy=\"42\" r=\"4\" fill=\"#555\"/><circle cx=\"30\" cy=\"42\" r=\"2\" fill=\"#999\"/><circle cx=\"50\" cy=\"42\" r=\"2\" fill=\"#999\"/></svg>", desc:'Safe, air-conditioned pet transport for vet visits, grooming appointments, or any trip around Bangkok. Carrier included.' },
+];
+
+const categories = ['All','Grooming','Day Care','Training','Boarding','Vet Checkup','Dog Walking','Pet Taxi'];
+const faqs = [
+  { group:'booking', q:'How do I book a service on Pawtal?', a:'Search for the service you need, pick a vendor that suits your pet and schedule, then choose Instant Book, Request to Book, or Inquire First. Follow the on-screen steps to confirm and pay securely.' },
+  { group:'booking', q:'What is the difference between Instant Book and Request to Book?', a:'Instant Book confirms your slot right away. Request to Book sends a request to the vendor, who may ask a few questions before accepting. Some vendors prefer this to ensure a good fit.' },
+  { group:'booking', q:'Can I cancel or reschedule a booking?', a:'Yes. You can cancel or reschedule from your booking history up to 24 hours before the appointment. Cancellation policies vary by vendor and are shown on each listing.' },
+  { group:'booking', q:'What happens if the vendor cancels on me?', a:'If a vendor cancels a confirmed booking, you will receive a full refund within 3–5 business days and a notification to help you find an alternative.' },
+  { group:'vendors', q:'How do I list my pet service business on Pawtal?', a:"Click 'Start your free listing' and complete vendor onboarding in about 10 minutes. You'll need a valid Thai business ID or freelancer registration, photos, and a service description." },
+  { group:'vendors', q:'Can I screen customers before accepting a booking?', a:"Absolutely. Use Request to Book or Inquire First mode, and optionally set up a pre-booking questionnaire to collect pet info upfront." },
+  { group:'vendors', q:'How and when do I get paid?', a:'Earnings are transferred to your Thai bank account within 3 business days after each completed booking, trackable in your vendor dashboard.' },
+  { group:'payment', q:'What payment methods does Pawtal accept?', a:'Visa, Mastercard, PromptPay, and major Thai e-wallets. All transactions use our PCI-compliant payment gateway — card details are never stored.' },
+  { group:'payment', q:'Will I receive a receipt for my booking?', a:'Yes. A confirmation and receipt are sent to your email immediately after payment. You can also download receipts anytime from your booking history.' },
+  { group:'safety', q:'How does Pawtal verify vendors?', a:"Every vendor is identity-checked before going live. We verify credentials, review photos, and monitor ratings to maintain quality standards." },
+  { group:'safety', q:'What if something goes wrong during a service?', a:"Contact support immediately via the app or website. We have a dedicated resolution process and may offer compensation or a rebooking." },
+  { group:'safety', q:'Are vendors insured?', a:"Pawtal strongly encourages liability insurance — some service types require it. Insurance status is shown on each vendor profile." },
+];
+
+let activeCat = 'All';
+let activeGroup = 'all';
+let activeSvc = null;
+
+// Render service strip
+const strip = document.getElementById('svcStrip');
+services.forEach((s, i) => {
+  const el = document.createElement('div');
+  el.className = 'svc-item';
+  el.innerHTML = `<div class="svc-icon" style="display:flex;align-items:center;justify-content:center;overflow:hidden;">${s.svg}</div><div class="svc-name">${s.name}</div>`;
+  el.onclick = () => {
+    document.querySelectorAll('.svc-item').forEach(x => x.classList.remove('active'));
+    el.classList.add('active');
+    filterCards(s.name);
+    document.getElementById('deals').scrollIntoView({ behavior: 'smooth' });
+  };
+  strip.appendChild(el);
+});
+
+// Render category pills
+const catRow = document.getElementById('catRow');
+categories.forEach(c => {
+  const el = document.createElement('div');
+  el.className = 'cat-pill' + (c === 'All' ? ' active' : '');
+  el.textContent = c;
+  el.onclick = () => {
+    document.querySelectorAll('.cat-pill').forEach(x => x.classList.remove('active'));
+    el.classList.add('active');
+    filterCards(c);
+  };
+  catRow.appendChild(el);
+});
+
+function filterCards(cat) {
+  activeCat = cat;
+  const filtered = cat === 'All' ? deals : deals.filter(d => d.cat === cat);
+  renderCards(filtered);
+}
+
+function renderCards(data) {
+  const grid = document.getElementById('cardsGrid');
+  grid.innerHTML = '';
+  if (data.length === 0) {
+    grid.innerHTML = '<div style="grid-column:span 4;text-align:center;padding:60px 0;color:var(--hint);font-size:15px;font-weight:300;">No deals found in this category right now. Check back soon!</div>';
+    return;
+  }
+  data.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'card';
+    el.innerHTML = `
+      <div class="card-img" style="display:flex;align-items:center;justify-content:center;overflow:hidden;">${d.svg}<div class="card-badge">${d.discount}</div></div>
+      <div class="card-body">
+        <div class="card-title">${d.title}</div>
+        <div class="card-meta"><span class="card-rating">★ ${d.rating}</span><span>${d.location}</span></div>
+        <div class="card-price"><span class="price-old">${d.old}</span><span class="price-new">${d.new}</span><span class="price-save">${d.save}</span></div>
+        <div class="card-timer"><div class="timer-dot"></div>${d.timer}</div>
+        <button class="book-btn">Book now</button>
+      </div>`;
+    el.querySelector('.book-btn').onclick = (e) => { e.stopPropagation(); openModal(d); };
+    el.onclick = () => openModal(d);
+    grid.appendChild(el);
+  });
+}
+
+renderCards(deals);
+
+// FAQ
+function renderFAQs(group) {
+  const list = document.getElementById('faqList');
+  const filtered = group === 'all' ? faqs : faqs.filter(f => f.group === group);
+  list.innerHTML = '';
+  filtered.forEach(faq => {
+    const item = document.createElement('div');
+    item.className = 'faq-item';
+    item.innerHTML = `<div class="faq-q"><div class="faq-q-text">${faq.q}</div><div class="faq-icon"><svg viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="#17A8FF" stroke-width="1.5" stroke-linecap="round"/></svg></div></div><div class="faq-a">${faq.a}</div>`;
+    item.querySelector('.faq-q').addEventListener('click', () => {
+      const isOpen = item.classList.contains('open');
+      list.querySelectorAll('.faq-item').forEach(el => el.classList.remove('open'));
+      if (!isOpen) item.classList.add('open');
+    });
+    list.appendChild(item);
+  });
+}
+
+const tabsEl = document.getElementById('faqTabs');
+[{label:'All',group:'all'},{label:'Booking',group:'booking'},{label:'For vendors',group:'vendors'},{label:'Payment',group:'payment'},{label:'Safety',group:'safety'}].forEach(t => {
+  const el = document.createElement('div');
+  el.className = 'faq-tab' + (t.group === 'all' ? ' active' : '');
+  el.textContent = t.label;
+  el.onclick = () => {
+    document.querySelectorAll('.faq-tab').forEach(x => x.classList.remove('active'));
+    el.classList.add('active');
+    renderFAQs(t.group);
+  };
+  tabsEl.appendChild(el);
+});
+renderFAQs('all');
+
+// Modal
+function openModal(d) {
+  document.getElementById('modalImgWrap').innerHTML = d.svg;
+  document.getElementById('modalBadge').textContent = d.discount;
+  document.getElementById('modalTitle').textContent = d.title;
+  document.getElementById('modalRating').textContent = '★ ' + d.rating;
+  document.getElementById('modalLocation').textContent = d.location;
+  document.getElementById('modalDesc').textContent = d.desc;
+  document.getElementById('modalOld').textContent = d.old;
+  document.getElementById('modalNew').textContent = d.new;
+  document.getElementById('modalSave').textContent = d.save;
+  document.getElementById('modalTimer').textContent = d.timer;
+  document.getElementById('modalBookBtn').onclick = () => {
+    closeModalBtn();
+    showToast('Booking confirmed! Check your email for details.');
+  };
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModalBtn();
+}
+function closeModalBtn() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// Toast
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Search
+function handleSearch() {
+  const q = document.getElementById('heroSearch').value.trim().toLowerCase();
+  if (!q) { document.getElementById('deals').scrollIntoView({ behavior: 'smooth' }); return; }
+  const match = deals.filter(d => d.title.toLowerCase().includes(q) || d.cat.toLowerCase().includes(q));
+  document.getElementById('deals').scrollIntoView({ behavior: 'smooth' });
+  setTimeout(() => {
+    renderCards(match.length ? match : deals);
+    if (!match.length) showToast('No exact match found — showing all deals.');
+    else showToast(`Found ${match.length} result${match.length>1?'s':''} for "${q}"`);
+  }, 400);
+}
+document.getElementById('heroSearch').addEventListener('keydown', e => { if (e.key === 'Enter') handleSearch(); });
+
+// Scroll reveal
+const reveals = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+}, { threshold: 0.08 });
+reveals.forEach(r => observer.observe(r));
+</script>
+</body>
+</html>

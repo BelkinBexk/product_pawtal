@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pawtal MVP#1 — Multi-Platform Prototype</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset ──────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter','Noto Sans Thai',sans-serif; background: #0F172A; overflow: hidden; height: 100vh; color: #1A1A2E; }
+
+    /* ── Phone frame ─────────────────────────────────────────────────────── */
+    .phone {
+      width: 390px; height: 844px; background: white;
+      border-radius: 44px; position: relative; overflow: hidden;
+      box-shadow: 0 0 0 2px #374151, 0 0 0 6px #1F2937, 0 0 0 7px #4B5563,
+                  0 32px 80px rgba(0,0,0,.75);
+    }
+    .di { /* dynamic island */
+      position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+      width: 126px; height: 37px; background: #050505;
+      border-radius: 20px; z-index: 200;
+    }
+
+    /* Phone screen layers — each is absolute full-cover */
+    .pscreen {
+      position: absolute; inset: 0; padding-top: 60px;
+      display: flex; flex-direction: column;
+      visibility: hidden; opacity: 0;
+      transition: opacity .25s ease;
+    }
+    .pscreen.active { visibility: visible; opacity: 1; }
+
+    /* Scrollable zone inside a pscreen */
+    .pscroll { flex: 1; overflow-y: auto; overflow-x: hidden; }
+    .pscroll::-webkit-scrollbar { display: none; }
+
+    /* ── Status bar (inside each screen) ───────────────────────────────── */
+    .sbar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 4px 28px 6px; font-size: 13px; font-weight: 600;
+      flex-shrink: 0;
+    }
+    .sbar-r { display: flex; gap: 5px; align-items: center; font-size: 12px; }
+
+    /* ── LINE specific ───────────────────────────────────────────────────── */
+    .line-hdr {
+      background: #06C755; color: white;
+      padding: 10px 16px 10px; display: flex; align-items: center;
+      justify-content: space-between; flex-shrink: 0;
+    }
+    .line-bubble-oa {
+      background: #F0F0F0; color: #111; border-radius: 4px 18px 18px 18px;
+      padding: 10px 14px; font-size: 14px; line-height: 1.55;
+      max-width: 258px; display: inline-block;
+    }
+    .line-bubble-me {
+      background: #06C755; color: white; border-radius: 18px 4px 18px 18px;
+      padding: 10px 14px; font-size: 14px; line-height: 1.55;
+      max-width: 258px; display: inline-block;
+    }
+
+    /* ── Rich Menu ───────────────────────────────────────────────────────── */
+    .rich-menu { flex-shrink: 0; background: #0F1923; }
+    .rm-toggle {
+      background: #F3F4F6; height: 24px;
+      display: flex; align-items: center; justify-content: center; gap: 4px;
+      font-size: 10px; color: #9CA3AF; cursor: pointer;
+      border-top: 1px solid #E5E7EB;
+    }
+    .rm-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      grid-template-rows: 118px 78px;
+      gap: 1px; background: rgba(255,255,255,.12);
+    }
+    .rm-cell {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 6px; cursor: pointer;
+      padding: 10px 8px; position: relative;
+      transition: filter .15s;
+    }
+    .rm-cell:hover { filter: brightness(1.12); }
+    .rm-cell:active { transform: scale(.97); }
+    .rm-cell-lbl { font-size: 11px; font-weight: 700; color: white; text-align: center; line-height: 1.3; }
+    .rm-main { grid-column: 1; grid-row: 1 / 3; background: linear-gradient(160deg,#1A3C5E,#0D7377); }
+    .rm-main .rm-cell-lbl { font-size: 13px; }
+
+    /* ── LIFF browser header ─────────────────────────────────────────────── */
+    .liff-bar {
+      background: #F5F5F5; border-bottom: 1px solid #E5E7EB;
+      padding: 8px 12px; display: flex; align-items: center; gap: 8px;
+      flex-shrink: 0;
+    }
+
+    /* ── Browser frame ───────────────────────────────────────────────────── */
+    .browser {
+      width: 1080px; height: 672px; background: white;
+      border-radius: 12px; overflow: hidden;
+      box-shadow: 0 20px 70px rgba(0,0,0,.45);
+    }
+    .browser-chrome {
+      height: 48px; background: #F1F3F4; border-bottom: 1px solid #DEDEDE;
+      display: flex; align-items: center; padding: 0 14px; gap: 10px;
+      flex-shrink: 0;
+    }
+    .bc-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .bc-url {
+      flex: 1; height: 28px; background: white; border: 1px solid #DADCE0;
+      border-radius: 14px; display: flex; align-items: center; padding: 0 12px;
+      font-size: 12px; color: #4B5563; gap: 6px;
+    }
+    .browser-body { height: calc(672px - 48px); overflow-y: auto; overflow-x: hidden; }
+    .browser-body::-webkit-scrollbar { width: 6px; }
+    .browser-body::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 3px; }
+
+    /* ── Desktop landing sections ─────────────────────────────────────────── */
+    .dl-nav {
+      position: sticky; top: 0; background: white; z-index: 50;
+      border-bottom: 1px solid #F3F4F6;
+      padding: 0 64px; height: 68px;
+      display: flex; align-items: center; gap: 40px;
+    }
+    .dl-nav-link {
+      font-size: 14px; color: #6B7280; text-decoration: none;
+      transition: color .15s; white-space: nowrap;
+    }
+    .dl-nav-link:hover { color: #1A3C5E; }
+    .btn-dl-primary {
+      background: #0D7377; color: white; font-size: 14px; font-weight: 700;
+      border: none; border-radius: 10px; padding: 10px 22px; cursor: pointer;
+      white-space: nowrap; transition: background .15s;
+    }
+    .btn-dl-primary:hover { background: #0A5E62; }
+    .btn-dl-ghost {
+      background: none; color: #1A3C5E; font-size: 14px; font-weight: 600;
+      border: 2px solid #E5E7EB; border-radius: 10px; padding: 9px 20px;
+      cursor: pointer; white-space: nowrap; transition: all .15s;
+    }
+    .btn-dl-ghost:hover { border-color: #1A3C5E; }
+    .dl-feature-card {
+      background: #F9FAFB; border: 1px solid #F0F0F0; border-radius: 16px;
+      padding: 28px 24px; transition: all .2s;
+    }
+    .dl-feature-card:hover { box-shadow: 0 8px 24px rgba(26,60,94,.1); border-color: #E8F0F7; }
+    .dl-step-num {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: linear-gradient(135deg, #1A3C5E, #0D7377);
+      color: white; font-size: 18px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .dl-testimonial {
+      background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 16px; padding: 24px;
+    }
+    .dl-footer { background: #1A1A2E; color: white; padding: 56px 64px 32px; }
+
+    /* ── Left nav items ──────────────────────────────────────────────────── */
+    .nav-item {
+      padding: 10px 12px; border-radius: 10px; cursor: pointer;
+      display: flex; align-items: center; gap: 10px; color: #6B7280;
+      transition: all .15s; font-size: 13px;
+    }
+    .nav-item:hover { background: #F3F4F6; color: #111827; }
+    .nav-item.active { background: #E8F0F7; color: #1A3C5E; font-weight: 600; }
+
+    /* ── Mode tabs ───────────────────────────────────────────────────────── */
+    .mtab {
+      padding: 0 28px; height: 100%; display: flex; align-items: center;
+      gap: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
+      color: rgba(255,255,255,.55); border-bottom: 3px solid transparent;
+      transition: all .15s;
+    }
+    .mtab:hover { color: rgba(255,255,255,.85); }
+    .mtab.active { color: white; border-bottom-color: #0D7377; }
+
+    /* ── Annotation panel ────────────────────────────────────────────────── */
+    .ann { padding: 11px 14px; border-radius: 8px; margin-bottom: 9px; }
+    .ann.ux   { background: #EDE9FE; border-left: 3px solid #7C3AED; }
+    .ann.copy { background: #FEF3C7; border-left: 3px solid #D97706; }
+    .ann.dev  { background: #CCFBF1; border-left: 3px solid #0D7377; }
+    .ann.rule { background: #FEE2E2; border-left: 3px solid #DC2626; }
+    .ann h4 { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 4px; }
+    .ann p  { font-size: 12px; line-height: 1.55; color: #374151; }
+
+    /* ── LINE OA profile screen ──────────────────────────────────────────── */
+    .line-search-bar {
+      background: #3DB554; padding: 8px 12px; display: flex; align-items: center; gap: 8px;
+    }
+    .line-search-input {
+      flex: 1; background: rgba(255,255,255,.2); border: none; border-radius: 20px;
+      padding: 6px 14px; color: white; font-size: 14px; outline: none;
+    }
+    .line-search-input::placeholder { color: rgba(255,255,255,.65); }
+
+    /* ── Misc helpers ────────────────────────────────────────────────────── */
+    @keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+    .fu { animation: fadeUp .3s ease; }
+    .nav-dot { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.25); cursor: pointer; transition: all .2s; }
+    .nav-dot.active { background: white; transform: scale(1.3); }
+    .separator { width: 1px; background: rgba(255,255,255,.15); align-self: stretch; }
+  </style>
+</head>
+
+<body>
+
+<!-- ═══════════════════════════════════════════════════════
+     TOP BAR
+══════════════════════════════════════════════════════════ -->
+<div style="background:#1A3C5E;height:50px;display:flex;align-items:center;padding:0 24px;gap:0;">
+  <div style="display:flex;align-items:center;gap:10px;padding-right:28px;border-right:1px solid rgba(255,255,255,.15);">
+    <span style="font-size:22px;">🐾</span>
+    <span style="font-size:13px;font-weight:800;color:white;letter-spacing:.02em;">PAWTAL</span>
+    <span style="font-size:11px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.9);padding:2px 10px;border-radius:20px;letter-spacing:.04em;">MVP#1 · Multi-Platform Prototype</span>
+  </div>
+
+  <!-- Mode tabs -->
+  <div class="mtab active" id="tabLine" onclick="setMode('line')">
+    <span style="font-size:16px;">📱</span> Mobile — LINE OA
+  </div>
+  <div class="mtab" id="tabDesktop" onclick="setMode('desktop')">
+    <span style="font-size:16px;">🖥️</span> Desktop Landing
+  </div>
+
+  <div style="margin-left:auto;font-size:11px;color:rgba(255,255,255,.4);">UX/UI Design · March 2026</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     MAIN LAYOUT
+══════════════════════════════════════════════════════════ -->
+<div style="display:flex;height:calc(100vh - 50px);">
+
+  <!-- ── LEFT NAV ──────────────────────────────────────────────────────── -->
+  <div style="width:236px;background:#FAFAFA;border-right:1px solid #E5E7EB;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;" id="leftNav">
+    <div style="padding:14px 14px 8px;border-bottom:1px solid #F0F0F0;">
+      <p style="font-size:10px;font-weight:800;color:#9CA3AF;text-transform:uppercase;letter-spacing:.09em;margin-bottom:3px;" id="leftNavMode">Mobile — LINE OA</p>
+      <p style="font-size:12px;color:#6B7280;">Click to navigate screens</p>
+    </div>
+    <div style="padding:10px 8px;flex:1;" id="leftNavList"></div>
+
+    <!-- Legend at bottom -->
+    <div style="padding:14px;border-top:1px solid #F0F0F0;">
+      <p style="font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Journey Phases</p>
+      <div id="phaseLegend" style="display:flex;flex-direction:column;gap:5px;font-size:11px;color:#6B7280;"></div>
+    </div>
+  </div>
+
+  <!-- ── CENTER STAGE ───────────────────────────────────────────────────── -->
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;overflow:hidden;position:relative;" id="centerStage">
+
+    <!-- Ambient glow -->
+    <div id="ambientGlow" style="position:absolute;pointer-events:none;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(13,115,119,.2) 0%,transparent 70%);transition:background .4s;"></div>
+
+    <!-- ████████ LINE MODE — PHONE ████████ -->
+    <div id="lineMode" style="display:flex;flex-direction:column;align-items:center;gap:14px;">
+
+      <div class="phone">
+        <div class="di"></div>
+
+        <!-- ── SCREEN L0: LINE OA PROFILE ────────────────────────────── -->
+        <div class="pscreen active" id="line-s0">
+          <div class="sbar"><span>9:41</span><div class="sbar-r"><span>●●●●</span><span>WiFi</span><span>🔋</span></div></div>
+
+          <!-- LINE Search bar (simulates finding the OA) -->
+          <div class="line-search-bar" style="flex-shrink:0;">
+            <span style="color:white;font-size:16px;">←</span>
+            <div class="line-search-input">Pawtal</div>
+            <span style="color:white;font-size:13px;">🔍</span>
+          </div>
+
+          <!-- Search result + profile -->
+          <div class="pscroll" style="background:#F7F7F7;">
+            <div style="background:white;margin:0;padding:0 0 16px;">
+
+              <!-- Profile image + basic info -->
+              <div style="background:linear-gradient(160deg,#1A3C5E 0%,#0D7377 100%);padding:28px 24px 20px;text-align:center;position:relative;">
+                <div style="width:80px;height:80px;border-radius:50%;background:white;display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 12px;box-shadow:0 4px 16px rgba(0,0,0,.2);">🐾</div>
+                <div style="display:flex;align-items:center;justify-content:center;gap:6px;">
+                  <p style="font-size:18px;font-weight:800;color:white;">Pawtal</p>
+                  <div style="background:#06C755;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;">
+                    <span style="color:white;font-size:10px;font-weight:800;">✓</span>
+                  </div>
+                </div>
+                <p style="font-size:12px;color:rgba(255,255,255,.75);margin-top:4px;">@pawtal.official</p>
+              </div>
+
+              <!-- Stats row -->
+              <div style="display:flex;padding:16px 24px;border-bottom:1px solid #F3F4F6;gap:0;">
+                <div style="flex:1;text-align:center;">
+                  <p style="font-size:18px;font-weight:800;color:#1A3C5E;">1.2K</p>
+                  <p style="font-size:11px;color:#9CA3AF;">เพื่อน</p>
+                </div>
+                <div style="width:1px;background:#F3F4F6;"></div>
+                <div style="flex:1;text-align:center;">
+                  <p style="font-size:18px;font-weight:800;color:#1A3C5E;">50+</p>
+                  <p style="font-size:11px;color:#9CA3AF;">ผู้ให้บริการ</p>
+                </div>
+                <div style="width:1px;background:#F3F4F6;"></div>
+                <div style="flex:1;text-align:center;">
+                  <p style="font-size:14px;font-weight:700;color:#16A34A;">ธุรกิจ</p>
+                  <p style="font-size:11px;color:#9CA3AF;">ประเภท</p>
+                </div>
+              </div>
+
+              <!-- Bio -->
+              <div style="padding:16px 24px;border-bottom:1px solid #F3F4F6;">
+                <p style="font-size:14px;color:#374151;line-height:1.65;">
+                  🐾 แพลตฟอร์มบริการสัตว์เลี้ยงสำหรับผู้ให้บริการและเจ้าของสัตว์เลี้ยงในกรุงเทพ<br/><br/>
+                  📍 สุขุมวิท, กรุงเทพฯ<br/>
+                  🌐 pawtal.app
+                </p>
+              </div>
+
+              <!-- Action buttons -->
+              <div style="padding:16px 24px;display:flex;gap:10px;">
+                <button onclick="goTo('line','s1')" style="flex:1;background:#06C755;color:white;font-size:15px;font-weight:700;border:none;border-radius:10px;padding:12px;cursor:pointer;">
+                  + เพิ่มเพื่อน
+                </button>
+                <button style="width:48px;background:#F3F4F6;border:none;border-radius:10px;padding:12px;cursor:pointer;font-size:18px;">🔔</button>
+                <button style="width:48px;background:#F3F4F6;border:none;border-radius:10px;padding:12px;cursor:pointer;font-size:18px;">↗</button>
+              </div>
+
+              <!-- Posts preview -->
+              <div style="padding:0 24px;">
+                <p style="font-size:12px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">โพสต์ล่าสุด</p>
+
+                <!-- Post 1 -->
+                <div style="border:1px solid #F3F4F6;border-radius:12px;overflow:hidden;margin-bottom:10px;">
+                  <div style="background:linear-gradient(135deg,#1A3C5E,#0D7377);padding:20px;text-align:center;">
+                    <p style="font-size:20px;margin-bottom:6px;">🐾</p>
+                    <p style="font-size:14px;font-weight:700;color:white;">รับสมัครผู้ให้บริการ!</p>
+                    <p style="font-size:12px;color:rgba(255,255,255,.8);">ลงทะเบียนฟรี · 0% คอมมิชชัน 3 เดือน</p>
+                  </div>
+                  <div style="padding:12px 14px;">
+                    <p style="font-size:13px;color:#4B5563;line-height:1.6;">📣 Pawtal กำลังรับสมัครผู้ให้บริการสัตว์เลี้ยงในพื้นที่สุขุมวิท! เพิ่มลูกค้าใหม่โดยไม่มีค่าใช้จ่ายใน 3 เดือนแรก</p>
+                    <p style="font-size:12px;color:#9CA3AF;margin-top:8px;">กดเมนูด้านล่างเพื่อสมัครได้เลย 👇</p>
+                  </div>
+                </div>
+
+                <!-- Post 2 -->
+                <div style="border:1px solid #F3F4F6;border-radius:12px;overflow:hidden;margin-bottom:16px;">
+                  <div style="padding:14px;">
+                    <p style="font-size:13px;color:#4B5563;line-height:1.6;">⭐ คุณมูก จาก Mook Pet Salon ได้รับลูกค้าใหม่ 8 คนในเดือนแรกผ่าน Pawtal 🎉</p>
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid #F3F4F6;">
+                      <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#1A3C5E,#0D7377);display:flex;align-items:center;justify-content:center;color:white;font-size:12px;font-weight:700;">ม</div>
+                      <span style="font-size:12px;font-weight:600;color:#1A3C5E;">Mook Pet Salon</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── SCREEN L1: LINE CHAT + RICH MENU ───────────────────────── -->
+        <div class="pscreen" id="line-s1">
+          <div class="sbar"><span>9:43</span><div class="sbar-r"><span>●●●●</span><span>WiFi</span><span>🔋</span></div></div>
+
+          <!-- LINE Chat header -->
+          <div class="line-hdr">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <button onclick="goTo('line','s0')" style="background:rgba(0,0,0,.15);border:none;border-radius:50%;width:30px;height:30px;color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
+              <div style="width:36px;height:36px;border-radius:50%;background:white;display:flex;align-items:center;justify-content:center;font-size:20px;">🐾</div>
+              <div>
+                <div style="display:flex;align-items:center;gap:5px;">
+                  <p style="font-size:15px;font-weight:700;color:white;">Pawtal</p>
+                  <div style="background:white;border-radius:50%;width:15px;height:15px;display:flex;align-items:center;justify-content:center;">
+                    <span style="color:#06C755;font-size:9px;font-weight:900;">✓</span>
+                  </div>
+                </div>
+                <p style="font-size:11px;color:rgba(255,255,255,.8);">Official Account</p>
+              </div>
+            </div>
+            <div style="display:flex;gap:14px;">
+              <span style="font-size:18px;cursor:pointer;">📞</span>
+              <span style="font-size:18px;cursor:pointer;">⋮</span>
+            </div>
+          </div>
+
+          <!-- Chat messages -->
+          <div class="pscroll" style="background:#F7F7F7;padding:16px 14px;display:flex;flex-direction:column;gap:14px;">
+
+            <!-- Timestamp -->
+            <p style="text-align:center;font-size:11px;color:#9CA3AF;">วันนี้ 9:43</p>
+
+            <!-- OA Welcome image card -->
+            <div style="display:flex;gap:8px;align-items:flex-end;">
+              <div style="width:32px;height:32px;border-radius:50%;background:white;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;border:1px solid #E5E7EB;">🐾</div>
+              <div>
+                <div style="background:linear-gradient(135deg,#1A3C5E,#0D7377);border-radius:4px 18px 18px 18px;padding:14px 16px;max-width:260px;text-align:center;">
+                  <p style="font-size:22px;margin-bottom:6px;">🐾</p>
+                  <p style="font-size:14px;font-weight:700;color:white;margin-bottom:4px;">ยินดีต้อนรับสู่ Pawtal!</p>
+                  <p style="font-size:12px;color:rgba(255,255,255,.85);">แพลตฟอร์มสัตว์เลี้ยงสำหรับผู้ให้บริการมืออาชีพ</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- OA Message 1 -->
+            <div style="display:flex;gap:8px;align-items:flex-end;">
+              <div style="width:32px;height:32px;border-radius:50%;background:white;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;border:1px solid #E5E7EB;">🐾</div>
+              <div>
+                <div class="line-bubble-oa">สวัสดีค่ะ! ขอบคุณที่ติดตาม Pawtal 🙏<br/>เราช่วยให้คุณได้ลูกค้าใหม่ออนไลน์ โดยไม่ต้องพึ่งแค่ปากต่อปาก</div>
+              </div>
+            </div>
+
+            <!-- OA Message 2 -->
+            <div style="display:flex;gap:8px;align-items:flex-end;">
+              <div style="width:32px;height:32px;border-radius:50%;background:white;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;border:1px solid #E5E7EB;">🐾</div>
+              <div>
+                <div class="line-bubble-oa">🎁 <strong>ข้อเสนอพิเศษ</strong><br/>ลงทะเบียนตอนนี้ รับสิทธิ์ <strong>ฟรี 3 เดือน</strong> ไม่มีค่าคอมมิชชันจากทุกการจอง!</div>
+              </div>
+            </div>
+
+            <!-- OA Message 3 (quick reply prompt) -->
+            <div style="display:flex;gap:8px;align-items:flex-end;">
+              <div style="width:32px;height:32px;border-radius:50%;background:white;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;border:1px solid #E5E7EB;">🐾</div>
+              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start;">
+                <div class="line-bubble-oa">กดเมนูด้านล่างเพื่อเริ่มต้นได้เลยค่ะ 👇</div>
+                <!-- Quick reply buttons -->
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                  <button onclick="goTo('line','s2')" style="background:white;border:1.5px solid #06C755;color:#06C755;font-size:12px;font-weight:600;border-radius:20px;padding:6px 14px;cursor:pointer;">ลงทะเบียนฟรี</button>
+                  <button style="background:white;border:1.5px solid #9CA3AF;color:#4B5563;font-size:12px;font-weight:600;border-radius:20px;padding:6px 14px;cursor:pointer;">ดูบริการ</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- User message -->
+            <div style="display:flex;justify-content:flex-end;">
+              <div class="line-bubble-me">สนใจค่ะ อยากลงทะเบียน</div>
+            </div>
+
+            <!-- OA Reply -->
+            <div style="display:flex;gap:8px;align-items:flex-end;">
+              <div style="width:32px;height:32px;border-radius:50%;background:white;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;border:1px solid #E5E7EB;">🐾</div>
+              <div class="line-bubble-oa">ยินดีมากค่ะ! กด <strong>"ลงทะเบียนพาร์ทเนอร์"</strong> ในเมนูด้านล่างเพื่อกรอกข้อมูลได้เลยค่ะ 🐾</div>
+            </div>
+
+            <!-- Spacer for rich menu -->
+            <div style="height:8px;"></div>
+          </div>
+
+          <!-- Input bar -->
+          <div style="background:white;border-top:1px solid #E5E7EB;padding:8px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <div style="flex:1;background:#F3F4F6;border-radius:20px;padding:8px 16px;font-size:14px;color:#9CA3AF;">Aa</div>
+            <span style="font-size:20px;cursor:pointer;">😊</span>
+            <span style="font-size:20px;cursor:pointer;">📎</span>
+            <span style="font-size:22px;color:#06C755;cursor:pointer;">🎤</span>
+          </div>
+
+          <!-- ── RICH MENU ──────────────────────────────────────────── -->
+          <div class="rich-menu">
+            <div class="rm-toggle">
+              <span>▲ เมนู</span>
+            </div>
+            <div class="rm-grid">
+
+              <!-- Cell 1: Primary CTA — Registration (spans 2 rows on left) -->
+              <div class="rm-cell rm-main" onclick="goTo('line','s2')" style="position:relative;">
+                <!-- Shimmer border -->
+                <div style="position:absolute;inset:2px;border:1.5px solid rgba(255,255,255,.25);border-radius:4px;pointer-events:none;"></div>
+                <div style="font-size:32px;margin-bottom:4px;">🐾</div>
+                <p class="rm-cell-lbl" style="font-size:12px;max-width:100px;">ลงทะเบียน<br/>พาร์ทเนอร์</p>
+                <div style="margin-top:6px;background:rgba(255,255,255,.2);border-radius:20px;padding:3px 12px;">
+                  <p style="font-size:10px;color:rgba(255,255,255,.9);font-weight:700;">ฟรี! →</p>
+                </div>
+              </div>
+
+              <!-- Cell 2: Our Services (top right) -->
+              <div class="rm-cell" style="background:linear-gradient(135deg,#0D3D4A,#0A2E38);" onclick="">
+                <div style="font-size:24px;">📋</div>
+                <p class="rm-cell-lbl">บริการของเรา</p>
+              </div>
+
+              <!-- Cell 3: About Pawtal (top far right) -->
+              <div class="rm-cell" style="background:linear-gradient(135deg,#1A3060,#111D45);" onclick="">
+                <div style="font-size:24px;">🌟</div>
+                <p class="rm-cell-lbl">เกี่ยวกับเรา</p>
+              </div>
+
+              <!-- Cell 4: FAQ (bottom middle) -->
+              <div class="rm-cell" style="background:linear-gradient(135deg,#0C3520,#082814);" onclick="">
+                <div style="font-size:20px;">❓</div>
+                <p class="rm-cell-lbl">FAQ</p>
+              </div>
+
+              <!-- Cell 5: Contact (bottom far right) -->
+              <div class="rm-cell" style="background:linear-gradient(135deg,#3D1A10,#2A0F08);" onclick="">
+                <div style="font-size:20px;">💬</div>
+                <p class="rm-cell-lbl">ติดต่อเรา</p>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- ── SCREEN L2: LIFF — MOBILE LANDING PAGE ──────────────────── -->
+        <div class="pscreen" id="line-s2">
+          <div class="sbar"><span>9:44</span><div class="sbar-r"><span>●●●●</span><span>WiFi</span><span>🔋</span></div></div>
+
+          <!-- LIFF Browser bar -->
+          <div class="liff-bar">
+            <button onclick="goTo('line','s1')" style="background:none;border:none;color:#6B7280;font-size:15px;cursor:pointer;padding:2px 6px;">←</button>
+            <div style="display:flex;align-items:center;gap:5px;flex:1;background:white;border:1px solid #E5E7EB;border-radius:8px;padding:5px 10px;">
+              <span style="font-size:12px;">🔒</span>
+              <span style="font-size:12px;color:#4B5563;font-weight:500;">pawtal.app/providers/join</span>
+            </div>
+            <button style="background:none;border:none;color:#6B7280;font-size:18px;cursor:pointer;padding:2px 6px;">✕</button>
+          </div>
+
+          <!-- Mobile landing page content (inside LIFF) -->
+          <div class="pscroll" style="background:white;">
+
+            <!-- Sticky nav -->
+            <div style="position:sticky;top:0;background:white;border-bottom:1px solid #F3F4F6;padding:10px 18px;display:flex;justify-content:space-between;align-items:center;z-index:50;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="font-size:18px;">🐾</span>
+                <span style="font-size:16px;font-weight:800;color:#1A3C5E;">Pawtal</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:4px;">
+                <div style="width:8px;height:8px;border-radius:50%;background:#06C755;"></div>
+                <span style="font-size:11px;color:#06C755;font-weight:600;">มาจาก LINE</span>
+              </div>
+            </div>
+
+            <!-- Hero -->
+            <div style="background:linear-gradient(160deg,#1A3C5E 0%,#0D7377 100%);padding:28px 20px 32px;position:relative;overflow:hidden;">
+              <div style="position:absolute;top:-20px;right:-20px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.06);"></div>
+              <span style="display:inline-block;background:rgba(255,255,255,.18);color:white;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;margin-bottom:14px;letter-spacing:.05em;">🔗 จาก LINE Official Account</span>
+              <h1 style="color:white;font-size:26px;font-weight:900;line-height:1.25;margin:0 0 12px;letter-spacing:-.02em;">รับลูกค้าใหม่<br/>ง่ายกว่าเดิม 🐾</h1>
+              <p style="color:rgba(255,255,255,.85);font-size:13px;line-height:1.7;margin:0 0 20px;">เข้าร่วม Pawtal วันนี้ รับสิทธิ์ฟรี 3 เดือนแรก ไม่มีค่าคอมมิชชัน</p>
+
+              <!-- Offer badge -->
+              <div style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:12px;padding:10px 14px;margin-bottom:20px;display:flex;align-items:center;gap:10px;">
+                <span style="font-size:20px;">🎁</span>
+                <div>
+                  <p style="font-size:12px;color:rgba(255,255,255,.7);margin-bottom:2px;">ข้อเสนอพิเศษจาก LINE</p>
+                  <p style="font-size:14px;font-weight:700;color:white;">ฟรี 0% คอมมิชชัน 3 เดือน</p>
+                </div>
+              </div>
+
+              <button style="width:100%;background:white;color:#1A3C5E;font-size:15px;font-weight:800;border:none;border-radius:14px;padding:15px;cursor:pointer;">
+                ลงทะเบียนฟรี →
+              </button>
+              <p style="color:rgba(255,255,255,.6);font-size:11px;text-align:center;margin-top:10px;">ไม่มีสัญญาผูกมัด · ยกเลิกได้ทุกเวลา</p>
+            </div>
+
+            <!-- Stats -->
+            <div style="display:flex;padding:18px 16px;border-bottom:1px solid #F3F4F6;gap:0;">
+              <div style="flex:1;text-align:center;"><p style="font-size:20px;font-weight:800;color:#1A3C5E;">0%</p><p style="font-size:11px;color:#9CA3AF;">คอมมิชชัน<br/>3 เดือนแรก</p></div>
+              <div style="width:1px;background:#F3F4F6;"></div>
+              <div style="flex:1;text-align:center;"><p style="font-size:20px;font-weight:800;color:#1A3C5E;">500+</p><p style="font-size:11px;color:#9CA3AF;">เจ้าของสัตว์<br/>รอใช้บริการ</p></div>
+              <div style="width:1px;background:#F3F4F6;"></div>
+              <div style="flex:1;text-align:center;"><p style="font-size:20px;font-weight:800;color:#1A3C5E;">2 นาที</p><p style="font-size:11px;color:#9CA3AF;">ลงทะเบียน</p></div>
+            </div>
+
+            <!-- Value props -->
+            <div style="padding:20px 18px 0;">
+              <p style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;">ทำไมต้องเลือก Pawtal</p>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="background:#F9FAFB;border:1px solid #F0F0F0;border-radius:14px;padding:16px;display:flex;gap:12px;align-items:flex-start;">
+                  <span style="font-size:22px;flex-shrink:0;">📱</span>
+                  <div><p style="font-size:14px;font-weight:700;color:#1A3C5E;margin-bottom:4px;">ลูกค้าใหม่จากดิจิทัล</p><p style="font-size:12px;color:#6B7280;line-height:1.6;">เข้าถึงเจ้าของสัตว์เลี้ยงที่ค้นหาบริการในพื้นที่ของคุณ</p></div>
+                </div>
+                <div style="background:#F9FAFB;border:1px solid #F0F0F0;border-radius:14px;padding:16px;display:flex;gap:12px;align-items:flex-start;">
+                  <span style="font-size:22px;flex-shrink:0;">📅</span>
+                  <div><p style="font-size:14px;font-weight:700;color:#1A3C5E;margin-bottom:4px;">จัดการนัดหมายอัตโนมัติ</p><p style="font-size:12px;color:#6B7280;line-height:1.6;">บอกลา LINE chaos ระบบจัดการตารางให้คุณ</p></div>
+                </div>
+                <div style="background:#F9FAFB;border:1px solid #F0F0F0;border-radius:14px;padding:16px;display:flex;gap:12px;align-items:flex-start;">
+                  <span style="font-size:22px;flex-shrink:0;">⭐</span>
+                  <div><p style="font-size:14px;font-weight:700;color:#1A3C5E;margin-bottom:4px;">โปรไฟล์ที่น่าเชื่อถือ</p><p style="font-size:12px;color:#6B7280;line-height:1.6;">รีวิวจากลูกค้าจริง สร้างความไว้ใจให้ธุรกิจ</p></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Testimonial -->
+            <div style="margin:20px 18px 0;background:#E8F0F7;border-radius:14px;padding:18px;">
+              <div style="display:flex;gap:10px;align-items:flex-start;">
+                <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#1A3C5E,#0D7377);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:15px;flex-shrink:0;">ม</div>
+                <div>
+                  <p style="font-size:13px;color:#1A3C5E;line-height:1.65;margin-bottom:6px;">"ลูกค้าใหม่เพิ่ม 8-10 คน/เดือน โดยไม่ต้องทำอะไรเพิ่ม!"</p>
+                  <p style="font-size:11px;font-weight:700;color:#0D7377;">คุณมูก — Mook Pet Salon, อ่อนนุช</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom CTA -->
+            <div style="padding:24px 18px 20px;">
+              <button style="width:100%;background:linear-gradient(135deg,#1A3C5E,#0D7377);color:white;font-size:15px;font-weight:800;border:none;border-radius:14px;padding:16px;cursor:pointer;">
+                ลงทะเบียนสนใจ — ฟรี →
+              </button>
+              <p style="text-align:center;font-size:11px;color:#9CA3AF;margin-top:10px;">🔒 ปลอดภัยตาม PDPA</p>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- end .phone -->
+
+      <!-- Nav dots below phone -->
+      <div style="display:flex;gap:10px;" id="lineDots"></div>
+    </div><!-- end #lineMode -->
+
+    <!-- ████████ DESKTOP MODE — BROWSER ████████ -->
+    <div id="desktopMode" style="display:none;">
+      <div class="browser">
+
+        <!-- Browser chrome -->
+        <div class="browser-chrome">
+          <div style="display:flex;gap:6px;">
+            <div class="bc-dot" style="background:#FF5F57;"></div>
+            <div class="bc-dot" style="background:#FEBC2E;"></div>
+            <div class="bc-dot" style="background:#28C840;"></div>
+          </div>
+          <div style="display:flex;gap:6px;margin-left:8px;">
+            <button style="background:none;border:none;color:#9CA3AF;font-size:13px;cursor:pointer;">←</button>
+            <button style="background:none;border:none;color:#9CA3AF;font-size:13px;cursor:pointer;">→</button>
+            <button style="background:none;border:none;color:#9CA3AF;font-size:13px;cursor:pointer;">↺</button>
+          </div>
+          <div class="bc-url">
+            <span>🔒</span>
+            <span>pawtal.app/providers</span>
+          </div>
+          <div style="display:flex;gap:10px;margin-left:8px;">
+            <button style="background:none;border:none;color:#9CA3AF;font-size:16px;cursor:pointer;">⭐</button>
+            <button style="background:none;border:none;color:#9CA3AF;font-size:16px;cursor:pointer;">⋮</button>
+          </div>
+        </div>
+
+        <!-- Desktop landing page -->
+        <div class="browser-body">
+
+          <!-- ── DESKTOP NAV ───────────────────────────────────────── -->
+          <nav class="dl-nav">
+            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+              <span style="font-size:24px;">🐾</span>
+              <span style="font-size:20px;font-weight:900;color:#1A3C5E;letter-spacing:-.03em;">Pawtal</span>
+            </div>
+            <div style="display:flex;gap:28px;align-items:center;margin-left:32px;">
+              <a class="dl-nav-link" href="#">สำหรับผู้ให้บริการ</a>
+              <a class="dl-nav-link" href="#">วิธีการทำงาน</a>
+              <a class="dl-nav-link" href="#">รีวิว</a>
+              <a class="dl-nav-link" href="#">FAQ</a>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;margin-left:auto;">
+              <button class="btn-dl-ghost">เข้าสู่ระบบ</button>
+              <button class="btn-dl-primary">ลงทะเบียนฟรี →</button>
+            </div>
+          </nav>
+
+          <!-- ── HERO SECTION ──────────────────────────────────────── -->
+          <section style="padding:72px 64px 64px;display:flex;gap:56px;align-items:center;background:linear-gradient(155deg,#F0F5FB 0%,#FAFCFF 55%,white 100%);">
+
+            <!-- Left: headline + CTA -->
+            <div style="flex:1.1;max-width:540px;">
+              <span style="display:inline-flex;align-items:center;gap:6px;background:#E8F0F7;color:#1A3C5E;font-size:12px;font-weight:700;padding:6px 14px;border-radius:20px;letter-spacing:.05em;margin-bottom:20px;">
+                <span>🐾</span> สำหรับผู้ให้บริการสัตว์เลี้ยง
+              </span>
+              <h1 style="font-size:46px;font-weight:900;color:#1A3C5E;line-height:1.13;letter-spacing:-.03em;margin-bottom:20px;">
+                เพิ่มรายได้<br/>ให้ธุรกิจสัตว์เลี้ยง<br/>ของคุณ
+              </h1>
+              <p style="font-size:17px;color:#4B5563;line-height:1.75;margin-bottom:32px;max-width:460px;">
+                Pawtal เชื่อมต่อช่างตัดขน ร้านสัตว์เลี้ยง และผู้ให้บริการในสุขุมวิทกับเจ้าของสัตว์เลี้ยงที่กำลังมองหาคุณ — ระบบจัดการนัดหมายครบในที่เดียว
+              </p>
+
+              <!-- Stats row -->
+              <div style="display:flex;gap:36px;margin-bottom:36px;padding-bottom:32px;border-bottom:1px solid #E5E7EB;">
+                <div>
+                  <p style="font-size:30px;font-weight:900;color:#1A3C5E;line-height:1;">0%</p>
+                  <p style="font-size:12px;color:#9CA3AF;margin-top:4px;">ค่าคอม 3 เดือนแรก</p>
+                </div>
+                <div>
+                  <p style="font-size:30px;font-weight:900;color:#1A3C5E;line-height:1;">500+</p>
+                  <p style="font-size:12px;color:#9CA3AF;margin-top:4px;">เจ้าของสัตว์รอใช้บริการ</p>
+                </div>
+                <div>
+                  <p style="font-size:30px;font-weight:900;color:#1A3C5E;line-height:1;">2 นาที</p>
+                  <p style="font-size:12px;color:#9CA3AF;margin-top:4px;">ลงทะเบียนใช้เวลา</p>
+                </div>
+              </div>
+
+              <!-- CTA buttons -->
+              <div style="display:flex;gap:14px;align-items:center;margin-bottom:18px;">
+                <button class="btn-dl-primary" style="font-size:16px;padding:14px 32px;border-radius:12px;">ลงทะเบียนฟรี →</button>
+                <button class="btn-dl-ghost" style="font-size:15px;padding:13px 24px;border-radius:12px;">ดูวิธีการทำงาน ↓</button>
+              </div>
+              <p style="font-size:13px;color:#9CA3AF;">🔒 ปลอดภัยตาม PDPA · ไม่มีสัญญาผูกมัด · ยกเลิกได้ทุกเวลา</p>
+            </div>
+
+            <!-- Right: phone mockup -->
+            <div style="flex:0.9;display:flex;justify-content:center;position:relative;">
+              <!-- Glow behind phone -->
+              <div style="position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(13,115,119,.15),transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);"></div>
+
+              <!-- Phone mockup showing the app -->
+              <div style="width:264px;height:530px;background:#0F1923;border-radius:36px;overflow:hidden;box-shadow:0 32px 80px rgba(26,60,94,.35),0 0 0 2px #374151;position:relative;">
+                <div style="width:96px;height:28px;background:#050505;border-radius:0 0 16px 16px;position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:10;"></div>
+                <div style="padding-top:36px;height:100%;display:flex;flex-direction:column;">
+
+                  <!-- App header -->
+                  <div style="background:linear-gradient(135deg,#1A3C5E,#0D7377);padding:16px 18px 20px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                      <span style="font-size:16px;">🐾</span>
+                      <span style="font-size:14px;font-weight:700;color:white;">Pawtal</span>
+                      <span style="margin-left:auto;font-size:10px;background:rgba(255,255,255,.2);color:white;padding:2px 8px;border-radius:10px;font-weight:600;">LIVE</span>
+                    </div>
+                    <p style="font-size:12px;color:rgba(255,255,255,.7);">สวัสดี คุณมูก 👋</p>
+                    <p style="font-size:18px;font-weight:800;color:white;">แดชบอร์ด</p>
+                  </div>
+
+                  <!-- Mock dashboard cards -->
+                  <div style="flex:1;background:#F7F8FA;padding:14px 14px;display:flex;flex-direction:column;gap:10px;overflow:hidden;">
+
+                    <div style="background:white;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);">
+                      <p style="font-size:10px;color:#9CA3AF;margin-bottom:6px;">การจองสัปดาห์นี้</p>
+                      <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <p style="font-size:24px;font-weight:800;color:#1A3C5E;">12</p>
+                        <span style="background:#DCFCE7;color:#16A34A;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;">↑ 33%</span>
+                      </div>
+                    </div>
+
+                    <div style="background:white;border-radius:12px;padding:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);">
+                      <p style="font-size:10px;color:#9CA3AF;margin-bottom:8px;">นัดหมายวันนี้</p>
+                      <div style="display:flex;flex-direction:column;gap:6px;">
+                        <div style="display:flex;gap:8px;align-items:center;">
+                          <div style="width:8px;height:8px;border-radius:50%;background:#0D7377;flex-shrink:0;"></div>
+                          <p style="font-size:11px;color:#374151;flex:1;">10:00 น. — หมาพูเดิ้ล ตัดขน</p>
+                        </div>
+                        <div style="display:flex;gap:8px;align-items:center;">
+                          <div style="width:8px;height:8px;border-radius:50%;background:#D97706;flex-shrink:0;"></div>
+                          <p style="font-size:11px;color:#374151;flex:1;">14:00 น. — แมวเปอร์เซีย อาบน้ำ</p>
+                        </div>
+                        <div style="display:flex;gap:8px;align-items:center;">
+                          <div style="width:8px;height:8px;border-radius:50%;background:#9CA3AF;flex-shrink:0;"></div>
+                          <p style="font-size:11px;color:#9CA3AF;flex:1;">16:00 น. — ว่าง</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style="background:linear-gradient(135deg,#E8F0F7,#CCFBF1);border-radius:12px;padding:12px;">
+                      <p style="font-size:10px;color:#0D7377;font-weight:700;margin-bottom:4px;">รายรับเดือนนี้</p>
+                      <p style="font-size:20px;font-weight:800;color:#1A3C5E;">฿ 18,400</p>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+
+              <!-- Floating badges -->
+              <div style="position:absolute;top:40px;right:-20px;background:white;border-radius:12px;padding:10px 14px;box-shadow:0 8px 24px rgba(0,0,0,.15);display:flex;align-items:center;gap:8px;">
+                <div style="width:32px;height:32px;border-radius:50%;background:#DCFCE7;display:flex;align-items:center;justify-content:center;font-size:16px;">🎉</div>
+                <div>
+                  <p style="font-size:11px;font-weight:700;color:#1A3C5E;">ลูกค้าใหม่!</p>
+                  <p style="font-size:10px;color:#9CA3AF;">Fern จอง Bath+Trim</p>
+                </div>
+              </div>
+              <div style="position:absolute;bottom:60px;left:-24px;background:white;border-radius:12px;padding:10px 14px;box-shadow:0 8px 24px rgba(0,0,0,.15);">
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <span style="font-size:16px;">⭐</span>
+                  <div>
+                    <p style="font-size:11px;font-weight:700;color:#1A3C5E;">4.9 / 5.0</p>
+                    <p style="font-size:10px;color:#9CA3AF;">รีวิวเฉลี่ย</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ── TRUST BAR ──────────────────────────────────────────── -->
+          <div style="background:#F9FAFB;border-top:1px solid #F0F0F0;border-bottom:1px solid #F0F0F0;padding:20px 64px;display:flex;align-items:center;gap:32px;">
+            <p style="font-size:13px;color:#9CA3AF;white-space:nowrap;">เชื่อถือโดย:</p>
+            <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;">
+              <div style="display:flex;align-items:center;gap:8px;opacity:.6;">
+                <div style="width:32px;height:32px;border-radius:50%;background:#E5E7EB;display:flex;align-items:center;justify-content:center;font-size:16px;">✂️</div>
+                <span style="font-size:13px;font-weight:600;color:#6B7280;">Mook Salon</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;opacity:.6;">
+                <div style="width:32px;height:32px;border-radius:50%;background:#E5E7EB;display:flex;align-items:center;justify-content:center;font-size:16px;">🏥</div>
+                <span style="font-size:13px;font-weight:600;color:#6B7280;">Pet Care Clinic</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;opacity:.6;">
+                <div style="width:32px;height:32px;border-radius:50%;background:#E5E7EB;display:flex;align-items:center;justify-content:center;font-size:16px;">🐩</div>
+                <span style="font-size:13px;font-weight:600;color:#6B7280;">Poodle Studio</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;opacity:.6;">
+                <div style="width:32px;height:32px;border-radius:50%;background:#E5E7EB;display:flex;align-items:center;justify-content:center;font-size:16px;">🚐</div>
+                <span style="font-size:13px;font-weight:600;color:#6B7280;">Mobile Groom BKK</span>
+              </div>
+              <span style="font-size:12px;color:#9CA3AF;margin-left:auto;">+ อีก 46 ผู้ให้บริการ ในสุขุมวิท</span>
+            </div>
+          </div>
+
+          <!-- ── FEATURES SECTION ──────────────────────────────────── -->
+          <section style="padding:72px 64px;">
+            <div style="text-align:center;max-width:600px;margin:0 auto 56px;">
+              <span style="font-size:12px;font-weight:700;color:#0D7377;text-transform:uppercase;letter-spacing:.1em;">ทำไมต้อง Pawtal</span>
+              <h2 style="font-size:34px;font-weight:900;color:#1A3C5E;margin:12px 0 16px;letter-spacing:-.02em;">ทุกอย่างที่คุณต้องการ<br/>ในที่เดียว</h2>
+              <p style="font-size:16px;color:#6B7280;line-height:1.7;">จากการรับจอง ไปถึงการเก็บรีวิว — Pawtal ดูแลธุรกิจให้คุณ</p>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;">
+
+              <div class="dl-feature-card">
+                <div style="width:52px;height:52px;border-radius:14px;background:#E8F0F7;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:18px;">📱</div>
+                <h3 style="font-size:17px;font-weight:800;color:#1A3C5E;margin-bottom:10px;">ลูกค้าใหม่จากออนไลน์</h3>
+                <p style="font-size:14px;color:#6B7280;line-height:1.7;">เข้าถึงเจ้าของสัตว์เลี้ยงที่ค้นหาบริการในพื้นที่ของคุณผ่าน Google และ LINE</p>
+              </div>
+
+              <div class="dl-feature-card">
+                <div style="width:52px;height:52px;border-radius:14px;background:#CCFBF1;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:18px;">📅</div>
+                <h3 style="font-size:17px;font-weight:800;color:#1A3C5E;margin-bottom:10px;">จัดการนัดหมายอัตโนมัติ</h3>
+                <p style="font-size:14px;color:#6B7280;line-height:1.7;">ระบบส่ง reminder อัตโนมัติ ลดการ no-show และบริหารตารางงานแบบ real-time</p>
+              </div>
+
+              <div class="dl-feature-card">
+                <div style="width:52px;height:52px;border-radius:14px;background:#DCFCE7;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:18px;">⭐</div>
+                <h3 style="font-size:17px;font-weight:800;color:#1A3C5E;margin-bottom:10px;">โปรไฟล์และรีวิว</h3>
+                <p style="font-size:14px;color:#6B7280;line-height:1.7;">โปรไฟล์ที่น่าเชื่อถือพร้อม verified badge และรีวิวจากลูกค้าจริง</p>
+              </div>
+
+              <div class="dl-feature-card">
+                <div style="width:52px;height:52px;border-radius:14px;background:#FEF3C7;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:18px;">💰</div>
+                <h3 style="font-size:17px;font-weight:800;color:#1A3C5E;margin-bottom:10px;">รายรับที่คาดเดาได้</h3>
+                <p style="font-size:14px;color:#6B7280;line-height:1.7;">แดชบอร์ดแสดงรายรับ รายวัน รายสัปดาห์ รายเดือน พร้อม analytics</p>
+              </div>
+
+              <div class="dl-feature-card">
+                <div style="width:52px;height:52px;border-radius:14px;background:#EDE9FE;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:18px;">💳</div>
+                <h3 style="font-size:17px;font-weight:800;color:#1A3C5E;margin-bottom:10px;">ชำระเงินออนไลน์</h3>
+                <p style="font-size:14px;color:#6B7280;line-height:1.7;">รับชำระผ่าน PromptPay และบัตรเครดิต เงินโอนเข้าบัญชีคุณโดยตรง</p>
+              </div>
+
+              <div class="dl-feature-card">
+                <div style="width:52px;height:52px;border-radius:14px;background:#FEE2E2;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:18px;">🛡️</div>
+                <h3 style="font-size:17px;font-weight:800;color:#1A3C5E;margin-bottom:10px;">ปลอดภัยและโปร่งใส</h3>
+                <p style="font-size:14px;color:#6B7280;line-height:1.7;">ระบบ verified ลูกค้า ประวัติการจองครบถ้วน และการคุ้มครองตาม PDPA</p>
+              </div>
+
+            </div>
+          </section>
+
+          <!-- ── HOW IT WORKS ───────────────────────────────────────── -->
+          <section style="padding:64px;background:#F9FAFB;border-top:1px solid #F0F0F0;border-bottom:1px solid #F0F0F0;">
+            <div style="text-align:center;max-width:500px;margin:0 auto 52px;">
+              <span style="font-size:12px;font-weight:700;color:#0D7377;text-transform:uppercase;letter-spacing:.1em;">วิธีการเริ่มต้น</span>
+              <h2 style="font-size:32px;font-weight:900;color:#1A3C5E;margin:12px 0;letter-spacing:-.02em;">เพียง 3 ขั้นตอน</h2>
+            </div>
+
+            <div style="display:flex;gap:0;align-items:flex-start;max-width:840px;margin:0 auto;">
+
+              <div style="flex:1;text-align:center;padding:0 24px;">
+                <div class="dl-step-num" style="margin:0 auto 20px;">1</div>
+                <h3 style="font-size:18px;font-weight:800;color:#1A3C5E;margin-bottom:10px;">กรอกข้อมูลสมัคร</h3>
+                <p style="font-size:14px;color:#6B7280;line-height:1.7;">ใช้เวลา 2 นาที กรอกชื่อ ธุรกิจ เบอร์โทร และประเภทบริการ</p>
+              </div>
+
+              <!-- Arrow -->
+              <div style="padding-top:22px;color:#D1D5DB;font-size:24px;flex-shrink:0;">→</div>
+
+              <div style="flex:1;text-align:center;padding:0 24px;">
+                <div class="dl-step-num" style="margin:0 auto 20px;">2</div>
+                <h3 style="font-size:18px;font-weight:800;color:#1A3C5E;margin-bottom:10px;">ทีมงานติดต่อกลับ</h3>
+                <p style="font-size:14px;color:#6B7280;line-height:1.7;">ภายใน 24 ชั่วโมง เราโทรมาพูดคุยรายละเอียดและตอบทุกคำถาม</p>
+              </div>
+
+              <!-- Arrow -->
+              <div style="padding-top:22px;color:#D1D5DB;font-size:24px;flex-shrink:0;">→</div>
+
+              <div style="flex:1;text-align:center;padding:0 24px;">
+                <div class="dl-step-num" style="margin:0 auto 20px;">3</div>
+                <h3 style="font-size:18px;font-weight:800;color:#1A3C5E;margin-bottom:10px;">เริ่มรับลูกค้าใหม่</h3>
+                <p style="font-size:14px;color:#6B7280;line-height:1.7;">สร้างโปรไฟล์ เพิ่มบริการ และรับการจองออนไลน์ได้เลย</p>
+              </div>
+
+            </div>
+          </section>
+
+          <!-- ── TESTIMONIALS ───────────────────────────────────────── -->
+          <section style="padding:72px 64px;">
+            <div style="text-align:center;margin-bottom:48px;">
+              <span style="font-size:12px;font-weight:700;color:#0D7377;text-transform:uppercase;letter-spacing:.1em;">รีวิวจากผู้ให้บริการ</span>
+              <h2 style="font-size:32px;font-weight:900;color:#1A3C5E;margin:12px 0;letter-spacing:-.02em;">พวกเขาพูดถึง Pawtal</h2>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:840px;margin:0 auto;">
+
+              <div class="dl-testimonial">
+                <div style="display:flex;gap:2px;margin-bottom:14px;">
+                  <span style="color:#F59E0B;">★★★★★</span>
+                </div>
+                <p style="font-size:15px;color:#374151;line-height:1.75;margin-bottom:18px;">"ตั้งแต่เข้าร่วม Pawtal ลูกค้าใหม่เพิ่มขึ้นเดือนละ 8-10 คน โดยที่ไม่ต้องทำอะไรเพิ่มเลย"</p>
+                <div style="display:flex;align-items:center;gap:10px;padding-top:16px;border-top:1px solid #F3F4F6;">
+                  <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#1A3C5E,#0D7377);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;">ม</div>
+                  <div><p style="font-size:14px;font-weight:700;color:#1A3C5E;">คุณมูก</p><p style="font-size:12px;color:#9CA3AF;">Mook Pet Salon, อ่อนนุช</p></div>
+                </div>
+              </div>
+
+              <div class="dl-testimonial">
+                <div style="display:flex;gap:2px;margin-bottom:14px;">
+                  <span style="color:#F59E0B;">★★★★★</span>
+                </div>
+                <p style="font-size:15px;color:#374151;line-height:1.75;margin-bottom:18px;">"ก่อนหน้านี้รับจองผ่าน LINE วุ่นวายมาก ตอนนี้ระบบ Pawtal จัดการทุกอย่างแทนฉันหมดเลย"</p>
+                <div style="display:flex;align-items:center;gap:10px;padding-top:16px;border-top:1px solid #F3F4F6;">
+                  <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#0D7377,#16A34A);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;">น</div>
+                  <div><p style="font-size:14px;font-weight:700;color:#1A3C5E;">คุณน้อง</p><p style="font-size:12px;color:#9CA3AF;">Mobile Grooming BKK, สุขุมวิท</p></div>
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+          <!-- ── CTA BANNER ─────────────────────────────────────────── -->
+          <section style="margin:0 64px 72px;background:linear-gradient(135deg,#1A3C5E 0%,#0D7377 100%);border-radius:20px;padding:56px 64px;display:flex;align-items:center;justify-content:space-between;gap:48px;">
+            <div>
+              <h2 style="font-size:32px;font-weight:900;color:white;margin-bottom:12px;letter-spacing:-.02em;">พร้อมเพิ่มลูกค้าใหม่<br/>แล้วหรือยัง?</h2>
+              <p style="font-size:16px;color:rgba(255,255,255,.8);line-height:1.65;max-width:400px;">ลงทะเบียนวันนี้ รับสิทธิ์ฟรี 3 เดือน ไม่มีค่าคอมมิชชัน ไม่มีสัญญาผูกมัด</p>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start;flex-shrink:0;">
+              <button style="background:white;color:#1A3C5E;font-size:16px;font-weight:800;border:none;border-radius:12px;padding:16px 36px;cursor:pointer;white-space:nowrap;">ลงทะเบียนฟรี →</button>
+              <p style="font-size:12px;color:rgba(255,255,255,.6);text-align:center;width:100%;">🔒 ปลอดภัย · ยกเลิกได้ทุกเวลา</p>
+            </div>
+          </section>
+
+          <!-- ── FOOTER ─────────────────────────────────────────────── -->
+          <footer class="dl-footer">
+            <div style="display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:48px;margin-bottom:48px;">
+
+              <div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                  <span style="font-size:24px;">🐾</span>
+                  <span style="font-size:20px;font-weight:900;color:white;">Pawtal</span>
+                </div>
+                <p style="font-size:14px;color:rgba(255,255,255,.55);line-height:1.75;margin-bottom:20px;">แพลตฟอร์มบริการสัตว์เลี้ยงสำหรับผู้ให้บริการมืออาชีพในกรุงเทพ</p>
+                <div style="display:flex;gap:10px;">
+                  <div style="width:36px;height:36px;background:rgba(255,255,255,.1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;">📘</div>
+                  <div style="width:36px;height:36px;background:#06C755;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;">💬</div>
+                  <div style="width:36px;height:36px;background:rgba(255,255,255,.1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;">📷</div>
+                </div>
+              </div>
+
+              <div>
+                <p style="font-size:13px;font-weight:700;color:rgba(255,255,255,.9);margin-bottom:16px;text-transform:uppercase;letter-spacing:.06em;">สำหรับผู้ให้บริการ</p>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                  <a href="#" style="font-size:13px;color:rgba(255,255,255,.5);text-decoration:none;">ลงทะเบียน</a>
+                  <a href="#" style="font-size:13px;color:rgba(255,255,255,.5);text-decoration:none;">วิธีการทำงาน</a>
+                  <a href="#" style="font-size:13px;color:rgba(255,255,255,.5);text-decoration:none;">ราคาและแพ็กเกจ</a>
+                  <a href="#" style="font-size:13px;color:rgba(255,255,255,.5);text-decoration:none;">เข้าสู่ระบบ</a>
+                </div>
+              </div>
+
+              <div>
+                <p style="font-size:13px;font-weight:700;color:rgba(255,255,255,.9);margin-bottom:16px;text-transform:uppercase;letter-spacing:.06em;">ช่วยเหลือ</p>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                  <a href="#" style="font-size:13px;color:rgba(255,255,255,.5);text-decoration:none;">FAQ</a>
+                  <a href="#" style="font-size:13px;color:rgba(255,255,255,.5);text-decoration:none;">ติดต่อเรา</a>
+                  <a href="#" style="font-size:13px;color:rgba(255,255,255,.5);text-decoration:none;">LINE OA</a>
+                </div>
+              </div>
+
+              <div>
+                <p style="font-size:13px;font-weight:700;color:rgba(255,255,255,.9);margin-bottom:16px;text-transform:uppercase;letter-spacing:.06em;">กฎหมาย</p>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                  <a href="#" style="font-size:13px;color:rgba(255,255,255,.5);text-decoration:none;">นโยบายความเป็นส่วนตัว</a>
+                  <a href="#" style="font-size:13px;color:rgba(255,255,255,.5);text-decoration:none;">ข้อกำหนดการใช้งาน</a>
+                  <a href="#" style="font-size:13px;color:rgba(255,255,255,.5);text-decoration:none;">PDPA</a>
+                </div>
+              </div>
+
+            </div>
+
+            <div style="border-top:1px solid rgba(255,255,255,.08);padding-top:24px;display:flex;justify-content:space-between;align-items:center;">
+              <p style="font-size:12px;color:rgba(255,255,255,.3);">© 2026 Pawtal Co., Ltd. · กรุงเทพมหานคร · ทุกสิทธิ์สงวน</p>
+              <p style="font-size:12px;color:rgba(255,255,255,.3);">🇹🇭 Thailand · 🔒 PDPA Compliant</p>
+            </div>
+          </footer>
+
+        </div><!-- end browser-body -->
+      </div><!-- end .browser -->
+    </div><!-- end #desktopMode -->
+
+  </div><!-- end #centerStage -->
+
+  <!-- ── RIGHT PANEL ─────────────────────────────────────────────────────── -->
+  <div style="width:272px;background:white;border-left:1px solid #E5E7EB;display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;">
+    <div style="padding:14px;border-bottom:1px solid #F0F0F0;flex-shrink:0;">
+      <p style="font-size:10px;font-weight:800;color:#9CA3AF;text-transform:uppercase;letter-spacing:.09em;margin-bottom:3px;">UX Designer Notes</p>
+      <p style="font-size:12px;color:#6B7280;font-weight:500;" id="annTitle">LINE OA — Profile Page</p>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:14px;" id="annPanel"></div>
+
+    <!-- Legend -->
+    <div style="padding:12px 14px;border-top:1px solid #F0F0F0;flex-shrink:0;">
+      <p style="font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Key</p>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:11px;">
+        <div style="display:flex;align-items:center;gap:6px;"><div style="width:8px;height:8px;border-radius:2px;background:#7C3AED;flex-shrink:0;"></div><span>UX Decision</span></div>
+        <div style="display:flex;align-items:center;gap:6px;"><div style="width:8px;height:8px;border-radius:2px;background:#D97706;flex-shrink:0;"></div><span>UX Copy</span></div>
+        <div style="display:flex;align-items:center;gap:6px;"><div style="width:8px;height:8px;border-radius:2px;background:#0D7377;flex-shrink:0;"></div><span>Dev Note</span></div>
+        <div style="display:flex;align-items:center;gap:6px;"><div style="width:8px;height:8px;border-radius:2px;background:#DC2626;flex-shrink:0;"></div><span>Design Rule</span></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end main layout -->
+
+<!-- ═══════════════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════════════════ -->
+<script>
+// ── Data ─────────────────────────────────────────────────────────────────
+const DATA = {
+  line: {
+    label: 'Mobile — LINE OA',
+    phaseLegend: ['📱 OA Profile → ติดตาม', '💬 Chat → Rich Menu Tap', '🌐 LIFF → Mobile Landing'],
+    screens: [
+      {
+        id: 's0', label: 'L1 — OA Profile', emoji: '👤', phase: 'Awareness',
+        title: 'LINE OA — Profile & Discovery',
+        anns: [
+          { t:'ux',   h:'OA Profile Strategy', b:'Provider sees Pawtal\'s OA via QR code on marketing materials, Facebook ad, or BizDev referral. Profile must show credibility immediately — verified badge, follower count, and a clear bio.' },
+          { t:'rule', h:'Verified Badge', b:'LINE Blue Tick (verified account) is mandatory for B2B trust. Requires LINE Business account + official verification. Shown as green ✓ on the profile name.' },
+          { t:'copy', h:'Bio Copy Formula', b:'"🐾 [What we do] for [who] in [where]. 📍 [Location]. 🌐 [URL]" — 3 lines max. Thai providers scan quickly; use emoji anchors for skimmability.' },
+          { t:'ux',   h:'Add Friend CTA', b:'Green "+ เพิ่มเพื่อน" button is the primary CTA. On tap → user follows the OA → triggers automatic welcome message sequence (LINE Message API).' },
+          { t:'dev',  h:'LINE Message API', b:'On follow: send 3 messages automatically via Messaging API. Triggered by webhook event type: "follow". Messages are pre-templated in Flex Message format.' },
+        ]
+      },
+      {
+        id: 's1', label: 'L2 — Chat + Rich Menu', emoji: '💬', phase: 'Discovery',
+        title: 'LINE Chat — Rich Menu Design',
+        anns: [
+          { t:'ux',   h:'Rich Menu Layout', b:'3×2 grid: Primary CTA (left, tall, 2/3 height) = ลงทะเบียนพาร์ทเนอร์. Rationale: primary action gets largest touch area. Secondary cells (4) are equal.' },
+          { t:'rule', h:'Rich Menu Dimensions', b:'LINE spec: 2506×1686px (full) or 2506×843px (compact). Minimum tap area per cell: 200px wide. All cells meet WCAG 44×44pt touch targets when rendered at 390px.' },
+          { t:'ux',   h:'Welcome Message Sequence', b:'3 auto-messages on follow: (1) image card with branding, (2) value prop text, (3) promotional offer + quick reply chips. Space them: msg 1 instant, msg 2 after 0.5s, msg 3 after 1s.' },
+          { t:'copy', h:'Quick Reply Chips', b:'"ลงทะเบียนฟรี" (primary, LINE green border) | "ดูบริการ" (secondary, grey). Quick replies appear above the rich menu. They disappear after user taps — prevents re-tap confusion.' },
+          { t:'dev',  h:'Rich Menu Setup', b:'Configure via LINE Messaging API: POST /v2/bot/richmenu. Area type: "uri" for registration cell (opens LIFF URL). Other cells: "message" type (sends postback text). LIFF app registered separately.' },
+        ]
+      },
+      {
+        id: 's2', label: 'L3 — LIFF Landing', emoji: '🌐', phase: 'Form Fill',
+        title: 'LIFF — Mobile Landing Page',
+        anns: [
+          { t:'ux',   h:'LIFF Strategy', b:'LIFF (LINE Front-end Framework) opens the web app inside LINE — no app switching, no external browser. User stays in LINE context = higher conversion vs. external URL.' },
+          { t:'dev',  h:'LIFF Integration', b:'Register LIFF app at LINE Developers Console. LIFF URL: liff.line.me/{liffId}. Size: Full (covers full screen). liff.init() on load. Use liff.getProfile() to pre-fill name field.' },
+          { t:'copy', h:'LINE Context Badge', b:'"🟢 มาจาก LINE" badge in the nav shows users they came from the OA — reinforces trust. Green dot matches LINE brand color (#06C755).' },
+          { t:'ux',   h:'Special Offer Banner', b:'LIFF landing shows a "🎁 ข้อเสนอพิเศษจาก LINE" offer card — exclusive to OA visitors. Creates urgency and differentiates the LINE acquisition channel.' },
+          { t:'rule', h:'Pre-fill from LINE', b:'Use liff.getProfile() to pre-populate first name and LINE display picture in the form. Reduces friction. Requires user permission — show permission dialog before form loads.' },
+        ]
+      },
+    ]
+  },
+
+  desktop: {
+    label: 'Desktop Landing',
+    phaseLegend: ['🖥️ Direct URL or Google Search', '📖 Read content, build trust', '✅ Click CTA → registration form'],
+    screens: [
+      {
+        id: 's0', label: 'D1 — Desktop Landing', emoji: '🖥️', phase: 'Awareness → Conversion',
+        title: 'Desktop — Full Landing Page',
+        anns: [
+          { t:'ux',   h:'Desktop Hero Layout', b:'Two-column hero: 55% text (copy + CTA) left, 45% phone mockup showing the provider dashboard right. Outcome-focused headline leads. Phone mockup shows real benefit — bookings flowing in.' },
+          { t:'rule', h:'Navigation', b:'Sticky nav with logo, 4 text links, 2 buttons. Desktop nav links use Thai. Links scroll to sections. Sticky behaviour: adds border-bottom shadow after 64px scroll. Max nav height: 68px.' },
+          { t:'ux',   h:'Trust Bar', b:'Trust bar below hero shows real provider logos (greyscale + name). "ยอดนิยม" / popular providers signal social proof. Placed before features to validate before user reads feature details.' },
+          { t:'copy', h:'CTA Hierarchy', b:'Primary: "ลงทะเบียนฟรี →" (filled teal). Secondary: "ดูวิธีการทำงาน ↓" (ghost border). Ratio: 60/40 visual weight. Both on same row. Primary is always to the left (natural reading direction).' },
+          { t:'dev',  h:'Performance', b:'Desktop hero H1 uses CSS gradient text. Phone mockup is pure CSS (no image). Stats use CSS counter-up animation on viewport enter (IntersectionObserver). LCP target: <2.5s.' },
+          { t:'rule', h:'Desktop Spacing', b:'Section padding: 72px top/bottom, 64px horizontal. Content max-width: none (full bleed). Grid columns: 3-col features, 2-col testimonials. 20px gap in grids.' },
+        ]
+      },
+    ]
+  }
+};
+
+// ── State ─────────────────────────────────────────────────────────────────
+let mode = 'line';
+let lineIdx = 0;
+
+// ── Mode switch ───────────────────────────────────────────────────────────
+function setMode(m) {
+  mode = m;
+  document.getElementById('tabLine').classList.toggle('active', m === 'line');
+  document.getElementById('tabDesktop').classList.toggle('active', m === 'desktop');
+  document.getElementById('lineMode').style.display = m === 'line' ? 'flex' : 'none';
+  document.getElementById('desktopMode').style.display = m === 'desktop' ? 'flex' : 'none';
+  // Ambient glow color
+  document.getElementById('ambientGlow').style.background = m === 'line'
+    ? 'radial-gradient(circle,rgba(6,199,85,.15) 0%,transparent 70%)'
+    : 'radial-gradient(circle,rgba(13,115,119,.18) 0%,transparent 70%)';
+  buildLeftNav();
+  renderAnnotations();
+}
+
+// ── LINE screen navigation ────────────────────────────────────────────────
+function goTo(m, sid) {
+  // Deactivate all LINE screens
+  document.querySelectorAll('.pscreen').forEach(el => el.classList.remove('active'));
+  document.getElementById(`line-${sid}`).classList.add('active');
+  lineIdx = DATA.line.screens.findIndex(s => s.id === sid);
+  buildLeftNav();
+  renderAnnotations();
+}
+
+// ── Build left nav ────────────────────────────────────────────────────────
+function buildLeftNav() {
+  const d = DATA[mode];
+  document.getElementById('leftNavMode').textContent = d.label;
+
+  // Phase legend
+  const pl = document.getElementById('phaseLegend');
+  pl.innerHTML = d.phaseLegend.map(p => `<span>${p}</span>`).join('');
+
+  // Nav list
+  const nl = document.getElementById('leftNavList');
+  nl.innerHTML = '';
+  d.screens.forEach((s, i) => {
+    const isActive = (mode === 'line' && i === lineIdx) || (mode === 'desktop');
+    const el = document.createElement('div');
+    el.className = 'nav-item' + (isActive ? ' active' : '');
+    el.innerHTML = `
+      <span style="font-size:18px;flex-shrink:0;">${s.emoji}</span>
+      <div style="flex:1;min-width:0;">
+        <p style="font-size:12px;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.label}</p>
+        <p style="font-size:11px;color:#9CA3AF;margin:0;">${s.phase}</p>
+      </div>
+    `;
+    if (mode === 'line') { const sid = s.id; el.onclick = () => goTo('line', sid); }
+    nl.appendChild(el);
+  });
+
+  // Line nav dots
+  const lineDots = document.getElementById('lineDots');
+  if (lineDots) {
+    lineDots.innerHTML = '';
+    if (mode === 'line') {
+      DATA.line.screens.forEach((s, i) => {
+        const dot = document.createElement('div');
+        dot.className = 'nav-dot' + (i === lineIdx ? ' active' : '');
+        dot.onclick = () => goTo('line', s.id);
+        lineDots.appendChild(dot);
+      });
+    }
+  }
+}
+
+// ── Render annotations ────────────────────────────────────────────────────
+function renderAnnotations() {
+  const d = DATA[mode];
+  const s = mode === 'line' ? d.screens[lineIdx] : d.screens[0];
+  document.getElementById('annTitle').textContent = s.title;
+  document.getElementById('annPanel').innerHTML = s.anns.map(a => `
+    <div class="ann ${a.t}">
+      <h4>${a.h}</h4>
+      <p>${a.b}</p>
+    </div>
+  `).join('');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+buildLeftNav();
+renderAnnotations();
+</script>
+
+</body>
+</html>

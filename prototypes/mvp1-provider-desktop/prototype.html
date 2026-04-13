@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pawtal MVP#1 — Provider Journey (Desktop)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand:  { blue: '#1A3C5E', teal: '#0D7377', light: '#E8F0F7', tealLight: '#CCFBF1' },
+            accent: { green: '#16A34A', amber: '#D97706', red: '#DC2626' }
+          },
+          fontFamily: { sans: ['Inter', 'Noto Sans Thai', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Inter', 'Noto Sans Thai', sans-serif; background: #0F172A; color: #1A1A2E; }
+
+    /* ── Outer shell ──────────────────────────────────────────────────────── */
+    #shell {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── Left Nav Panel ───────────────────────────────────────────────────── */
+    #leftNav {
+      width: 220px;
+      background: #1E293B;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      overflow-y: auto;
+    }
+    #leftNav::-webkit-scrollbar { width: 4px; }
+    #leftNav::-webkit-scrollbar-track { background: transparent; }
+    #leftNav::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+
+    .nav-logo {
+      padding: 18px 16px 14px;
+      border-bottom: 1px solid #334155;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .nav-logo-paw { font-size: 20px; }
+    .nav-logo-text { font-size: 16px; font-weight: 800; color: white; letter-spacing: -.02em; }
+    .nav-logo-badge {
+      font-size: 9px; font-weight: 700; background: #0D7377; color: white;
+      padding: 2px 6px; border-radius: 4px; letter-spacing: .04em;
+    }
+
+    .nav-section-label {
+      font-size: 9px; font-weight: 700; color: #64748B;
+      text-transform: uppercase; letter-spacing: .1em;
+      padding: 16px 16px 6px;
+    }
+
+    .nav-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 14px;
+      cursor: pointer; transition: background .15s;
+      border-radius: 6px; margin: 1px 6px;
+    }
+    .nav-item:hover { background: #334155; }
+    .nav-item.active { background: #1A3C5E; }
+    .nav-item-num {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: #334155; color: #94A3B8;
+      font-size: 10px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px; transition: all .15s;
+    }
+    .nav-item.active .nav-item-num { background: #0D7377; color: white; }
+    .nav-item.done .nav-item-num { background: #16A34A; color: white; }
+    .nav-item-info { flex: 1; min-width: 0; }
+    .nav-item-label { font-size: 12px; font-weight: 600; color: #94A3B8; line-height: 1.3; }
+    .nav-item.active .nav-item-label { color: white; }
+    .nav-item.done .nav-item-label { color: #6EE7B7; }
+    .nav-item-sub { font-size: 10px; color: #64748B; margin-top: 2px; }
+    .nav-item.active .nav-item-sub { color: #7DD3FC; }
+
+    /* phase strip */
+    .phase-strip {
+      margin: 4px 14px 0;
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .phase-bar {
+      height: 3px; border-radius: 2px;
+      background: #334155; transition: background .3s;
+    }
+    .phase-bar.done { background: #16A34A; }
+    .phase-bar.active { background: #0D7377; }
+
+    /* ── Center: Browser Frame ────────────────────────────────────────────── */
+    #center {
+      flex: 1;
+      display: flex; flex-direction: column;
+      align-items: center;
+      overflow-y: auto;
+      padding: 20px 16px;
+      gap: 16px;
+    }
+    #center::-webkit-scrollbar { width: 6px; }
+    #center::-webkit-scrollbar-track { background: transparent; }
+    #center::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+
+    /* Browser outer shell */
+    .browser-shell {
+      width: 1080px;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 0 1px #334155, 0 30px 80px rgba(0,0,0,.7);
+      flex-shrink: 0;
+    }
+
+    /* Browser chrome */
+    .browser-chrome {
+      background: #1E293B;
+      padding: 10px 14px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .browser-dots { display: flex; gap: 6px; }
+    .browser-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+    }
+    .browser-dot.red   { background: #EF4444; }
+    .browser-dot.amber { background: #F59E0B; }
+    .browser-dot.green { background: #22C55E; }
+    .browser-nav-btns {
+      display: flex; gap: 4px;
+    }
+    .browser-nav-btn {
+      width: 26px; height: 26px; border-radius: 6px;
+      background: #334155; border: none; cursor: default;
+      color: #64748B; font-size: 13px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .browser-url-bar {
+      flex: 1; height: 30px;
+      background: #0F172A; border-radius: 6px;
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 12px;
+    }
+    .browser-url-lock { font-size: 11px; color: #22C55E; }
+    .browser-url-text { font-size: 12px; color: #94A3B8; font-family: monospace; }
+
+    /* Browser viewport */
+    .browser-viewport {
+      background: white;
+      height: 720px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      position: relative;
+    }
+    .browser-viewport::-webkit-scrollbar { width: 8px; }
+    .browser-viewport::-webkit-scrollbar-track { background: #F1F5F9; }
+    .browser-viewport::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+
+    /* ── Screen visibility ────────────────────────────────────────────────── */
+    .dscreen { display: none; animation: fadeIn .2s ease; }
+    .dscreen.active { display: block; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Desktop Nav (inside browser) ────────────────────────────────────── */
+    .site-nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(255,255,255,.96);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid #F1F5F9;
+      padding: 0 48px;
+      display: flex; align-items: center; height: 64px; gap: 32px;
+    }
+    .site-nav-logo {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 22px; font-weight: 800; color: #1A3C5E; letter-spacing: -.03em;
+      flex-shrink: 0;
+    }
+    .site-nav-links {
+      display: flex; gap: 24px; flex: 1;
+    }
+    .site-nav-link {
+      font-size: 14px; color: #4B5563; font-weight: 500; cursor: pointer;
+      padding: 4px 0; border-bottom: 2px solid transparent;
+      transition: all .15s;
+    }
+    .site-nav-link:hover { color: #1A3C5E; border-color: #1A3C5E; }
+    .site-nav-actions {
+      display: flex; gap: 10px; align-items: center;
+    }
+    .btn-ghost {
+      font-size: 14px; font-weight: 600; color: #4B5563;
+      background: none; border: 1.5px solid #E5E7EB;
+      padding: 8px 16px; border-radius: 8px; cursor: pointer;
+      transition: all .15s;
+    }
+    .btn-ghost:hover { border-color: #1A3C5E; color: #1A3C5E; }
+
+    /* ── Primary button ───────────────────────────────────────────────────── */
+    .btn-primary {
+      background: linear-gradient(135deg, #1A3C5E, #0D7377);
+      color: white; border: none; border-radius: 10px;
+      padding: 12px 24px; font-size: 15px; font-weight: 700;
+      cursor: pointer; transition: all .2s; width: 100%;
+      font-family: inherit;
+    }
+    .btn-primary:hover { opacity: .9; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(13,115,119,.35); }
+    .btn-primary-sm {
+      background: linear-gradient(135deg, #1A3C5E, #0D7377);
+      color: white; border: none; border-radius: 8px;
+      padding: 10px 20px; font-size: 14px; font-weight: 700;
+      cursor: pointer; font-family: inherit; transition: all .2s;
+      white-space: nowrap;
+    }
+    .btn-primary-sm:hover { opacity: .9; }
+    .btn-outline-sm {
+      background: white; color: #4B5563; border: 1.5px solid #E5E7EB;
+      border-radius: 8px; padding: 10px 20px; font-size: 14px; font-weight: 600;
+      cursor: pointer; font-family: inherit; transition: all .2s;
+      white-space: nowrap;
+    }
+    .btn-outline-sm:hover { border-color: #1A3C5E; color: #1A3C5E; }
+
+    /* ── Form fields ──────────────────────────────────────────────────────── */
+    .field-label {
+      display: block; font-size: 13px; font-weight: 600; color: #374151;
+      margin-bottom: 6px;
+    }
+    .req { color: #DC2626; }
+    .field-input {
+      width: 100%; padding: 10px 14px;
+      border: 1.5px solid #E5E7EB; border-radius: 8px;
+      font-size: 14px; color: #1A1A2E; font-family: inherit;
+      transition: border-color .15s; outline: none; background: white;
+    }
+    .field-input:focus { border-color: #0D7377; box-shadow: 0 0 0 3px rgba(13,115,119,.12); }
+    .field-hint { font-size: 12px; color: #9CA3AF; margin-top: 4px; }
+
+    /* ── Service cards ────────────────────────────────────────────────────── */
+    .svc-card {
+      border: 2px solid #E5E7EB; border-radius: 12px;
+      padding: 14px 16px; cursor: pointer; transition: all .15s;
+      user-select: none; background: white;
+    }
+    .svc-card:hover { border-color: #0D7377; background: #F0FDFA; }
+    .svc-card.selected { border-color: #0D7377; background: #CCFBF1; }
+    .check-dot {
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 2px solid #D1D5DB; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .15s;
+    }
+    .svc-card.selected .check-dot {
+      background: #0D7377; border-color: #0D7377;
+    }
+    .svc-card.selected .check-dot::after {
+      content: ''; width: 8px; height: 5px;
+      border-left: 2px solid white; border-bottom: 2px solid white;
+      transform: rotate(-45deg) translateY(-1px);
+    }
+
+    /* ── PDPA checkbox ────────────────────────────────────────────────────── */
+    .pdpa-check-input { display: none; }
+    .pdpa-check-label {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 16px; border: 2px solid #E5E7EB; border-radius: 12px;
+      cursor: pointer; transition: border-color .15s;
+    }
+    .pdpa-check-input:checked + .pdpa-check-label { border-color: #0D7377; background: #F0FDFA; }
+    .pdpa-box {
+      width: 20px; height: 20px; border-radius: 5px;
+      border: 2px solid #D1D5DB; background: white;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px; transition: all .15s;
+    }
+    .pdpa-check-input:checked + .pdpa-check-label .pdpa-box {
+      background: #0D7377; border-color: #0D7377;
+    }
+
+    /* ── Progress bar ─────────────────────────────────────────────────────── */
+    .progress-track {
+      height: 6px; background: #E5E7EB; border-radius: 3px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; background: linear-gradient(90deg, #1A3C5E, #0D7377);
+      border-radius: 3px; transition: width .4s ease;
+    }
+
+    /* ── Review rows ──────────────────────────────────────────────────────── */
+    .review-row {
+      display: flex; gap: 12px;
+      padding: 10px 0; border-bottom: 1px solid #F3F4F6;
+    }
+    .review-row:last-child { border-bottom: none; }
+    .review-label { font-size: 13px; color: #9CA3AF; font-weight: 500; width: 120px; flex-shrink: 0; }
+    .review-value { font-size: 14px; color: #1A3C5E; font-weight: 600; }
+
+    /* ── Timeline ─────────────────────────────────────────────────────────── */
+    .tl-step { display: flex; gap: 14px; }
+    .tl-left { display: flex; flex-direction: column; align-items: center; }
+    .tl-dot {
+      width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0; z-index: 1;
+    }
+    .tl-line { width: 2px; flex: 1; background: #E5E7EB; min-height: 24px; }
+
+    /* ── FAQ ──────────────────────────────────────────────────────────────── */
+    .faq-item { border-bottom: 1px solid #F3F4F6; }
+    .faq-q {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 0; cursor: pointer; user-select: none;
+    }
+    .faq-a {
+      font-size: 14px; color: #4B5563; line-height: 1.7;
+      padding: 0 0 16px; display: none;
+    }
+    .faq-item.open .faq-a { display: block; }
+    .faq-arrow { color: #9CA3AF; font-size: 12px; transition: transform .2s; }
+    .faq-item.open .faq-arrow { transform: rotate(180deg); }
+
+    /* ── Right Annotation Panel ───────────────────────────────────────────── */
+    #rightPanel {
+      width: 260px;
+      background: white;
+      border-left: 1px solid #E2E8F0;
+      display: flex; flex-direction: column;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+    #rightPanel::-webkit-scrollbar { width: 4px; }
+    #rightPanel::-webkit-scrollbar-track { background: transparent; }
+    #rightPanel::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 2px; }
+
+    .ann-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid #F1F5F9;
+      position: sticky; top: 0; background: white; z-index: 10;
+    }
+    .ann-pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 9px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+      padding: 3px 8px; border-radius: 4px; margin-bottom: 6px;
+    }
+    .ann-pill.ux   { background: #EDE9FE; color: #7C3AED; }
+    .ann-pill.copy { background: #FEF3C7; color: #D97706; }
+    .ann-pill.dev  { background: #CCFBF1; color: #0D7377; }
+    .ann-pill.rule { background: #FEE2E2; color: #DC2626; }
+
+    .ann-card {
+      border: 1px solid #F1F5F9; border-radius: 8px;
+      padding: 10px 12px; margin: 0 10px 8px;
+    }
+    .ann-card h4 { font-size: 11px; font-weight: 700; color: #1A3C5E; margin: 4px 0 4px; }
+    .ann-card p { font-size: 11px; color: #4B5563; margin: 0; line-height: 1.6; }
+
+    .ann-legend {
+      padding: 12px 14px;
+      border-top: 1px solid #F1F5F9;
+      margin-top: auto;
+    }
+    .ann-legend-title {
+      font-size: 9px; font-weight: 700; color: #94A3B8;
+      text-transform: uppercase; letter-spacing: .08em; margin: 0 0 8px;
+    }
+    .ann-legend-row {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; color: #6B7280; margin-bottom: 4px;
+    }
+    .ann-legend-dot {
+      width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0;
+    }
+
+    /* ── Stat pill (landing) ──────────────────────────────────────────────── */
+    .stat-box {
+      text-align: center;
+    }
+    .stat-num { font-size: 26px; font-weight: 800; color: white; }
+    .stat-lbl { font-size: 12px; color: rgba(255,255,255,.75); margin-top: 2px; line-height: 1.4; }
+
+    /* ── Animated checkmark (success) ────────────────────────────────────── */
+    @keyframes popIn {
+      0%   { transform: scale(0.5); opacity: 0; }
+      70%  { transform: scale(1.1); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .success-icon { animation: popIn .5s cubic-bezier(.175,.885,.32,1.275) forwards; }
+  </style>
+</head>
+
+<body>
+<div id="shell">
+
+  <!-- ── LEFT NAV ───────────────────────────────────────────────────────────── -->
+  <div id="leftNav">
+    <div class="nav-logo">
+      <span class="nav-logo-paw">🐾</span>
+      <span class="nav-logo-text">Pawtal</span>
+      <span class="nav-logo-badge">MVP#1</span>
+    </div>
+
+    <div class="nav-section-label">Provider Journey</div>
+
+    <!-- Phase progress bars -->
+    <div class="phase-strip">
+      <div class="phase-bar" id="pb0"></div>
+    </div>
+
+    <div style="padding: 6px 6px 0;" id="navItems"></div>
+
+    <div style="margin-top: auto; padding: 12px 14px; border-top: 1px solid #334155;">
+      <div style="font-size: 9px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px;">Phase Legend</div>
+      <div style="display: flex; flex-direction: column; gap: 5px; font-size: 10px; color: #64748B;">
+        <div style="display:flex;align-items:center;gap:6px;"><div style="width:8px;height:8px;border-radius:50%;background:#0D7377;flex-shrink:0;"></div> Awareness</div>
+        <div style="display:flex;align-items:center;gap:6px;"><div style="width:8px;height:8px;border-radius:50%;background:#7C3AED;flex-shrink:0;"></div> Form Fill</div>
+        <div style="display:flex;align-items:center;gap:6px;"><div style="width:8px;height:8px;border-radius:50%;background:#16A34A;flex-shrink:0;"></div> Confirmation</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CENTER ─────────────────────────────────────────────────────────────── -->
+  <div id="center">
+
+    <!-- Browser Frame -->
+    <div class="browser-shell">
+
+      <!-- Chrome bar -->
+      <div class="browser-chrome">
+        <div class="browser-dots">
+          <div class="browser-dot red"></div>
+          <div class="browser-dot amber"></div>
+          <div class="browser-dot green"></div>
+        </div>
+        <div class="browser-nav-btns">
+          <div class="browser-nav-btn">‹</div>
+          <div class="browser-nav-btn">›</div>
+        </div>
+        <div class="browser-url-bar">
+          <span class="browser-url-lock">🔒</span>
+          <span class="browser-url-text" id="urlBar">pawtal.co.th/providers/join</span>
+        </div>
+      </div>
+
+      <!-- Viewport -->
+      <div class="browser-viewport" id="viewport">
+
+        <!-- ══════════════════════════════════════════════════════════════════
+             SCREEN 1: LANDING PAGE
+        ══════════════════════════════════════════════════════════════════ -->
+        <div class="dscreen active" id="dscreen-0">
+
+          <!-- Site Nav -->
+          <nav class="site-nav">
+            <div class="site-nav-logo"><span>🐾</span> Pawtal</div>
+            <div class="site-nav-links">
+              <span class="site-nav-link">บริการ</span>
+              <span class="site-nav-link">ราคา</span>
+              <span class="site-nav-link">ตัวอย่างผู้ใช้</span>
+              <span class="site-nav-link">คำถามที่พบบ่อย</span>
+            </div>
+            <div class="site-nav-actions">
+              <button class="btn-ghost">เข้าสู่ระบบ</button>
+              <button class="btn-primary-sm" onclick="goTo(1)">ลงทะเบียนฟรี →</button>
+            </div>
+          </nav>
+
+          <!-- Hero section -->
+          <div style="background: linear-gradient(135deg, #1A3C5E 0%, #0D7377 55%, #0F766E 100%); padding: 72px 80px; position: relative; overflow: hidden;">
+            <!-- Decorative circles -->
+            <div style="position:absolute;top:-60px;right:-60px;width:320px;height:320px;border-radius:50%;background:rgba(255,255,255,.05);pointer-events:none;"></div>
+            <div style="position:absolute;bottom:-80px;left:300px;width:240px;height:240px;border-radius:50%;background:rgba(255,255,255,.04);pointer-events:none;"></div>
+
+            <div style="display: flex; align-items: center; gap: 64px; position: relative; z-index: 1;">
+              <!-- Left: Copy -->
+              <div style="flex: 1; min-width: 0;">
+                <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);color:white;font-size:12px;font-weight:700;padding:6px 14px;border-radius:20px;margin-bottom:24px;letter-spacing:.04em;">
+                  <span>🐾</span> สำหรับผู้ให้บริการสัตว์เลี้ยง — ฟรี 3 เดือนแรก
+                </div>
+                <h1 style="color:white;font-size:44px;font-weight:800;line-height:1.15;margin:0 0 20px;letter-spacing:-.03em;">รับลูกค้าใหม่<br/>ง่ายกว่าเดิม 🐾</h1>
+                <p style="color:rgba(255,255,255,.82);font-size:17px;line-height:1.7;margin:0 0 32px;max-width:480px;">Pawtal เชื่อมต่อช่างตัดขน ร้านสัตว์เลี้ยง และผู้ให้บริการในสุขุมวิทกับเจ้าของสัตว์เลี้ยงที่กำลังมองหาคุณ — ไม่ต้องพึ่ง LINE หรือ Facebook อีกต่อไป</p>
+                <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                  <button class="btn-primary-sm" onclick="goTo(1)" style="font-size:16px;padding:14px 32px;border-radius:12px;background:white;color:#1A3C5E;">ลงทะเบียนฟรี →</button>
+                  <span style="color:rgba(255,255,255,.6);font-size:13px;">ไม่มีค่าใช้จ่าย · ไม่มีสัญญาผูกมัด</span>
+                </div>
+              </div>
+
+              <!-- Right: Stats card + mock dashboard preview -->
+              <div style="flex-shrink:0;width:320px;">
+                <!-- Mock dashboard card -->
+                <div style="background:white;border-radius:16px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.25);">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                    <div style="font-size:13px;font-weight:700;color:#1A3C5E;">Dashboard ของคุณ</div>
+                    <div style="background:#DCFCE7;color:#16A34A;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">🟢 Live</div>
+                  </div>
+                  <!-- Stats row -->
+                  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
+                    <div style="background:#F8FAFC;border-radius:8px;padding:10px;text-align:center;">
+                      <div style="font-size:18px;font-weight:800;color:#1A3C5E;">12</div>
+                      <div style="font-size:10px;color:#9CA3AF;margin-top:2px;">การจองใหม่</div>
+                    </div>
+                    <div style="background:#F0FDFA;border-radius:8px;padding:10px;text-align:center;">
+                      <div style="font-size:18px;font-weight:800;color:#0D7377;">4.9⭐</div>
+                      <div style="font-size:10px;color:#9CA3AF;margin-top:2px;">คะแนนเฉลี่ย</div>
+                    </div>
+                    <div style="background:#F8FAFC;border-radius:8px;padding:10px;text-align:center;">
+                      <div style="font-size:18px;font-weight:800;color:#16A34A;">+8</div>
+                      <div style="font-size:10px;color:#9CA3AF;margin-top:2px;">ลูกค้าใหม่</div>
+                    </div>
+                  </div>
+                  <!-- Upcoming appointments -->
+                  <div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">นัดหมายวันนี้</div>
+                  <div style="display:flex;flex-direction:column;gap:6px;">
+                    <div style="display:flex;align-items:center;gap:10px;background:#F8FAFC;border-radius:8px;padding:8px 10px;">
+                      <div style="width:30px;height:30px;border-radius:50%;background:#CCFBF1;display:flex;align-items:center;justify-content:center;font-size:14px;">🐕</div>
+                      <div style="flex:1;">
+                        <div style="font-size:12px;font-weight:700;color:#1A3C5E;">ตัดขน — เฟรนช์บูล</div>
+                        <div style="font-size:11px;color:#9CA3AF;">10:00 · คุณนัท</div>
+                      </div>
+                      <div style="font-size:11px;font-weight:600;color:#16A34A;">ยืนยัน</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;background:#F8FAFC;border-radius:8px;padding:8px 10px;">
+                      <div style="width:30px;height:30px;border-radius:50%;background:#EDE9FE;display:flex;align-items:center;justify-content:center;font-size:14px;">🐈</div>
+                      <div style="flex:1;">
+                        <div style="font-size:12px;font-weight:700;color:#1A3C5E;">อาบน้ำ — เมนคูน</div>
+                        <div style="font-size:11px;color:#9CA3AF;">14:30 · คุณปิ่น</div>
+                      </div>
+                      <div style="font-size:11px;font-weight:600;color:#D97706;">รอยืนยัน</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stats bar -->
+          <div style="background:#1A3C5E;padding:28px 80px;display:flex;gap:0;">
+            <div class="stat-box" style="flex:1;border-right:1px solid rgba(255,255,255,.15);">
+              <div class="stat-num">0%</div>
+              <div class="stat-lbl">ค่าคอมมิชชัน<br/>3 เดือนแรก</div>
+            </div>
+            <div class="stat-box" style="flex:1;border-right:1px solid rgba(255,255,255,.15);padding-left:32px;">
+              <div class="stat-num">500+</div>
+              <div class="stat-lbl">เจ้าของสัตว์เลี้ยง<br/>รอใช้บริการ</div>
+            </div>
+            <div class="stat-box" style="flex:1;border-right:1px solid rgba(255,255,255,.15);padding-left:32px;">
+              <div class="stat-num">2 นาที</div>
+              <div class="stat-lbl">ลงทะเบียน<br/>ใช้เวลาแค่นี้</div>
+            </div>
+            <div class="stat-box" style="flex:1;padding-left:32px;">
+              <div class="stat-num">24 ชม.</div>
+              <div class="stat-lbl">ทีมงานโทรกลับ<br/>ภายใน</div>
+            </div>
+          </div>
+
+          <!-- Value props 3-col -->
+          <div style="padding: 64px 80px;">
+            <div style="text-align:center;margin-bottom:44px;">
+              <p style="font-size:12px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.1em;margin:0 0 10px;">ทำไมต้องเลือก Pawtal</p>
+              <h2 style="font-size:30px;font-weight:800;color:#1A3C5E;margin:0;letter-spacing:-.02em;">ทุกสิ่งที่คุณต้องการ<br/>ในที่เดียว</h2>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;">
+              <div style="background:#F8FAFC;border-radius:16px;padding:28px 24px;">
+                <div style="width:48px;height:48px;background:#E8F0F7;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px;">📱</div>
+                <h3 style="font-size:17px;font-weight:700;color:#1A3C5E;margin:0 0 10px;">ลูกค้าใหม่จากดิจิทัล</h3>
+                <p style="font-size:14px;color:#6B7280;margin:0;line-height:1.7;">เข้าถึงเจ้าของสัตว์เลี้ยงที่กำลังค้นหาบริการในพื้นที่ของคุณ ไม่ต้องพึ่งปากต่อปากเพียงอย่างเดียว</p>
+              </div>
+              <div style="background:#F8FAFC;border-radius:16px;padding:28px 24px;">
+                <div style="width:48px;height:48px;background:#CCFBF1;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px;">📅</div>
+                <h3 style="font-size:17px;font-weight:700;color:#1A3C5E;margin:0 0 10px;">ระบบนัดหมายอัตโนมัติ</h3>
+                <p style="font-size:14px;color:#6B7280;margin:0;line-height:1.7;">บอกลาการรับนัดผ่าน LINE แบบวุ่นวาย ระบบจัดการตารางนัดหมายให้คุณแบบอัตโนมัติ</p>
+              </div>
+              <div style="background:#F8FAFC;border-radius:16px;padding:28px 24px;">
+                <div style="width:48px;height:48px;background:#EDE9FE;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px;">⭐️</div>
+                <h3 style="font-size:17px;font-weight:700;color:#1A3C5E;margin:0 0 10px;">โปรไฟล์น่าเชื่อถือ</h3>
+                <p style="font-size:14px;color:#6B7280;margin:0;line-height:1.7;">มีโปรไฟล์ดิจิทัลพร้อมรีวิวจากลูกค้าจริง สร้างความเชื่อมั่นให้กับธุรกิจของคุณ</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- How it works -->
+          <div style="padding: 0 80px 64px; background: #F8FAFC; margin: 0; padding-top: 64px;">
+            <div style="text-align:center;margin-bottom:44px;">
+              <p style="font-size:12px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.1em;margin:0 0 10px;">วิธีการเริ่มต้น</p>
+              <h2 style="font-size:30px;font-weight:800;color:#1A3C5E;margin:0;letter-spacing:-.02em;">เริ่มต้นใน 3 ขั้นตอน</h2>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px;">
+              <div style="text-align:center;">
+                <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#1A3C5E,#0D7377);color:white;font-size:22px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">1</div>
+                <h3 style="font-size:17px;font-weight:700;color:#1A3C5E;margin:0 0 10px;">กรอกข้อมูลสมัคร</h3>
+                <p style="font-size:14px;color:#6B7280;margin:0;line-height:1.7;">ใช้เวลาแค่ 2 นาที — ชื่อ, ธุรกิจ, ประเภทบริการ</p>
+              </div>
+              <div style="text-align:center;">
+                <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#1A3C5E,#0D7377);color:white;font-size:22px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">2</div>
+                <h3 style="font-size:17px;font-weight:700;color:#1A3C5E;margin:0 0 10px;">ทีมงานติดต่อกลับ</h3>
+                <p style="font-size:14px;color:#6B7280;margin:0;line-height:1.7;">ภายใน 24 ชั่วโมง เราจะโทรมาพูดคุยรายละเอียด</p>
+              </div>
+              <div style="text-align:center;">
+                <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#1A3C5E,#0D7377);color:white;font-size:22px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">3</div>
+                <h3 style="font-size:17px;font-weight:700;color:#1A3C5E;margin:0 0 10px;">เริ่มรับลูกค้าใหม่</h3>
+                <p style="font-size:14px;color:#6B7280;margin:0;line-height:1.7;">สร้างโปรไฟล์และรับการจองออนไลน์ได้เลย</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Testimonial -->
+          <div style="padding: 64px 80px;">
+            <div style="text-align:center;margin-bottom:36px;">
+              <p style="font-size:12px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.1em;margin:0 0 10px;">เสียงจากผู้ใช้จริง</p>
+              <h2 style="font-size:30px;font-weight:800;color:#1A3C5E;margin:0;letter-spacing:-.02em;">ผู้ให้บริการที่เชื่อมั่น Pawtal</h2>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+              <div style="background:#E8F0F7;border-radius:16px;padding:28px;">
+                <p style="font-size:15px;color:#1A3C5E;line-height:1.7;margin:0 0 16px;">"ตั้งแต่เข้าร่วม Pawtal ลูกค้าใหม่เพิ่มขึ้นเดือนละ 8-10 คน โดยที่ไม่ต้องทำอะไรเพิ่มเลย"</p>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#1A3C5E,#0D7377);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;">ม</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:700;color:#1A3C5E;">คุณมูก</div>
+                    <div style="font-size:12px;color:#6B7280;">Mook Pet Salon, อ่อนนุช</div>
+                  </div>
+                </div>
+              </div>
+              <div style="background:#F0FDFA;border-radius:16px;padding:28px;">
+                <p style="font-size:15px;color:#1A3C5E;line-height:1.7;margin:0 0 16px;">"ระบบนัดหมายช่วยได้มากเลยค่ะ ไม่ต้องมานั่งตอบ LINE ทีละอย่างแล้ว ประหยัดเวลาไปได้เยอะมาก"</p>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#0D7377,#16A34A);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;">น</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:700;color:#1A3C5E;">คุณนุ่น</div>
+                    <div style="font-size:12px;color:#6B7280;">Happy Paws Grooming, ทองหล่อ</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- FAQ -->
+          <div style="padding: 0 80px 64px; background:#F8FAFC; padding-top:64px;">
+            <div style="text-align:center;margin-bottom:36px;">
+              <p style="font-size:12px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.1em;margin:0 0 10px;">FAQ</p>
+              <h2 style="font-size:30px;font-weight:800;color:#1A3C5E;margin:0;letter-spacing:-.02em;">คำถามที่พบบ่อย</h2>
+            </div>
+            <div style="max-width:680px;margin:0 auto;">
+              <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-q"><span style="font-size:15px;font-weight:600;color:#1A3C5E;">มีค่าใช้จ่ายอะไรบ้าง?</span><span class="faq-arrow">▼</span></div>
+                <div class="faq-a">การสมัครและช่วง 3 เดือนแรกไม่มีค่าใช้จ่ายใดๆ หลังจากนั้นจะมีค่าคอมมิชชันเมื่อมีการจองผ่านแพลตฟอร์ม ซึ่งทีมงานจะอธิบายรายละเอียดเมื่อโทรมาคุย</div>
+              </div>
+              <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-q"><span style="font-size:15px;font-weight:600;color:#1A3C5E;">ต้องมีความรู้ด้านเทคโนโลยีไหม?</span><span class="faq-arrow">▼</span></div>
+                <div class="faq-a">ไม่จำเป็นเลย! ทีมงานของเราจะช่วยตั้งค่าโปรไฟล์และสอนการใช้งานทุกขั้นตอน ใช้ง่ายเหมือน LINE</div>
+              </div>
+              <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-q"><span style="font-size:15px;font-weight:600;color:#1A3C5E;">มีสัญญาผูกมัดไหม?</span><span class="faq-arrow">▼</span></div>
+                <div class="faq-a">ไม่มี คุณสามารถหยุดใช้งานได้ตลอดเวลา เราต้องการให้คุณเข้าร่วมเพราะเห็นคุณค่า ไม่ใช่เพราะถูกบังคับ</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom CTA Banner -->
+          <div style="background:linear-gradient(135deg,#1A3C5E,#0D7377);padding:64px 80px;text-align:center;">
+            <h2 style="color:white;font-size:32px;font-weight:800;margin:0 0 14px;letter-spacing:-.02em;">พร้อมรับลูกค้าใหม่แล้วหรือยัง?</h2>
+            <p style="color:rgba(255,255,255,.8);font-size:16px;margin:0 0 32px;">สมัครฟรีวันนี้ — ทีมงานโทรกลับภายใน 24 ชั่วโมง</p>
+            <button class="btn-primary-sm" onclick="goTo(1)" style="background:white;color:#1A3C5E;font-size:16px;padding:14px 40px;border-radius:12px;">ลงทะเบียนสนใจ — ฟรี →</button>
+            <p style="color:rgba(255,255,255,.55);font-size:13px;margin-top:14px;">🔒 ข้อมูลของคุณปลอดภัยตาม PDPA</p>
+          </div>
+
+          <!-- Footer -->
+          <div style="background:#0F172A;padding:32px 80px;display:flex;justify-content:space-between;align-items:center;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:18px;">🐾</span>
+              <span style="font-size:15px;font-weight:800;color:white;">Pawtal</span>
+            </div>
+            <div style="font-size:12px;color:#475569;">© 2026 Pawtal Co., Ltd. · กรุงเทพมหานคร</div>
+            <div style="display:flex;gap:16px;font-size:12px;color:#475569;">
+              <span style="cursor:pointer;hover:color:white;">Privacy Policy</span>
+              <span style="cursor:pointer;">Terms</span>
+              <span style="cursor:pointer;">Contact</span>
+            </div>
+          </div>
+
+        </div><!-- /dscreen-0 -->
+
+        <!-- ══════════════════════════════════════════════════════════════════
+             SCREEN 2: FORM STEP 1 — Personal & Business Info
+        ══════════════════════════════════════════════════════════════════ -->
+        <div class="dscreen" id="dscreen-1">
+
+          <nav class="site-nav">
+            <div class="site-nav-logo"><span>🐾</span> Pawtal</div>
+            <div style="flex:1; display:flex; align-items:center; justify-content:center; gap:0;">
+              <!-- Step breadcrumb -->
+              <div style="display:flex;align-items:center;gap:0;">
+                <div style="display:flex;align-items:center;gap:8px;padding:6px 16px;background:#1A3C5E;border-radius:20px 0 0 20px;">
+                  <div style="width:20px;height:20px;border-radius:50%;background:#0D7377;color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;">1</div>
+                  <span style="font-size:12px;font-weight:700;color:white;">ข้อมูลส่วนตัว</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;padding:6px 16px;background:#F1F5F9;border-radius:0;">
+                  <div style="width:20px;height:20px;border-radius:50%;background:#E5E7EB;color:#9CA3AF;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;">2</div>
+                  <span style="font-size:12px;font-weight:600;color:#9CA3AF;">บริการ & พื้นที่</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;padding:6px 16px;background:#F1F5F9;border-radius:0 20px 20px 0;">
+                  <div style="width:20px;height:20px;border-radius:50%;background:#E5E7EB;color:#9CA3AF;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;">3</div>
+                  <span style="font-size:12px;font-weight:600;color:#9CA3AF;">ยืนยัน</span>
+                </div>
+              </div>
+            </div>
+            <div style="width:180px;display:flex;justify-content:flex-end;">
+              <button class="btn-ghost" onclick="goTo(0)" style="font-size:13px;">← กลับหน้าหลัก</button>
+            </div>
+          </nav>
+
+          <!-- 2-column layout -->
+          <div style="display:flex;min-height:calc(720px - 64px);">
+
+            <!-- Left: Form -->
+            <div style="flex:1;padding:48px;overflow-y:auto;border-right:1px solid #F1F5F9;">
+              <div style="max-width:520px;">
+                <span style="font-size:12px;font-weight:700;color:#0D7377;text-transform:uppercase;letter-spacing:.08em;">ขั้นตอนที่ 1/3</span>
+                <h2 style="font-size:28px;font-weight:800;color:#1A3C5E;margin:8px 0 6px;letter-spacing:-.02em;">ข้อมูลส่วนตัวและธุรกิจ</h2>
+                <p style="font-size:14px;color:#6B7280;margin:0 0 32px;line-height:1.6;">กรอกข้อมูลเพื่อให้ทีมงาน Pawtal ติดต่อกลับหาคุณ</p>
+
+                <!-- Progress bar -->
+                <div class="progress-track" style="margin-bottom:32px;"><div class="progress-fill" style="width:33%;"></div></div>
+
+                <!-- Name row -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+                  <div>
+                    <label class="field-label">ชื่อ <span class="req">*</span></label>
+                    <input class="field-input" type="text" placeholder="เช่น มูก" />
+                  </div>
+                  <div>
+                    <label class="field-label">นามสกุล <span class="req">*</span></label>
+                    <input class="field-input" type="text" placeholder="เช่น ใจดี" />
+                  </div>
+                </div>
+
+                <div style="margin-bottom:20px;">
+                  <label class="field-label">ชื่อธุรกิจ / ร้าน <span class="req">*</span></label>
+                  <input class="field-input" type="text" placeholder="เช่น Mook Pet Salon" />
+                </div>
+
+                <!-- Phone + Email row -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+                  <div>
+                    <label class="field-label">เบอร์โทรศัพท์ <span class="req">*</span></label>
+                    <input class="field-input" type="tel" placeholder="08X-XXX-XXXX" />
+                    <p class="field-hint">ทีมงานจะโทรหาคุณที่เบอร์นี้</p>
+                  </div>
+                  <div>
+                    <label class="field-label">อีเมล <span class="req">*</span></label>
+                    <input class="field-input" type="email" placeholder="your@email.com" />
+                    <p class="field-hint">เราจะส่งอีเมลยืนยันมาที่นี่</p>
+                  </div>
+                </div>
+
+                <div style="display:flex;gap:12px;margin-top:8px;">
+                  <button class="btn-outline-sm" onclick="goTo(0)">← กลับ</button>
+                  <button class="btn-primary-sm" onclick="goTo(2)" style="flex:1;">ถัดไป — เลือกบริการ →</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Context panel -->
+            <div style="width:320px;flex-shrink:0;background:#F8FAFC;padding:40px 28px;display:flex;flex-direction:column;gap:20px;">
+              <div>
+                <p style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.08em;margin:0 0 12px;">ข้อมูลของคุณปลอดภัย</p>
+                <div style="background:white;border-radius:12px;padding:16px 18px;border:1px solid #E5E7EB;">
+                  <div style="display:flex;gap:10px;align-items:flex-start;">
+                    <span style="font-size:20px;flex-shrink:0;">🔒</span>
+                    <p style="font-size:13px;color:#4B5563;margin:0;line-height:1.65;">ข้อมูลของคุณถูกเก็บรักษาอย่างปลอดภัยตาม<strong>พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล (PDPA)</strong> และจะถูกใช้เฉพาะเพื่อติดต่อประสานงานเท่านั้น</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <p style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.08em;margin:0 0 12px;">จะเกิดอะไรขึ้นหลังจากนี้</p>
+                <div style="display:flex;flex-direction:column;gap:12px;">
+                  <div style="display:flex;gap:10px;align-items:flex-start;">
+                    <div style="width:24px;height:24px;border-radius:50%;background:#0D7377;color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">1</div>
+                    <p style="font-size:13px;color:#4B5563;margin:0;line-height:1.6;">กรอกแบบฟอร์ม 3 ขั้นตอน ใช้เวลาแค่ 2 นาที</p>
+                  </div>
+                  <div style="display:flex;gap:10px;align-items:flex-start;">
+                    <div style="width:24px;height:24px;border-radius:50%;background:#0D7377;color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">2</div>
+                    <p style="font-size:13px;color:#4B5563;margin:0;line-height:1.6;">ทีมงานโทรกลับภายใน 24 ชั่วโมง</p>
+                  </div>
+                  <div style="display:flex;gap:10px;align-items:flex-start;">
+                    <div style="width:24px;height:24px;border-radius:50%;background:#0D7377;color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">3</div>
+                    <p style="font-size:13px;color:#4B5563;margin:0;line-height:1.6;">เริ่มรับลูกค้าใหม่บน Pawtal</p>
+                  </div>
+                </div>
+              </div>
+
+              <div style="background:#FEF3C7;border-radius:12px;padding:14px 16px;">
+                <div style="display:flex;gap:8px;align-items:flex-start;">
+                  <span style="font-size:16px;flex-shrink:0;">⏰</span>
+                  <p style="font-size:13px;color:#92400E;margin:0;line-height:1.6;">ใช้เวลาแค่ <strong>2 นาที</strong> ในการกรอกข้อมูล</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div><!-- /dscreen-1 -->
+
+        <!-- ══════════════════════════════════════════════════════════════════
+             SCREEN 3: FORM STEP 2 — Service Types & Area
+        ══════════════════════════════════════════════════════════════════ -->
+        <div class="dscreen" id="dscreen-2">
+
+          <nav class="site-nav">
+            <div class="site-nav-logo"><span>🐾</span> Pawtal</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;">
+              <div style="display:flex;align-items:center;gap:0;">
+                <div style="display:flex;align-items:center;gap:8px;padding:6px 16px;background:#CCFBF1;border-radius:20px 0 0 20px;">
+                  <div style="width:20px;height:20px;border-radius:50%;background:#16A34A;color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;">✓</div>
+                  <span style="font-size:12px;font-weight:700;color:#16A34A;">ข้อมูลส่วนตัว</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;padding:6px 16px;background:#1A3C5E;border-radius:0;">
+                  <div style="width:20px;height:20px;border-radius:50%;background:#0D7377;color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;">2</div>
+                  <span style="font-size:12px;font-weight:700;color:white;">บริการ & พื้นที่</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;padding:6px 16px;background:#F1F5F9;border-radius:0 20px 20px 0;">
+                  <div style="width:20px;height:20px;border-radius:50%;background:#E5E7EB;color:#9CA3AF;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;">3</div>
+                  <span style="font-size:12px;font-weight:600;color:#9CA3AF;">ยืนยัน</span>
+                </div>
+              </div>
+            </div>
+            <div style="width:180px;display:flex;justify-content:flex-end;">
+              <button class="btn-ghost" onclick="goTo(1)" style="font-size:13px;">← ย้อนกลับ</button>
+            </div>
+          </nav>
+
+          <div style="display:flex;min-height:calc(720px - 64px);">
+
+            <!-- Left: Service cards + area -->
+            <div style="flex:1;padding:48px;overflow-y:auto;border-right:1px solid #F1F5F9;">
+              <div style="max-width:560px;">
+                <span style="font-size:12px;font-weight:700;color:#0D7377;text-transform:uppercase;letter-spacing:.08em;">ขั้นตอนที่ 2/3</span>
+                <h2 style="font-size:28px;font-weight:800;color:#1A3C5E;margin:8px 0 6px;letter-spacing:-.02em;">บริการของคุณ</h2>
+                <p style="font-size:14px;color:#6B7280;margin:0 0 28px;line-height:1.6;">เลือกประเภทบริการที่คุณให้บริการ (เลือกได้มากกว่า 1 อย่าง)</p>
+
+                <div class="progress-track" style="margin-bottom:28px;"><div class="progress-fill" style="width:66%;"></div></div>
+
+                <!-- 2-col service cards grid -->
+                <p style="font-size:13px;font-weight:700;color:#374151;margin:0 0 12px;">ประเภทบริการ <span class="req">*</span></p>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:28px;">
+
+                  <div class="svc-card selected" onclick="toggleSvc(this)">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <span style="font-size:20px;">✂️</span>
+                      <div style="flex:1;">
+                        <p style="font-size:13px;font-weight:700;color:#1A3C5E;margin:0;">ตัดขน (Grooming)</p>
+                        <p style="font-size:11px;color:#9CA3AF;margin:0;">ร้านตัดขนทั่วไป</p>
+                      </div>
+                      <div class="check-dot"></div>
+                    </div>
+                  </div>
+
+                  <div class="svc-card" onclick="toggleSvc(this)">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <span style="font-size:20px;">🚐</span>
+                      <div style="flex:1;">
+                        <p style="font-size:13px;font-weight:700;color:#1A3C5E;margin:0;">บริการถึงบ้าน</p>
+                        <p style="font-size:11px;color:#9CA3AF;margin:0;">Mobile grooming</p>
+                      </div>
+                      <div class="check-dot"></div>
+                    </div>
+                  </div>
+
+                  <div class="svc-card" onclick="toggleSvc(this)">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <span style="font-size:20px;">🏥</span>
+                      <div style="flex:1;">
+                        <p style="font-size:13px;font-weight:700;color:#1A3C5E;margin:0;">คลินิกสัตว์</p>
+                        <p style="font-size:11px;color:#9CA3AF;margin:0;">รักษา-ตรวจสุขภาพ</p>
+                      </div>
+                      <div class="check-dot"></div>
+                    </div>
+                  </div>
+
+                  <div class="svc-card" onclick="toggleSvc(this)">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <span style="font-size:20px;">🏨</span>
+                      <div style="flex:1;">
+                        <p style="font-size:13px;font-weight:700;color:#1A3C5E;margin:0;">รับฝากสัตว์เลี้ยง</p>
+                        <p style="font-size:11px;color:#9CA3AF;margin:0;">Pet hotel / boarding</p>
+                      </div>
+                      <div class="check-dot"></div>
+                    </div>
+                  </div>
+
+                  <div class="svc-card" onclick="toggleSvc(this)">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <span style="font-size:20px;">🌞</span>
+                      <div style="flex:1;">
+                        <p style="font-size:13px;font-weight:700;color:#1A3C5E;margin:0;">Day Care</p>
+                        <p style="font-size:11px;color:#9CA3AF;margin:0;">รับเลี้ยงรายวัน</p>
+                      </div>
+                      <div class="check-dot"></div>
+                    </div>
+                  </div>
+
+                  <div class="svc-card" onclick="toggleSvc(this)">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <span style="font-size:20px;">🎓</span>
+                      <div style="flex:1;">
+                        <p style="font-size:13px;font-weight:700;color:#1A3C5E;margin:0;">ฝึกสัตว์เลี้ยง</p>
+                        <p style="font-size:11px;color:#9CA3AF;margin:0;">Training</p>
+                      </div>
+                      <div class="check-dot"></div>
+                    </div>
+                  </div>
+
+                </div>
+
+                <!-- Area + Message -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+                  <div>
+                    <label class="field-label">พื้นที่ให้บริการ <span class="req">*</span></label>
+                    <select class="field-input">
+                      <option>📍 สุขุมวิท (Sukhumvit)</option>
+                      <option>พระโขนง / อ่อนนุช</option>
+                      <option>ทองหล่อ / เอกมัย</option>
+                      <option>สีลม / สาทร</option>
+                      <option>อื่นๆ ในกรุงเทพ</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="field-label">ข้อมูลเพิ่มเติม <span style="font-weight:400;color:#9CA3AF;">(ไม่บังคับ)</span></label>
+                    <textarea class="field-input" rows="2" placeholder="เช่น มีประสบการณ์ 5 ปี..." style="resize:none;height:43px;"></textarea>
+                  </div>
+                </div>
+
+                <div style="display:flex;gap:12px;">
+                  <button class="btn-outline-sm" onclick="goTo(1)">← ย้อนกลับ</button>
+                  <button class="btn-primary-sm" onclick="goTo(3)" style="flex:1;">ถัดไป — ตรวจสอบ →</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Context -->
+            <div style="width:320px;flex-shrink:0;background:#F8FAFC;padding:40px 28px;display:flex;flex-direction:column;gap:20px;">
+              <div>
+                <p style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.08em;margin:0 0 12px;">พื้นที่เปิดตัว</p>
+                <div style="background:white;border-radius:12px;padding:16px;border:1px solid #E5E7EB;">
+                  <!-- Mini map placeholder -->
+                  <div style="background:linear-gradient(135deg,#E8F0F7,#CCFBF1);border-radius:8px;height:100px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;">
+                    <span style="font-size:28px;">🗺️</span>
+                  </div>
+                  <p style="font-size:13px;color:#1A3C5E;font-weight:600;margin:0 0 4px;">สุขุมวิท · กรุงเทพ</p>
+                  <p style="font-size:12px;color:#6B7280;margin:0;">Phase 1: สุขุมวิท 1–77, ทองหล่อ, เอกมัย, อ่อนนุช, พระโขนง</p>
+                </div>
+              </div>
+              <div style="background:#DCFCE7;border-radius:12px;padding:14px 16px;">
+                <p style="font-size:13px;color:#14532D;font-weight:600;margin:0 0 4px;">✅ อยู่นอกพื้นที่?</p>
+                <p style="font-size:12px;color:#166534;margin:0;line-height:1.6;">เราขยายพื้นที่ให้บริการทุกไตรมาส สมัครไว้ก่อนเพื่อรับสิทธิ์แรก</p>
+              </div>
+            </div>
+
+          </div>
+        </div><!-- /dscreen-2 -->
+
+        <!-- ══════════════════════════════════════════════════════════════════
+             SCREEN 4: FORM STEP 3 — Review & PDPA
+        ══════════════════════════════════════════════════════════════════ -->
+        <div class="dscreen" id="dscreen-3">
+
+          <nav class="site-nav">
+            <div class="site-nav-logo"><span>🐾</span> Pawtal</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;">
+              <div style="display:flex;align-items:center;gap:0;">
+                <div style="display:flex;align-items:center;gap:8px;padding:6px 16px;background:#CCFBF1;border-radius:20px 0 0 20px;">
+                  <div style="width:20px;height:20px;border-radius:50%;background:#16A34A;color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;">✓</div>
+                  <span style="font-size:12px;font-weight:700;color:#16A34A;">ข้อมูลส่วนตัว</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;padding:6px 16px;background:#CCFBF1;">
+                  <div style="width:20px;height:20px;border-radius:50%;background:#16A34A;color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;">✓</div>
+                  <span style="font-size:12px;font-weight:700;color:#16A34A;">บริการ & พื้นที่</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;padding:6px 16px;background:#1A3C5E;border-radius:0 20px 20px 0;">
+                  <div style="width:20px;height:20px;border-radius:50%;background:#0D7377;color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;">3</div>
+                  <span style="font-size:12px;font-weight:700;color:white;">ยืนยัน</span>
+                </div>
+              </div>
+            </div>
+            <div style="width:180px;display:flex;justify-content:flex-end;">
+              <button class="btn-ghost" onclick="goTo(2)" style="font-size:13px;">← ย้อนกลับ</button>
+            </div>
+          </nav>
+
+          <div style="display:flex;min-height:calc(720px - 64px);">
+
+            <!-- Left: Review summary -->
+            <div style="flex:1;padding:48px;overflow-y:auto;border-right:1px solid #F1F5F9;">
+              <div style="max-width:520px;">
+                <span style="font-size:12px;font-weight:700;color:#0D7377;text-transform:uppercase;letter-spacing:.08em;">ขั้นตอนที่ 3/3</span>
+                <h2 style="font-size:28px;font-weight:800;color:#1A3C5E;margin:8px 0 6px;letter-spacing:-.02em;">ตรวจสอบข้อมูล</h2>
+                <p style="font-size:14px;color:#6B7280;margin:0 0 28px;line-height:1.6;">กรุณาตรวจสอบข้อมูลก่อนส่ง</p>
+
+                <div class="progress-track" style="margin-bottom:32px;"><div class="progress-fill" style="width:100%;"></div></div>
+
+                <!-- Review card -->
+                <div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:16px;padding:24px;margin-bottom:24px;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:14px;border-bottom:2px solid #E5E7EB;">
+                    <p style="font-size:14px;font-weight:700;color:#1A3C5E;margin:0;">ข้อมูลของคุณ</p>
+                    <button onclick="goTo(1)" style="font-size:13px;color:#0D7377;font-weight:600;background:none;border:none;cursor:pointer;text-decoration:underline;">แก้ไข</button>
+                  </div>
+                  <div class="review-row"><span class="review-label">ชื่อ-นามสกุล</span><span class="review-value">มูก ใจดี</span></div>
+                  <div class="review-row"><span class="review-label">ธุรกิจ</span><span class="review-value">Mook Pet Salon</span></div>
+                  <div class="review-row"><span class="review-label">เบอร์โทร</span><span class="review-value">081-234-5678</span></div>
+                  <div class="review-row"><span class="review-label">อีเมล</span><span class="review-value">mook@petsalon.com</span></div>
+                  <div class="review-row">
+                    <span class="review-label">บริการ</span>
+                    <div>
+                      <span style="display:inline-block;background:#CCFBF1;color:#0D7377;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;margin:2px 4px 2px 0;">✂️ ตัดขน</span>
+                    </div>
+                  </div>
+                  <div class="review-row"><span class="review-label">พื้นที่</span><span class="review-value">สุขุมวิท</span></div>
+                </div>
+
+                <div style="display:flex;gap:12px;">
+                  <button class="btn-outline-sm" onclick="goTo(2)">← ย้อนกลับ</button>
+                  <button class="btn-primary-sm" onclick="goTo(4)" style="flex:1;" id="submitBtn" disabled style="opacity:.5;cursor:not-allowed;">ส่งข้อมูล 🐾</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: PDPA + Submit -->
+            <div style="width:360px;flex-shrink:0;background:#F8FAFC;padding:40px 28px;display:flex;flex-direction:column;gap:20px;">
+              <div>
+                <p style="font-size:13px;font-weight:700;color:#374151;margin:0 0 12px;">ความยินยอมตาม PDPA <span class="req">*</span></p>
+                <input type="checkbox" id="pdpaCheck" class="pdpa-check-input" onchange="toggleSubmit(this)" />
+                <label for="pdpaCheck" class="pdpa-check-label">
+                  <div class="pdpa-box">
+                    <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
+                      <path d="M1 5L4.5 8.5L11 1.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <p style="font-size:13px;color:#374151;margin:0;line-height:1.65;">ฉันยินยอมให้ Pawtal จัดเก็บและประมวลผลข้อมูลส่วนบุคคลของฉันเพื่อวัตถุประสงค์ในการให้บริการและการติดต่อสื่อสาร ตาม <span style="color:#0D7377;font-weight:600;cursor:pointer;">นโยบายความเป็นส่วนตัว</span></p>
+                </label>
+              </div>
+
+              <div style="background:#FEF3C7;border-radius:12px;padding:14px 16px;">
+                <div style="display:flex;gap:8px;align-items:flex-start;">
+                  <span style="font-size:16px;flex-shrink:0;">⏰</span>
+                  <p style="font-size:13px;color:#92400E;margin:0;line-height:1.6;">ทีมงานจะโทรกลับหาคุณ <strong>ภายใน 24 ชั่วโมง</strong> หลังจากกดส่งข้อมูล</p>
+                </div>
+              </div>
+
+              <div style="background:white;border:1px solid #E5E7EB;border-radius:12px;padding:16px;">
+                <p style="font-size:12px;font-weight:700;color:#374151;margin:0 0 8px;">✅ ก่อนส่ง กรุณาตรวจสอบ</p>
+                <ul style="font-size:12px;color:#6B7280;margin:0;padding-left:16px;line-height:1.8;">
+                  <li>ชื่อและนามสกุลถูกต้อง</li>
+                  <li>เบอร์โทรรับสาย</li>
+                  <li>อีเมลถูกต้อง ตรวจสอบ Spam</li>
+                </ul>
+              </div>
+
+              <button class="btn-primary" onclick="goTo(4)" id="submitBtnRight" style="margin-top:auto;">ส่งข้อมูล 🐾</button>
+            </div>
+
+          </div>
+        </div><!-- /dscreen-3 -->
+
+        <!-- ══════════════════════════════════════════════════════════════════
+             SCREEN 5: SUCCESS
+        ══════════════════════════════════════════════════════════════════ -->
+        <div class="dscreen" id="dscreen-4">
+
+          <nav class="site-nav">
+            <div class="site-nav-logo"><span>🐾</span> Pawtal</div>
+            <div style="flex:1;"></div>
+          </nav>
+
+          <div style="padding: 64px 80px; display: flex; gap: 80px; align-items: flex-start; min-height: calc(720px - 64px);">
+
+            <!-- Left: Confirmation -->
+            <div style="flex:1;">
+              <div class="success-icon" style="width:80px;height:80px;border-radius:50%;background:#DCFCE7;display:flex;align-items:center;justify-content:center;margin-bottom:24px;">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                  <circle cx="20" cy="20" r="20" fill="#16A34A" opacity="0.2"/>
+                  <circle cx="20" cy="20" r="14" fill="#16A34A"/>
+                  <path d="M12 20L18 26L28 14" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+
+              <h1 style="font-size:36px;font-weight:800;color:#14532D;margin:0 0 12px;letter-spacing:-.02em;">ได้รับข้อมูลแล้ว! 🎉</h1>
+              <p style="font-size:18px;color:#166534;margin:0 0 8px;font-weight:500;">สวัสดี คุณมูก</p>
+              <p style="font-size:15px;color:#4B5563;margin:0 0 32px;line-height:1.7;">ทีมงาน Pawtal จะโทรกลับหาคุณภายใน 24 ชั่วโมงที่ <strong>081-234-5678</strong><br/>และส่งอีเมลยืนยันไปที่ mook@petsalon.com แล้ว</p>
+
+              <!-- Email notice -->
+              <div style="background:#E8F0F7;border-radius:14px;padding:18px 20px;display:flex;gap:14px;align-items:center;margin-bottom:32px;max-width:480px;">
+                <span style="font-size:24px;flex-shrink:0;">✉️</span>
+                <div>
+                  <p style="font-size:14px;font-weight:700;color:#1A3C5E;margin:0 0 4px;">เช็คอีเมลของคุณ</p>
+                  <p style="font-size:13px;color:#4B5563;margin:0;line-height:1.6;">ตรวจสอบโฟลเดอร์ Spam ด้วยในกรณีที่ไม่พบในกล่องขาเข้า</p>
+                </div>
+              </div>
+
+              <!-- Share section -->
+              <div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:16px;padding:24px;max-width:480px;">
+                <p style="font-size:15px;font-weight:700;color:#1A3C5E;margin:0 0 6px;">แนะนำเพื่อนที่มีร้านด้วยไหม? 🙏</p>
+                <p style="font-size:13px;color:#6B7280;margin:0 0 16px;">เราขอบคุณทุกการแนะนำ</p>
+                <button style="background:#0D7377;color:white;border:none;padding:10px 24px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">แชร์ให้เพื่อน</button>
+              </div>
+
+              <div style="margin-top:24px;">
+                <button class="btn-outline-sm" onclick="goTo(0)">← กลับหน้าหลัก</button>
+              </div>
+            </div>
+
+            <!-- Right: What's next timeline -->
+            <div style="width:320px;flex-shrink:0;">
+              <p style="font-size:12px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.1em;margin:0 0 24px;">ขั้นตอนต่อไป</p>
+              <div style="display:flex;flex-direction:column;">
+
+                <div class="tl-step" style="padding-bottom:4px;">
+                  <div class="tl-left">
+                    <div class="tl-dot" style="background:#DCFCE7;">✉️</div>
+                    <div class="tl-line"></div>
+                  </div>
+                  <div style="padding: 6px 0 24px 0;">
+                    <p style="font-size:15px;font-weight:700;color:#1A3C5E;margin:0 0 4px;">อีเมลยืนยันทันที</p>
+                    <p style="font-size:13px;color:#6B7280;margin:0;line-height:1.6;">คุณจะได้รับอีเมลยืนยันภายใน 5 นาที</p>
+                  </div>
+                </div>
+
+                <div class="tl-step" style="padding-bottom:4px;">
+                  <div class="tl-left">
+                    <div class="tl-dot" style="background:#FEF3C7;">📞</div>
+                    <div class="tl-line"></div>
+                  </div>
+                  <div style="padding: 6px 0 24px 0;">
+                    <p style="font-size:15px;font-weight:700;color:#1A3C5E;margin:0 0 4px;">ทีมงานโทรติดต่อ</p>
+                    <p style="font-size:13px;color:#6B7280;margin:0;line-height:1.6;">ภายใน 24 ชั่วโมง เราจะโทรพูดคุยรายละเอียดและตอบทุกคำถาม</p>
+                  </div>
+                </div>
+
+                <div class="tl-step" style="padding-bottom:4px;">
+                  <div class="tl-left">
+                    <div class="tl-dot" style="background:#E8F0F7;">🤝</div>
+                    <div class="tl-line"></div>
+                  </div>
+                  <div style="padding: 6px 0 24px 0;">
+                    <p style="font-size:15px;font-weight:700;color:#1A3C5E;margin:0 0 4px;">ลงนามความร่วมมือ</p>
+                    <p style="font-size:13px;color:#6B7280;margin:0;line-height:1.6;">เซ็นสัญญาพันธมิตร — ไม่ต้องผูกมัด ยกเลิกได้ทุกเวลา</p>
+                  </div>
+                </div>
+
+                <div class="tl-step">
+                  <div class="tl-left">
+                    <div class="tl-dot" style="background:#CCFBF1;">🚀</div>
+                  </div>
+                  <div style="padding: 6px 0 0 0;">
+                    <p style="font-size:15px;font-weight:700;color:#16A34A;margin:0 0 4px;">เริ่มรับลูกค้าใหม่!</p>
+                    <p style="font-size:13px;color:#6B7280;margin:0;line-height:1.6;">สร้างโปรไฟล์ เพิ่มบริการ และรับการจองออนไลน์ได้เลย</p>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </div><!-- /dscreen-4 -->
+
+      </div><!-- /viewport -->
+    </div><!-- /browser-shell -->
+
+    <!-- Screen label -->
+    <div style="color:#64748B;font-size:12px;font-weight:500;" id="screenLabel">Screen 1 of 5</div>
+
+  </div><!-- /center -->
+
+  <!-- ── RIGHT ANNOTATIONS PANEL ────────────────────────────────────────────── -->
+  <div id="rightPanel">
+    <div class="ann-header">
+      <div style="font-size:9px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">UX Designer Notes</div>
+      <div style="font-size:13px;font-weight:700;color:#1E293B;" id="annTitle">Landing Page</div>
+      <div style="font-size:11px;color:#94A3B8;margin-top:2px;" id="annPhase">Phase: Awareness</div>
+    </div>
+    <div style="padding:10px 0;" id="annPanel"></div>
+    <div class="ann-legend">
+      <p class="ann-legend-title">Annotation Types</p>
+      <div class="ann-legend-row"><div class="ann-legend-dot" style="background:#7C3AED;"></div> UX Decision</div>
+      <div class="ann-legend-row"><div class="ann-legend-dot" style="background:#D97706;"></div> UX Copy / Content</div>
+      <div class="ann-legend-row"><div class="ann-legend-dot" style="background:#0D7377;"></div> Dev Note</div>
+      <div class="ann-legend-row"><div class="ann-legend-dot" style="background:#DC2626;"></div> Design Rule</div>
+    </div>
+  </div>
+
+</div><!-- /shell -->
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════════════════════════════════ -->
+<script>
+// ── Screen metadata ─────────────────────────────────────────────────────────
+const SCREENS = [
+  {
+    idx: 0, label: 'S1 — Landing Page', phase: 'Awareness',
+    url: 'pawtal.co.th/providers/join',
+    title: 'Landing Page — Provider Acquisition',
+    annotations: [
+      { t:'ux',   h:'Desktop Hero Strategy', b:'2-column hero: copy+CTA left, live dashboard mockup right. The dashboard preview is the strongest conversion signal — shows what success looks like before they sign up.' },
+      { t:'rule', h:'CTA Button', b:'Primary CTA uses white on brand-blue gradient for maximum contrast. Size: 16px, 14px padding, 12px radius — passes WCAG touch target even on laptop trackpads.' },
+      { t:'copy', h:'Hero Headline Copy', b:'"รับลูกค้าใหม่ง่ายกว่าเดิม" — outcome-led, not feature-led. Avoids "marketplace platform" jargon that Thai SME providers won\'t recognize.' },
+      { t:'ux',   h:'Stats Bar', b:'4-stat dark bar anchored below hero as social proof: 0% commission, 500+ waiting owners, 2 mins to register, 24hr callback. All stats are time-bounded to reduce scepticism.' },
+      { t:'dev',  h:'Performance', b:'Hero is CSS gradient only (zero image requests). Dashboard mockup is pure HTML/CSS. LCP target < 2.5s. Sticky nav uses backdrop-filter blur for glass effect.' },
+      { t:'rule', h:'Contrast', b:'White on #1A3C5E = 9.8:1 WCAG AAA. All body copy #6B7280 on white = 4.6:1 WCAG AA. Dark stats bar: rgba(255,255,255,.82) on #1A3C5E = 5.2:1.' },
+    ]
+  },
+  {
+    idx: 1, label: 'S2 — Form Step 1/3', phase: 'Form Fill',
+    url: 'pawtal.co.th/providers/join/step-1',
+    title: 'Form Step 1 — Personal & Business Info',
+    annotations: [
+      { t:'ux',   h:'2-Column Form Layout', b:'Form on left (60%), context panel on right (40%). Right panel shows security reassurance and a 3-step "what happens next" — reduces drop-off by answering anxiety before it forms.' },
+      { t:'ux',   h:'Step Breadcrumb Nav', b:'Pill-shaped step tracker in the nav bar (not above form) keeps the header uncluttered and lets form content start higher on the page. Completed steps turn green.' },
+      { t:'rule', h:'Field Layout', b:'Name fields are 50/50 grid. Phone+Email are 50/50 grid — context-related fields grouped together. Max 4 fields visible at once. No scrolling needed at 1080px.' },
+      { t:'copy', h:'Phone Hint Text', b:'"ทีมงานจะโทรหาคุณที่เบอร์นี้" sets expectation that a human will call. Reduces form abandonment from users unsure if it\'s spam.' },
+      { t:'dev',  h:'Validation', b:'Client-side: required fields, email regex, phone format. Inline error on blur (not on submit). Tab key navigates logically: first → last → business → phone → email.' },
+    ]
+  },
+  {
+    idx: 2, label: 'S3 — Form Step 2/3', phase: 'Form Fill',
+    url: 'pawtal.co.th/providers/join/step-2',
+    title: 'Form Step 2 — Services & Area',
+    annotations: [
+      { t:'ux',   h:'Service Card Grid', b:'2×3 card grid uses more space efficiently on desktop vs. single-column list. Each card: emoji + Thai name + English sub-label. Selected state: teal border + light background.' },
+      { t:'ux',   h:'Map Context Panel', b:'Right panel shows a Bangkok area map (placeholder) with the Phase 1 zone highlighted. Reassures out-of-zone providers they can still sign up early ("รับสิทธิ์แรก").' },
+      { t:'rule', h:'Multi-select', b:'At least 1 service type required before proceeding. No visual error state shown in prototype but validation enforced in production code.' },
+      { t:'copy', h:'Area Dropdown', b:'Sukhumvit listed first and pre-selected — it\'s the only live zone for MVP#1. Other Bangkok areas included to capture warm leads for future expansion.' },
+      { t:'dev',  h:'State persistence', b:'Form state must persist if user navigates back. Use React controlled components + form state manager (React Hook Form). No data loss on back navigation.' },
+    ]
+  },
+  {
+    idx: 3, label: 'S4 — Form Step 3/3', phase: 'Form Fill',
+    url: 'pawtal.co.th/providers/join/review',
+    title: 'Form Step 3 — Review & PDPA',
+    annotations: [
+      { t:'ux',   h:'Review + PDPA Split', b:'Left panel shows a clean summary (review card) with an "แก้ไข" edit link. Right panel isolates the PDPA checkbox + submit button — PDPA deserves its own visual space.' },
+      { t:'rule', h:'PDPA Consent', b:'Checkbox must be unchecked by default (PDPA Act requirement). Thai law: consent must be explicit, freely given, specific. Link to full privacy policy is required.' },
+      { t:'ux',   h:'Submit Button State', b:'In production, the "ส่งข้อมูล" button on the left is disabled until PDPA checked. Right panel button is the primary submit action. Both trigger the same action.' },
+      { t:'copy', h:'24hr Callback Banner', b:'Amber "⏰" banner reinforces the promise made on the landing page. Consistency between promise and confirmation builds trust at the moment of highest commitment.' },
+      { t:'dev',  h:'API call', b:'POST /api/v1/leads — see CreateLeadDto. Response 201: navigate to success. Response 4xx: inline error. Idempotency key recommended to prevent duplicate submissions.' },
+    ]
+  },
+  {
+    idx: 4, label: 'S5 — Success', phase: 'Confirmation',
+    url: 'pawtal.co.th/providers/join/success',
+    title: 'Success — Submission Confirmed',
+    annotations: [
+      { t:'ux',   h:'Success Page Layout', b:'2-column: confirmation + share CTA on left, "what happens next" timeline on right. Timeline converts anxiety into anticipation — provider knows exactly what to expect.' },
+      { t:'ux',   h:'Animated Checkmark', b:'CSS popIn animation: scale 0.5→1.1→1.0. Signals completion kinetically. Green palette (#14532D, #DCFCE7) shifts the emotional tone from form fatigue to celebration.' },
+      { t:'copy', h:'Personalised Greeting', b:'"สวัสดี คุณมูก" uses the first name from form — shows the data was received and processed. Builds immediate trust that this is a real company, not a broken form.' },
+      { t:'rule', h:'No Dead Ends', b:'Two exit paths: (1) Share CTA to bring in more providers (viral loop), (2) "กลับหน้าหลัก" for users who want to re-read the landing page. Never strand the user.' },
+      { t:'dev',  h:'Email trigger', b:'Success screen rendered after 201 response confirms DB write. Transactional email fired via SendGrid/Postmark on the backend — not client-side. Email includes lead reference ID.' },
+    ]
+  },
+];
+
+let currentIdx = 0;
+
+// ── Build left nav ──────────────────────────────────────────────────────────
+function buildNav() {
+  const container = document.getElementById('navItems');
+  container.innerHTML = '';
+  SCREENS.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'nav-item' + (i === currentIdx ? ' active' : '') + (i < currentIdx ? ' done' : '');
+    div.onclick = () => goTo(i);
+    const numTxt = i < currentIdx ? '✓' : (i + 1);
+    div.innerHTML = `
+      <div class="nav-item-num">${numTxt}</div>
+      <div class="nav-item-info">
+        <div class="nav-item-label">${s.label}</div>
+        <div class="nav-item-sub">${s.phase}</div>
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
+// ── Build annotations ───────────────────────────────────────────────────────
+const TYPE_META = {
+  ux:   { label: 'UX Decision',    cls: 'ux',   color: '#7C3AED' },
+  copy: { label: 'UX Copy',        cls: 'copy', color: '#D97706' },
+  dev:  { label: 'Dev Note',       cls: 'dev',  color: '#0D7377' },
+  rule: { label: 'Design Rule',    cls: 'rule', color: '#DC2626' },
+};
+
+function buildAnnotations(idx) {
+  const s = SCREENS[idx];
+  document.getElementById('annTitle').textContent = s.title;
+  document.getElementById('annPhase').textContent = 'Phase: ' + s.phase;
+  const panel = document.getElementById('annPanel');
+  panel.innerHTML = '';
+  s.annotations.forEach(a => {
+    const m = TYPE_META[a.t];
+    const card = document.createElement('div');
+    card.className = 'ann-card';
+    card.innerHTML = `
+      <div class="ann-pill ${m.cls}">${m.label}</div>
+      <h4>${a.h}</h4>
+      <p>${a.b}</p>`;
+    panel.appendChild(card);
+  });
+}
+
+// ── Navigate ────────────────────────────────────────────────────────────────
+function goTo(idx) {
+  // Hide all
+  document.querySelectorAll('.dscreen').forEach(s => s.classList.remove('active'));
+  // Show target
+  document.getElementById('dscreen-' + idx).classList.add('active');
+  // Scroll viewport to top
+  document.getElementById('viewport').scrollTop = 0;
+  // Update URL bar
+  document.getElementById('urlBar').textContent = SCREENS[idx].url;
+  // Update screen label
+  document.getElementById('screenLabel').textContent = `Screen ${idx + 1} of ${SCREENS.length}`;
+  // Update state
+  currentIdx = idx;
+  buildNav();
+  buildAnnotations(idx);
+}
+
+// ── Interactivity ───────────────────────────────────────────────────────────
+function toggleSvc(el) { el.classList.toggle('selected'); }
+function toggleFaq(el) { el.classList.toggle('open'); }
+function toggleSubmit(checkbox) {
+  // In prototype, submit always works — this is just a visual demo
+}
+
+// ── Init ────────────────────────────────────────────────────────────────────
+buildNav();
+buildAnnotations(0);
+</script>
+</body>
+</html>

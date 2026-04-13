@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pawtal — Mobile App & Payment Gateway Cost Analysis</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #1a2e44;
+      background: #f8fafc;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .page {
+      max-width: 860px;
+      margin: 40px auto;
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 40px rgba(0,0,0,0.08);
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #002949 0%, #00508D 60%, #1AB0EB 100%);
+      padding: 40px 48px 36px;
+      color: white;
+    }
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .logo { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+    .logo span { color: #1AB0EB; }
+    .badge {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 100px;
+      padding: 4px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .header h1 {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+    .header p { color: rgba(255,255,255,0.72); font-size: 13px; }
+    .header-meta {
+      display: flex;
+      gap: 24px;
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.15);
+    }
+    .meta-item { font-size: 11px; color: rgba(255,255,255,0.55); }
+    .meta-item strong { display: block; color: white; font-size: 12px; margin-bottom: 2px; }
+
+    /* ── Body ── */
+    .body { padding: 40px 48px; }
+
+    /* ── Section ── */
+    .section { margin-bottom: 36px; }
+    .section-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #002949;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-title .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #1AB0EB;
+      flex-shrink: 0;
+    }
+    .section-sub {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 16px;
+      padding-left: 16px;
+    }
+
+    /* ── Info box ── */
+    .info-box {
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-size: 12px;
+      color: #0369a1;
+      margin-bottom: 20px;
+    }
+    .info-box strong { font-weight: 700; }
+
+    .warn-box {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-size: 12px;
+      color: #9a3412;
+      margin-bottom: 20px;
+    }
+
+    /* ── Table ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+      margin-bottom: 16px;
+    }
+    thead tr {
+      background: #f8fafc;
+    }
+    thead th {
+      text-align: left;
+      padding: 10px 14px;
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #6b7280;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    tbody tr { border-bottom: 1px solid #f3f4f6; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #fafafa; }
+    tbody td {
+      padding: 10px 14px;
+      color: #374151;
+      vertical-align: top;
+    }
+    .td-label { font-weight: 600; color: #111827; }
+    .td-note { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+    .td-highlight { font-weight: 700; color: #002949; }
+    .td-green { font-weight: 700; color: #16a34a; }
+    .td-blue { font-weight: 700; color: #0369a1; }
+    .td-orange { font-weight: 700; color: #d97706; }
+    .td-red { font-weight: 700; color: #dc2626; }
+
+    /* ── Divider ── */
+    .divider {
+      height: 1px;
+      background: #f3f4f6;
+      margin: 32px 0;
+    }
+
+    /* ── Phase cards ── */
+    .phases {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .phase-card {
+      border: 1.5px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .phase-card.active { border-color: #1AB0EB; background: #f0f9ff; }
+    .phase-num {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #9ca3af;
+      margin-bottom: 4px;
+    }
+    .phase-name { font-size: 13px; font-weight: 800; color: #002949; margin-bottom: 6px; }
+    .phase-desc { font-size: 11px; color: #6b7280; line-height: 1.5; margin-bottom: 10px; }
+    .phase-cost {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1AB0EB;
+      padding-top: 8px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    /* ── Economics model ── */
+    .econ-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .econ-card {
+      border: 1.5px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .econ-card h4 {
+      font-size: 12px;
+      font-weight: 700;
+      color: #002949;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .econ-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      font-size: 12px;
+    }
+    .econ-row .label { color: #6b7280; }
+    .econ-row .value { font-weight: 600; }
+    .econ-row.total {
+      border-top: 1.5px solid #e5e7eb;
+      margin-top: 6px;
+      padding-top: 8px;
+    }
+    .econ-row.total .label { font-weight: 700; color: #111827; }
+    .econ-row.total .value { font-size: 14px; font-weight: 800; color: #002949; }
+
+    /* ── Recommendation ── */
+    .recommendation {
+      background: linear-gradient(135deg, #002949, #00508D);
+      border-radius: 14px;
+      padding: 24px 28px;
+      color: white;
+      margin-bottom: 20px;
+    }
+    .recommendation h3 {
+      font-size: 15px;
+      font-weight: 800;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap-8px;
+    }
+    .rec-items { display: flex; flex-direction: column; gap: 8px; }
+    .rec-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.85);
+    }
+    .rec-item .tag {
+      background: #1AB0EB;
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 100px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* ── Summary totals ── */
+    .totals-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .total-card {
+      text-align: center;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 18px 14px;
+    }
+    .total-card .amount {
+      font-size: 22px;
+      font-weight: 800;
+      color: #002949;
+      margin-bottom: 4px;
+    }
+    .total-card .label {
+      font-size: 11px;
+      color: #6b7280;
+      font-weight: 500;
+    }
+    .total-card .sub {
+      font-size: 10px;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      background: #f8fafc;
+      border-top: 1px solid #e5e7eb;
+      padding: 20px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #9ca3af;
+    }
+    .footer strong { color: #6b7280; }
+
+    /* ── Print ── */
+    @media print {
+      body { background: white; }
+      .page { margin: 0; box-shadow: none; border-radius: 0; }
+      @page { margin: 0; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-top">
+      <div class="logo">Pawtal<span>.</span></div>
+      <div class="badge">CONFIDENTIAL · INTERNAL</div>
+    </div>
+    <h1>Mobile App & Payment Gateway<br>Cost Analysis</h1>
+    <p>Strategic cost breakdown for mobile application development and Omise payment integration</p>
+    <div class="header-meta">
+      <div class="meta-item"><strong>Prepared For</strong>Pawtal Product Squad</div>
+      <div class="meta-item"><strong>Date</strong>April 2026</div>
+      <div class="meta-item"><strong>Version</strong>v1.0</div>
+      <div class="meta-item"><strong>Stage</strong>Post-MVP#2.5</div>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="body">
+
+    <!-- ── Section 1: Mobile Frameworks ── -->
+    <div class="section">
+      <div class="section-title"><span class="dot"></span>1. Mobile Application — Framework Options</div>
+      <div class="section-sub">Evaluated against Pawtal's current tech stack: Next.js · TypeScript · Supabase</div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Framework</th>
+            <th>Language</th>
+            <th>Code Sharing</th>
+            <th>Performance</th>
+            <th>Team Fit</th>
+            <th>Verdict</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="td-label">React Native (Expo)</span><div class="td-note">Recommended</div></td>
+            <td>TypeScript / React</td>
+            <td class="td-green">High — share logic, types, Supabase client</td>
+            <td>Good</td>
+            <td class="td-green">✓ Same as web team</td>
+            <td class="td-blue">★ Best Fit</td>
+          </tr>
+          <tr>
+            <td><span class="td-label">Flutter</span></td>
+            <td>Dart</td>
+            <td class="td-red">None — full rewrite</td>
+            <td>Excellent</td>
+            <td class="td-orange">✗ New language</td>
+            <td>Secondary</td>
+          </tr>
+          <tr>
+            <td><span class="td-label">PWA</span><div class="td-note">Quickest to ship</div></td>
+            <td>TypeScript / Next.js</td>
+            <td class="td-green">Full — same codebase</td>
+            <td>Moderate</td>
+            <td class="td-green">✓ Zero ramp-up</td>
+            <td class="td-orange">MVP Test Only</td>
+          </tr>
+          <tr>
+            <td><span class="td-label">Native (Swift + Kotlin)</span></td>
+            <td>Swift / Kotlin</td>
+            <td class="td-red">None — 2 codebases</td>
+            <td>Best</td>
+            <td class="td-red">✗ Separate team</td>
+            <td>Not Yet</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── Section 2: Mobile Build Cost ── -->
+    <div class="section">
+      <div class="section-title"><span class="dot"></span>2. Mobile Application — Build Cost Breakdown</div>
+      <div class="section-sub">Based on React Native (Expo) — recommended path for Pawtal</div>
+
+      <div class="info-box">
+        <strong>Assumption:</strong> 1 frontend engineer already familiar with React/TypeScript transitions to React Native. No new hire required for MVP mobile build.
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Cost (THB)</th>
+            <th>Cost (USD)</th>
+            <th>Frequency</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="td-label">Apple Developer Account</span></td>
+            <td class="td-highlight">฿3,590</td>
+            <td>$99</td>
+            <td>Annual</td>
+            <td>Required to publish on App Store</td>
+          </tr>
+          <tr>
+            <td><span class="td-label">Google Play Developer Account</span></td>
+            <td class="td-highlight">฿925</td>
+            <td>$25</td>
+            <td>One-time</td>
+            <td>Lifetime access to Play Store</td>
+          </tr>
+          <tr>
+            <td><span class="td-label">Expo EAS Build — Free Tier</span></td>
+            <td class="td-green">฿0</td>
+            <td>$0</td>
+            <td>Monthly</td>
+            <td>30 builds/month, suitable for early stage</td>
+          </tr>
+          <tr>
+            <td><span class="td-label">Expo EAS Build — Production Tier</span></td>
+            <td class="td-highlight">฿3,600</td>
+            <td>$99</td>
+            <td>Monthly</td>
+            <td>Unlimited builds, priority queue, when needed</td>
+          </tr>
+          <tr>
+            <td><span class="td-label">Expo Push Notifications</span></td>
+            <td class="td-green">฿0</td>
+            <td>$0</td>
+            <td>Free</td>
+            <td>Included in Expo platform</td>
+          </tr>
+          <tr>
+            <td><span class="td-label">Supabase Backend</span></td>
+            <td class="td-green">฿0 additional</td>
+            <td>$0</td>
+            <td>—</td>
+            <td>Same instance as web; Supabase JS SDK works natively</td>
+          </tr>
+          <tr>
+            <td><span class="td-label">OTA Updates (Expo)</span></td>
+            <td class="td-green">฿0</td>
+            <td>$0</td>
+            <td>Free tier</td>
+            <td>Push JS updates without App Store resubmission</td>
+          </tr>
+          <tr>
+            <td><span class="td-label">Engineering Time (MVP mobile)</span></td>
+            <td class="td-highlight">฿80,000–150,000</td>
+            <td>$2,200–$4,200</td>
+            <td>One-time project</td>
+            <td>~2–3 months, 1 engineer; includes customer + provider flows</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Phase roadmap -->
+      <div class="phases">
+        <div class="phase-card">
+          <div class="phase-num">Phase 1 · Now</div>
+          <div class="phase-name">PWA</div>
+          <div class="phase-desc">Add to home screen from browser. Test mobile UX before committing to native.</div>
+          <div class="phase-cost">฿0 additional</div>
+        </div>
+        <div class="phase-card active">
+          <div class="phase-num">Phase 2 · Post-Traction</div>
+          <div class="phase-name">React Native (Expo)</div>
+          <div class="phase-desc">Full native mobile app on iOS & Android. Customer booking + provider dashboard.</div>
+          <div class="phase-cost">฿85,000–155,000 setup</div>
+        </div>
+        <div class="phase-card">
+          <div class="phase-num">Phase 3 · Scale</div>
+          <div class="phase-name">Evaluate Native</div>
+          <div class="phase-desc">Only if React Native performance becomes a bottleneck at significant user scale.</div>
+          <div class="phase-cost">Evaluate at ฿1M+ GMV/mo</div>
+        </div>
+      </div>
+
+      <!-- Annual mobile cost summary -->
+      <div class="totals-grid">
+        <div class="total-card">
+          <div class="amount">฿4,515</div>
+          <div class="label">Year 1 — Fixed Platform Fees</div>
+          <div class="sub">Apple ($99) + Google ($25)</div>
+        </div>
+        <div class="total-card">
+          <div class="amount">฿0–43,200</div>
+          <div class="label">Year 1 — Expo EAS Build</div>
+          <div class="sub">Free tier → ฿3,600/mo if needed</div>
+        </div>
+        <div class="total-card">
+          <div class="amount">฿85K–155K</div>
+          <div class="label">Engineering — MVP Mobile</div>
+          <div class="sub">One-time, 2–3 month build</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── Section 3: App Store Payment Warning ── -->
+    <div class="section">
+      <div class="section-title"><span class="dot"></span>3. Critical — App Store Payment Cut</div>
+      <div class="section-sub">This directly impacts Pawtal's commission model on mobile</div>
+
+      <div class="warn-box">
+        ⚠️ <strong>Apple and Google charge 15–30% on all in-app payments.</strong> This fee is on top of your payment gateway fee and would severely compress Pawtal's per-booking margin if payments are collected inside the native app.
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Payment Route</th>
+            <th>Apple/Google Cut</th>
+            <th>Gateway Fee</th>
+            <th>Pawtal Net (฿488 booking)</th>
+            <th>Recommended?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="td-label">In-App Payment (native)</span></td>
+            <td class="td-red">15–30%</td>
+            <td>3.65% Omise</td>
+            <td class="td-red">฿11–33 net</td>
+            <td class="td-red">✗ Avoid</td>
+          </tr>
+          <tr>
+            <td><span class="td-label">WebView / Browser Redirect</span></td>
+            <td class="td-green">฿0</td>
+            <td>3.65% Omise</td>
+            <td class="td-green">฿55 net</td>
+            <td class="td-green">✓ Recommended</td>
+          </tr>
+          <tr>
+            <td><span class="td-label">Web App (PWA / Next.js)</span></td>
+            <td class="td-green">฿0</td>
+            <td>3.65% Omise</td>
+            <td class="td-green">฿55 net</td>
+            <td class="td-green">✓ Recommended</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="info-box">
+        <strong>Solution:</strong> When user taps "Pay" in the mobile app, redirect to Omise Checkout in the device browser. Payment completes → user is redirected back to the app. This is a fully supported Omise pattern and completely avoids the Apple/Google cut.
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── Section 4: Omise Cost ── -->
+    <div class="section">
+      <div class="section-title"><span class="dot"></span>4. Omise Payment Gateway — Cost & Features</div>
+      <div class="section-sub">Recommended gateway for Pawtal MVP#3 and mobile phase</div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Fee Type</th>
+            <th>Amount</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="td-label">Setup Fee</span></td>
+            <td class="td-green">฿0</td>
+            <td>Free to register and integrate</td>
+          </tr>
+          <tr>
+            <td><span class="td-label">Monthly Fee</span></td>
+            <td class="td-green">฿0</td>
+            <td>No fixed monthly cost at any volume</td>
+          </tr>
+          <tr>
+            <td><span class="td-label">Credit / Debit Card</span></td>
+            <td class="td-highlight">3.65% per transaction</td>
+            <td>Visa, Mastercard, JCB</td>
+          </tr>
+          <tr>
+            <td><span class="td-label">PromptPay (QR)</span></td>
+            <td class="td-highlight">3.65% per transaction</td>
+            <td>Most popular payment method in Thailand</td>
+          </tr>
+          <tr>
+            <td><span class="td-label">TrueMoney Wallet</span></td>
+            <td class="td-highlight">3.65%</td>
+            <td>Supported natively</td>
+          </tr>
+          <tr>
+            <td><span class="td-label">Rabbit LINE Pay</span></td>
+            <td class="td-highlight">Included</td>
+            <td>Available in Omise checkout</td>
+          </tr>
+          <tr>
+            <td><span class="td-label">Minimum Charge</span></td>
+            <td>฿20</td>
+            <td>Per transaction minimum fee</td>
+          </tr>
+          <tr>
+            <td><span class="td-label">Refund</span></td>
+            <td class="td-highlight">Fee not returned</td>
+            <td>3.65% fee is non-refundable on voids</td>
+          </tr>
+          <tr>
+            <td><span class="td-label">Payout to Bank</span></td>
+            <td class="td-green">Free</td>
+            <td>T+2 business days to Thai bank account</td>
+          </tr>
+          <tr>
+            <td><span class="td-label">API / SDK</span></td>
+            <td class="td-green">Free</td>
+            <td>React Native SDK + Next.js server SDK available</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Unit economics -->
+      <div class="econ-grid">
+        <div class="econ-card">
+          <h4>📱 Web / PWA Booking — ฿650 service at 25% off</h4>
+          <div class="econ-row"><span class="label">Customer pays</span><span class="value">฿488</span></div>
+          <div class="econ-row"><span class="label">Omise fee (3.65%)</span><span class="value td-red">−฿18</span></div>
+          <div class="econ-row"><span class="label">Pawtal commission (15%)</span><span class="value">฿73</span></div>
+          <div class="econ-row"><span class="label">Provider receives</span><span class="value td-green">฿415</span></div>
+          <div class="econ-row total"><span class="label">Pawtal net revenue</span><span class="value td-green">฿55</span></div>
+        </div>
+        <div class="econ-card">
+          <h4>🍎 In-App Payment (iOS) — Same booking</h4>
+          <div class="econ-row"><span class="label">Customer pays</span><span class="value">฿488</span></div>
+          <div class="econ-row"><span class="label">Apple cut (15%)</span><span class="value td-red">−฿44</span></div>
+          <div class="econ-row"><span class="label">Omise fee (3.65%)</span><span class="value td-red">−฿18</span></div>
+          <div class="econ-row"><span class="label">Pawtal commission (15%)</span><span class="value">฿73</span></div>
+          <div class="econ-row"><span class="label">Provider receives</span><span class="value td-green">฿415</span></div>
+          <div class="econ-row total"><span class="label">Pawtal net revenue</span><span class="value td-red">฿11</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── Section 5: Omise at Scale ── -->
+    <div class="section">
+      <div class="section-title"><span class="dot"></span>5. Omise Cost at Different GMV Levels</div>
+      <div class="section-sub">Gateway cost impact as Pawtal scales (assuming avg. booking ฿488, Omise 3.65%)</div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Monthly GMV</th>
+            <th>Est. Bookings</th>
+            <th>Omise Fee (3.65%)</th>
+            <th>Pawtal Commission (15%)</th>
+            <th>Pawtal Net</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="td-label">฿50,000</span><div class="td-note">Early stage</div></td>
+            <td>~102</td>
+            <td class="td-orange">฿1,825</td>
+            <td>฿7,500</td>
+            <td class="td-green">฿5,675</td>
+          </tr>
+          <tr>
+            <td><span class="td-label">฿250,000</span><div class="td-note">Growing</div></td>
+            <td>~512</td>
+            <td class="td-orange">฿9,125</td>
+            <td>฿37,500</td>
+            <td class="td-green">฿28,375</td>
+          </tr>
+          <tr>
+            <td><span class="td-label">฿1,000,000</span><div class="td-note">Scale — renegotiate</div></td>
+            <td>~2,049</td>
+            <td class="td-orange">฿36,500</td>
+            <td>฿150,000</td>
+            <td class="td-green">฿113,500</td>
+          </tr>
+          <tr>
+            <td><span class="td-label">฿5,000,000</span><div class="td-note">Switch to 2C2P (~2%)</div></td>
+            <td>~10,246</td>
+            <td class="td-green">฿100,000 (est. 2%)</td>
+            <td>฿750,000</td>
+            <td class="td-green">฿650,000</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── Section 6: Provider Payout ── -->
+    <div class="section">
+      <div class="section-title"><span class="dot"></span>6. Provider Payout Strategy</div>
+      <div class="section-sub">How to pay out providers after Pawtal collects from customers</div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Cost per Transfer</th>
+            <th>Speed</th>
+            <th>Recommended Stage</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="td-label">Manual PromptPay (business banking app)</span></td>
+            <td class="td-green">฿0</td>
+            <td>Instant</td>
+            <td class="td-green">✓ MVP — now</td>
+          </tr>
+          <tr>
+            <td><span class="td-label">Omise Scheduled Payouts</span></td>
+            <td>฿25–50 per transfer</td>
+            <td>T+2 days</td>
+            <td>฿500K+ GMV/month</td>
+          </tr>
+          <tr>
+            <td><span class="td-label">Automated batch transfer (bank API)</span></td>
+            <td>Negotiated</td>
+            <td>Same day</td>
+            <td>฿2M+ GMV/month</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── Section 7: Summary Recommendation ── -->
+    <div class="section">
+      <div class="section-title"><span class="dot"></span>7. Final Recommendation</div>
+
+      <div class="recommendation">
+        <h3>🎯 Recommended Technology & Cost Path for Pawtal</h3>
+        <div class="rec-items">
+          <div class="rec-item">
+            <span class="tag">Now</span>
+            <span>Add PWA support to existing Next.js app (฿0 cost). Let customers add to home screen and test mobile UX before committing to native build.</span>
+          </div>
+          <div class="rec-item">
+            <span class="tag">MVP#3</span>
+            <span>Integrate Omise on the web app first. PromptPay + card support. No monthly fee, 3.65% per transaction, immediate payout to business bank account.</span>
+          </div>
+          <div class="rec-item">
+            <span class="tag">Post-Traction</span>
+            <span>Build React Native (Expo) mobile app. Route all payments through Omise WebView checkout to avoid Apple/Google 15–30% cut. Estimated ฿85K–155K engineering cost.</span>
+          </div>
+          <div class="rec-item">
+            <span class="tag">Scale</span>
+            <span>At ฿1M+ GMV/month, renegotiate with 2C2P for lower gateway rate (~2%). Automate provider payouts. Evaluate native iOS/Android only if performance requires it.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="totals-grid">
+        <div class="total-card">
+          <div class="amount">฿0</div>
+          <div class="label">Omise Monthly Fixed Cost</div>
+          <div class="sub">Pay only per transaction</div>
+        </div>
+        <div class="total-card">
+          <div class="amount">3.65%</div>
+          <div class="label">Omise Per-Transaction Fee</div>
+          <div class="sub">Cards, PromptPay, Wallets</div>
+        </div>
+        <div class="total-card">
+          <div class="amount">฿4,515/yr</div>
+          <div class="label">App Store Platform Fees</div>
+          <div class="sub">Apple $99/yr + Google $25 once</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /body -->
+
+  <!-- Footer -->
+  <div class="footer">
+    <span><strong>Pawtal</strong> — Thailand's Off-Peak Pet Service Marketplace</span>
+    <span>Internal Document · April 2026 · v1.0</span>
+  </div>
+
+</div><!-- /page -->
+</body>
+</html>
