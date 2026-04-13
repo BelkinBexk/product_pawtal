@@ -16,7 +16,7 @@ const VENDOR_PROTECTED = [
   "/vendor/customers",
 ];
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const res = NextResponse.next();
   const { pathname } = req.nextUrl;
 
