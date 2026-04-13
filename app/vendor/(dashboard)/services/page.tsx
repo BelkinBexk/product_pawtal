@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type FurType = "Short fur" | "Long fur" | "Special / Double coat";
@@ -8,12 +9,13 @@ type SizeKey = "XXS" | "XS" | "S" | "M" | "L" | "XL" | "2XL";
 type PriceMatrix = Partial<Record<FurType, Partial<Record<SizeKey, string>>>>;
 
 interface Service {
-  id:           string;
+  id:           string;   // UUID from Supabase, or "new" for unsaved
   name:         string;
   category:     string;
   duration:     number;
   bufferTime:   number;
-  price:        string;
+  price:        string;   // display string: "฿420" or "By size"
+  basePrice:    number;   // raw numeric
   variesBySize: boolean;
   matrix:       PriceMatrix;
   description:  string;
@@ -35,20 +37,27 @@ const FUR_TYPES: FurType[]  = ["Short fur", "Long fur", "Special / Double coat"]
 const DURATIONS             = [15,30,45,60,90,120,150,180,240,360,480];
 const BUFFERS               = [0,5,10,15,20,30,45,60];
 
-const DEFAULT_SERVICES: Service[] = [
-  { id:"s1", name:"Full Grooming",     category:"Grooming",    duration:90,   bufferTime:15, price:"By size",  variesBySize:true,  matrix:{}, description:"", active:true  },
-  { id:"s2", name:"Bath & Blowdry",    category:"Bath & Trim", duration:60,   bufferTime:15, price:"฿420",     variesBySize:false, matrix:{}, description:"", active:true  },
-  { id:"s3", name:"Nail Trim",         category:"Grooming",    duration:15,   bufferTime:5,  price:"฿150",     variesBySize:false, matrix:{}, description:"", active:true  },
-  { id:"s4", name:"Cat Grooming",      category:"Grooming",    duration:60,   bufferTime:15, price:"฿525",     variesBySize:false, matrix:{}, description:"", active:true  },
-  { id:"s5", name:"Day Care (Full)",   category:"Day Care",    duration:480,  bufferTime:0,  price:"฿800",     variesBySize:false, matrix:{}, description:"", active:true  },
-  { id:"s6", name:"Training Session",  category:"Training",    duration:60,   bufferTime:15, price:"฿680",     variesBySize:false, matrix:{}, description:"", active:false },
-  { id:"s7", name:"Boarding (1 night)",category:"Boarding",    duration:1440, bufferTime:0,  price:"฿950",     variesBySize:false, matrix:{}, description:"", active:true  },
-];
+// Fur type ↔ DB enum
+const FUR_TO_DB: Record<FurType, string> = {
+  "Short fur":               "short",
+  "Long fur":                "long",
+  "Special / Double coat":   "special",
+};
+const DB_TO_FUR: Record<string, FurType> = {
+  "short":   "Short fur",
+  "long":    "Long fur",
+  "special": "Special / Double coat",
+};
 
 function fmtDuration(min: number) {
   if (min < 60) return `${min} min`;
   if (min % 60 === 0) return `${min / 60}h`;
   return `${Math.floor(min / 60)}h ${min % 60}min`;
+}
+
+function fmtPrice(svc: Service): string {
+  if (svc.variesBySize) return "By size";
+  return svc.basePrice ? `฿${svc.basePrice.toLocaleString()}` : "—";
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
@@ -87,8 +96,8 @@ function DeleteModal({ name, onConfirm, onCancel }: { name: string; onConfirm: (
 }
 
 // ── Edit / Add page ───────────────────────────────────────────────────────────
-function EditPage({ svc, isNew, onSave, onBack, onDelete }: {
-  svc: Service; isNew: boolean;
+function EditPage({ svc, isNew, saving, onSave, onBack, onDelete }: {
+  svc: Service; isNew: boolean; saving: boolean;
   onSave: (s: Service) => void;
   onBack: () => void;
   onDelete: () => void;
@@ -118,7 +127,7 @@ function EditPage({ svc, isNew, onSave, onBack, onDelete }: {
 
       {/* Back */}
       <div className="svc-edit-topbar">
-        <button className="svc-edit-back" onClick={onBack}>
+        <button className="svc-edit-back" onClick={onBack} disabled={saving}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
@@ -215,9 +224,9 @@ function EditPage({ svc, isNew, onSave, onBack, onDelete }: {
               <div className="svc-base-price-wrap">
                 <div className="svc-base-currency">฿</div>
                 <input className="svc-base-input" type="number" min="0" step="50"
-                  value={form.price.replace(/[฿,]/g, "") || "0"}
+                  value={form.basePrice || ""}
                   placeholder="0"
-                  onChange={e => set("price", e.target.value)} />
+                  onChange={e => set("basePrice", Number(e.target.value) || 0)} />
               </div>
             </div>
           )}
@@ -237,16 +246,16 @@ function EditPage({ svc, isNew, onSave, onBack, onDelete }: {
 
       {/* Footer actions */}
       <div style={{ display:"flex", gap:10, justifyContent:"space-between", alignItems:"center", paddingBottom:32 }}>
-        <button className="svc-edit-back" style={{ color:"#ef4444" }} onClick={onDelete}>
+        <button className="svc-edit-back" style={{ color:"#ef4444" }} onClick={onDelete} disabled={saving}>
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
             <path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M3 4l1 9h8l1-9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
           {isNew ? "Discard" : "Delete service"}
         </button>
         <div style={{ display:"flex", gap:10 }}>
-          <button className="prof-discard-btn" onClick={onBack}>Cancel</button>
-          <button className="prof-save-btn" onClick={handleSave}>
-            {isNew ? "Add Service" : "Save Changes"}
+          <button className="prof-discard-btn" onClick={onBack} disabled={saving}>Cancel</button>
+          <button className="prof-save-btn" onClick={handleSave} disabled={saving}>
+            {saving ? "Saving…" : isNew ? "Add Service" : "Save Changes"}
           </button>
         </div>
       </div>
@@ -256,8 +265,9 @@ function EditPage({ svc, isNew, onSave, onBack, onDelete }: {
 }
 
 // ── List page ─────────────────────────────────────────────────────────────────
-function ServiceList({ services, onAdd, onEdit, onToggle, onDelete }: {
+function ServiceList({ services, loading, onAdd, onEdit, onToggle, onDelete }: {
   services: Service[];
+  loading: boolean;
   onAdd: () => void;
   onEdit: (id: string) => void;
   onToggle: (id: string) => void;
@@ -291,7 +301,7 @@ function ServiceList({ services, onAdd, onEdit, onToggle, onDelete }: {
           </div>
           <div style={{ marginLeft:"auto" }}>
             <span style={{ fontSize:12, color:"#5a8fa8", fontWeight:300 }}>
-              {activeCount} active · {services.length} total
+              {loading ? "Loading…" : `${activeCount} active · ${services.length} total`}
             </span>
           </div>
         </div>
@@ -309,19 +319,24 @@ function ServiceList({ services, onAdd, onEdit, onToggle, onDelete }: {
               </tr>
             </thead>
             <tbody>
-              {services.map(s => (
-                <ServiceRow key={s.id} svc={s}
-                  onEdit={() => onEdit(s.id)}
-                  onToggle={() => onToggle(s.id)}
-                  onDelete={() => onDelete(s.id)} />
-              ))}
-              {services.length === 0 && (
+              {loading ? (
+                <tr>
+                  <td colSpan={6} style={{ textAlign:"center", padding:"48px 0", color:"#7eb5d6", fontSize:13 }}>
+                    Loading services…
+                  </td>
+                </tr>
+              ) : services.length === 0 ? (
                 <tr>
                   <td colSpan={6} style={{ textAlign:"center", padding:"48px 0", color:"#7eb5d6", fontSize:13 }}>
                     No services yet. Click &ldquo;Add service&rdquo; to get started.
                   </td>
                 </tr>
-              )}
+              ) : services.map(s => (
+                <ServiceRow key={s.id} svc={s}
+                  onEdit={() => onEdit(s.id)}
+                  onToggle={() => onToggle(s.id)}
+                  onDelete={() => onDelete(s.id)} />
+              ))}
             </tbody>
           </table>
         </div>
@@ -339,7 +354,7 @@ function ServiceRow({ svc, onEdit, onToggle, onDelete }: {
       <td className="svc-name">{svc.name}</td>
       <td><span className="svc-cat-tag" style={{ color: cc }}>{svc.category}</span></td>
       <td className="svc-dur">{fmtDuration(svc.duration)}</td>
-      <td className="svc-price">{svc.price}</td>
+      <td className="svc-price">{fmtPrice(svc)}</td>
       <td>
         <button className={`svc-status-btn${svc.active ? " active" : " inactive"}`}
           onClick={e => { e.stopPropagation(); onToggle(); }}>
@@ -364,52 +379,206 @@ function ServiceRow({ svc, onEdit, onToggle, onDelete }: {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function ServicesPage() {
-  const [services, setServices] = useState<Service[]>(DEFAULT_SERVICES);
-  const [view,     setView]     = useState<"list" | "edit">("list");
-  const [editId,   setEditId]   = useState<string | null>(null);
-  const [toast,    setToast]    = useState<{ msg: string; success: boolean } | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [providerId, setProviderId] = useState<string | null>(null);
+  const [services,   setServices]   = useState<Service[]>([]);
+  const [view,       setView]       = useState<"list" | "edit">("list");
+  const [editId,     setEditId]     = useState<string | null>(null);
+  const [loading,    setLoading]    = useState(true);
+  const [saving,     setSaving]     = useState(false);
+  const [deleteId,   setDeleteId]   = useState<string | null>(null);
+  const [toast,      setToast]      = useState<{ msg: string; success: boolean } | null>(null);
 
   const showToast = (msg: string, success = false) => {
     setToast({ msg, success });
     setTimeout(() => setToast(null), 2800);
   };
 
+  // ── Load services from Supabase ──────────────────────────────────────────────
+  const loadServices = useCallback(async (pid: string) => {
+    const { data: rows } = await supabase
+      .from("services")
+      .select("*, service_pricing(*)")
+      .eq("provider_id", pid)
+      .order("sort_order", { ascending: true });
+
+    if (!rows) return;
+
+    const mapped: Service[] = rows.map(row => {
+      // Build pricing matrix from service_pricing rows
+      const matrix: PriceMatrix = {};
+      if (row.service_pricing) {
+        for (const p of row.service_pricing) {
+          const fur = DB_TO_FUR[p.fur_type];
+          if (fur) {
+            if (!matrix[fur]) matrix[fur] = {};
+            (matrix[fur] as Record<string, string>)[p.size_key as SizeKey] = String(p.price);
+          }
+        }
+      }
+      return {
+        id:           row.id,
+        name:         row.name,
+        category:     row.category,
+        duration:     row.duration_min,
+        bufferTime:   row.buffer_min ?? 0,
+        basePrice:    row.base_price ?? 0,
+        price:        row.varies_by_size ? "By size" : (row.base_price ? `฿${Number(row.base_price).toLocaleString()}` : "—"),
+        variesBySize: row.varies_by_size,
+        matrix,
+        description:  row.description ?? "",
+        active:       row.is_active,
+      };
+    });
+
+    setServices(mapped);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    async function init() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: provider } = await supabase
+        .from("providers").select("id").eq("user_id", user.id).single();
+      if (!provider) return;
+      setProviderId(provider.id);
+      await loadServices(provider.id);
+    }
+    init();
+  }, [loadServices]);
+
+  // ── Open edit view ────────────────────────────────────────────────────────────
   const openEdit = (id: string) => { setEditId(id); setView("edit"); };
 
   const handleAdd = () => {
-    const id = `s-${Date.now()}`;
+    const tempId = `new-${Date.now()}`;
     const blank: Service = {
-      id, name: "", category: "Grooming", duration: 60, bufferTime: 15,
-      price: "", variesBySize: false, matrix: {}, description: "", active: true,
+      id: tempId, name: "", category: "Grooming", duration: 60, bufferTime: 15,
+      basePrice: 0, price: "", variesBySize: false, matrix: {}, description: "", active: true,
     };
     setServices(prev => [...prev, blank]);
-    openEdit(id);
+    openEdit(tempId);
   };
 
-  const handleSave = (updated: Service) => {
-    const price = updated.variesBySize
-      ? "By size"
-      : `฿${parseInt(updated.price.replace(/[฿,]/g, "") || "0").toLocaleString()}`;
-    const final = { ...updated, price };
-    setServices(prev => prev.map(s => s.id === final.id ? final : s));
+  // ── Save service to Supabase ──────────────────────────────────────────────────
+  const handleSave = async (updated: Service) => {
+    if (!providerId) return;
+    setSaving(true);
+
+    const isNew = updated.id.startsWith("new-");
+
+    const serviceRow = {
+      provider_id:   providerId,
+      name:          updated.name.trim(),
+      category:      updated.category,
+      duration_min:  updated.duration,
+      buffer_min:    updated.bufferTime,
+      base_price:    updated.variesBySize ? null : (updated.basePrice || null),
+      varies_by_size: updated.variesBySize,
+      description:   updated.description.trim() || null,
+      is_active:     updated.active,
+      sort_order:    isNew ? services.filter(s => !s.id.startsWith("new-")).length : undefined,
+    };
+
+    let serviceId = updated.id;
+
+    if (isNew) {
+      const { data: inserted, error } = await supabase
+        .from("services")
+        .insert({ ...serviceRow })
+        .select("id")
+        .single();
+
+      if (error || !inserted) {
+        setSaving(false);
+        showToast("Failed to add service. Please try again.");
+        return;
+      }
+      serviceId = inserted.id;
+    } else {
+      const { error } = await supabase
+        .from("services")
+        .update(serviceRow)
+        .eq("id", serviceId);
+
+      if (error) {
+        setSaving(false);
+        showToast("Failed to save service. Please try again.");
+        return;
+      }
+    }
+
+    // Handle pricing matrix
+    if (updated.variesBySize) {
+      // Delete existing pricing, then insert fresh
+      await supabase.from("service_pricing").delete().eq("service_id", serviceId);
+
+      const pricingRows: { service_id: string; fur_type: string; size_key: string; price: number }[] = [];
+      for (const fur of FUR_TYPES) {
+        const dbFur = FUR_TO_DB[fur];
+        for (const size of SIZES) {
+          const val = updated.matrix[fur]?.[size];
+          if (val && !isNaN(Number(val))) {
+            pricingRows.push({ service_id: serviceId, fur_type: dbFur, size_key: size, price: Number(val) });
+          }
+        }
+      }
+
+      if (pricingRows.length > 0) {
+        await supabase.from("service_pricing").insert(pricingRows);
+      }
+    } else {
+      // Remove any stale pricing rows if switched from matrix to flat
+      await supabase.from("service_pricing").delete().eq("service_id", serviceId);
+    }
+
+    // Reload services to get fresh state
+    await loadServices(providerId);
+    setSaving(false);
     setView("list");
-    showToast(`${final.name} saved!`, true);
+    showToast(`${updated.name} saved!`, true);
   };
 
-  const handleToggle = (id: string) => {
-    setServices(prev => prev.map(s => {
-      if (s.id !== id) return s;
-      const next = { ...s, active: !s.active };
-      showToast(`${s.name} set to ${next.active ? "Active" : "Inactive"}`, next.active);
-      return next;
-    }));
+  // ── Toggle active status ──────────────────────────────────────────────────────
+  const handleToggle = async (id: string) => {
+    const svc = services.find(s => s.id === id);
+    if (!svc) return;
+    const newActive = !svc.active;
+
+    // Optimistic update
+    setServices(prev => prev.map(s => s.id === id ? { ...s, active: newActive } : s));
+
+    const { error } = await supabase
+      .from("services")
+      .update({ is_active: newActive })
+      .eq("id", id);
+
+    if (error) {
+      // Revert
+      setServices(prev => prev.map(s => s.id === id ? { ...s, active: svc.active } : s));
+      showToast("Failed to update status.");
+    } else {
+      showToast(`${svc.name} set to ${newActive ? "Active" : "Inactive"}`, newActive);
+    }
   };
 
+  // ── Delete service ────────────────────────────────────────────────────────────
   const handleDelete = (id: string) => setDeleteId(id);
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     const svc = services.find(s => s.id === deleteId);
+    if (!svc) { setDeleteId(null); return; }
+
+    if (!svc.id.startsWith("new-")) {
+      // service_pricing rows cascade-delete with the service
+      const { error } = await supabase.from("services").delete().eq("id", svc.id);
+      if (error) {
+        setDeleteId(null);
+        showToast("Failed to delete service.");
+        return;
+      }
+    }
+
     setServices(prev => prev.filter(s => s.id !== deleteId));
     setDeleteId(null);
     if (view === "edit") setView("list");
@@ -426,6 +595,7 @@ export default function ServicesPage() {
         {view === "list" ? (
           <ServiceList
             services={services}
+            loading={loading}
             onAdd={handleAdd}
             onEdit={openEdit}
             onToggle={handleToggle}
@@ -434,11 +604,11 @@ export default function ServicesPage() {
         ) : editSvc ? (
           <EditPage
             svc={editSvc}
-            isNew={!editSvc.name}
+            isNew={editSvc.id.startsWith("new-")}
+            saving={saving}
             onSave={handleSave}
             onBack={() => {
-              // discard blank if cancelling a new unsaved service
-              if (!editSvc.name) setServices(prev => prev.filter(s => s.id !== editSvc.id));
+              if (editSvc.id.startsWith("new-")) setServices(prev => prev.filter(s => s.id !== editSvc.id));
               setView("list");
             }}
             onDelete={() => handleDelete(editSvc.id)}

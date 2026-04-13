@@ -56,16 +56,21 @@ export default function VendorSignupPage() {
 
     setLoading(true);
 
-    // 1. Create auth account
+    // 1. Create auth account — pass all data so the trigger creates a complete row
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
-          role:       "provider",
-          first_name: firstName,
-          last_name:  lastName,
+          role:         "provider",
+          first_name:   firstName,
+          last_name:    lastName,
+          owner_name:   `${firstName} ${lastName}`,
           phone,
+          shop_name:    shopName,
+          service_type: serviceType.toLowerCase(),
+          area,
+          address,
         },
       },
     });
@@ -76,13 +81,14 @@ export default function VendorSignupPage() {
       return;
     }
 
-    // 2. Update providers row created by trigger
+    // 2. Update providers row in case trigger ran before metadata was available
     if (data.user) {
       await supabase
         .from("providers")
         .update({
-          business_name: shopName,
-          service_type:  serviceType.toLowerCase(),
+          shop_name:    shopName,
+          owner_name:   `${firstName} ${lastName}`,
+          service_type: serviceType.toLowerCase(),
           area,
           address,
           phone,

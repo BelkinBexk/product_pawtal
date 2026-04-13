@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type TabKey  = "info" | "hours" | "photos";
@@ -16,7 +17,7 @@ for (let h = 7; h <= 22; h++) {
   TIMES.push(`${String(h).padStart(2, "0")}:30`);
 }
 
-const INIT_HOURS: DayHour[] = [
+const DEFAULT_HOURS: DayHour[] = [
   { day: "Monday",    open: true,  from: "09:00", to: "18:00" },
   { day: "Tuesday",   open: true,  from: "09:00", to: "18:00" },
   { day: "Wednesday", open: true,  from: "09:00", to: "18:00" },
@@ -36,11 +37,17 @@ const MOCK_LOGOS = [
 ];
 
 const MOCK_COVERS = [
-  { id: "cover1", label: "Ocean blue",    from: "#e8f4ff", to: "#c7e8ff" },
-  { id: "cover2", label: "Mint teal",     from: "#e0fff8", to: "#b3ece1" },
-  { id: "cover3", label: "Soft purple",   from: "#f3e8ff", to: "#ddc9ff" },
-  { id: "cover4", label: "Fresh green",   from: "#dcfce7", to: "#bbf7d0" },
+  { id: "cover1", label: "Ocean blue",  from: "#e8f4ff", to: "#c7e8ff" },
+  { id: "cover2", label: "Mint teal",   from: "#e0fff8", to: "#b3ece1" },
+  { id: "cover3", label: "Soft purple", from: "#f3e8ff", to: "#ddc9ff" },
+  { id: "cover4", label: "Fresh green", from: "#dcfce7", to: "#bbf7d0" },
 ];
+
+// Convert "HH:MM:SS" (Postgres time) → "HH:MM"
+function pgTimeToHHMM(t: string | null | undefined): string {
+  if (!t) return "09:00";
+  return t.slice(0, 5);
+}
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
 function Toast({ msg, success }: { msg: string; success: boolean }) {
@@ -59,35 +66,188 @@ function Toast({ msg, success }: { msg: string; success: boolean }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function ProfilePage() {
-  // Tab
   const [tab, setTab] = useState<TabKey>("info");
 
   // Business info
-  const [name,        setName]        = useState("Nong's Pet Spa");
-  const [desc,        setDesc]        = useState("Premium pet grooming and spa in Sukhumvit. Specialising in dogs and cats of all breeds with a gentle, stress-free approach.");
-  const [serviceType, setServiceType] = useState("Grooming");
-  const [address,     setAddress]     = useState("Sukhumvit Soi 23, Bangkok");
-  const [phone,       setPhone]       = useState("+66 81 234 5678");
-  const [email,       setEmail]       = useState("nong@petspasukhumvit.com");
-  const [lineId,      setLineId]      = useState("@nongpetspa");
-  const [website,     setWebsite]     = useState("https://nongpetspa.com");
-  const [selectedAreas, setSelectedAreas] = useState<string[]>(["Sukhumvit", "Thonglor"]);
+  const [providerId,   setProviderId]   = useState<string | null>(null);
+  const [name,         setName]         = useState("");
+  const [desc,         setDesc]         = useState("");
+  const [serviceType,  setServiceType]  = useState("Grooming");
+  const [address,      setAddress]      = useState("");
+  const [phone,        setPhone]        = useState("");
+  const [email,        setEmail]        = useState("");
+  const [lineId,       setLineId]       = useState("");
+  const [website,      setWebsite]      = useState("");
+  const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
 
   // Hours
-  const [hours, setHours] = useState<DayHour[]>(INIT_HOURS);
+  const [hours, setHours] = useState<DayHour[]>(DEFAULT_HOURS);
 
-  // Photos
-  const [selectedLogo,    setSelectedLogo]    = useState<string>("logo1");
-  const [selectedCover,   setSelectedCover]   = useState<string>("cover1");
+  // Photos (mock selections — real upload deferred)
+  const [selectedLogo,  setSelectedLogo]  = useState<string>("logo1");
+  const [selectedCover, setSelectedCover] = useState<string>("cover1");
 
-  // Toast
-  const [toast, setToast] = useState<{ msg: string; success: boolean } | null>(null);
+  // UI state
+  const [loading,  setLoading]  = useState(true);
+  const [saving,   setSaving]   = useState(false);
+  const [toast,    setToast]    = useState<{ msg: string; success: boolean } | null>(null);
+
   const showToast = (msg: string, success = false) => {
     setToast({ msg, success });
     setTimeout(() => setToast(null), 2800);
   };
 
-  // Progress
+  // ── Load profile from Supabase ─────────────────────────────────────────────
+  useEffect(() => {
+    async function load() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Load provider row
+      const { data: provider } = await supabase
+        .from("providers")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      if (provider) {
+        setProviderId(provider.id);
+        setName(provider.shop_name  ?? "");
+        setDesc(provider.description ?? "");
+        setServiceType(provider.service_type
+          ? provider.service_type.charAt(0).toUpperCase() + provider.service_type.slice(1)
+          : "Grooming");
+        setAddress(provider.address  ?? "");
+        setPhone(provider.phone      ?? "");
+        setEmail(provider.email      ?? "");
+        setLineId(provider.line_id   ?? "");
+        setWebsite(provider.website  ?? "");
+        // area is stored comma-separated
+        if (provider.area) {
+          setSelectedAreas(provider.area.split(",").map((a: string) => a.trim()).filter(Boolean));
+        }
+      }
+
+      // Load opening hours
+      if (provider?.id) {
+        const { data: dbHours } = await supabase
+          .from("provider_hours")
+          .select("*")
+          .eq("provider_id", provider.id);
+
+        if (dbHours && dbHours.length > 0) {
+          setHours(prev => prev.map(h => {
+            const row = dbHours.find(r => r.day_of_week === h.day);
+            if (!row) return h;
+            return {
+              day:  h.day,
+              open: row.is_open,
+              from: pgTimeToHHMM(row.open_time),
+              to:   pgTimeToHHMM(row.close_time),
+            };
+          }));
+        }
+      }
+
+      setLoading(false);
+    }
+
+    load();
+  }, []);
+
+  // ── Save profile to Supabase ───────────────────────────────────────────────
+  const handleSave = async () => {
+    if (!providerId) return;
+    setSaving(true);
+
+    // 1. Update provider row
+    const { error: provErr } = await supabase
+      .from("providers")
+      .update({
+        shop_name:    name.trim(),
+        description:  desc.trim(),
+        service_type: serviceType.toLowerCase(),
+        address:      address.trim(),
+        phone:        phone.trim(),
+        email:        email.trim(),
+        line_id:      lineId.trim() || null,
+        website:      website.trim() || null,
+        area:         selectedAreas.join(", ") || null,
+      })
+      .eq("id", providerId);
+
+    if (provErr) {
+      setSaving(false);
+      showToast("Failed to save profile. Please try again.");
+      return;
+    }
+
+    // 2. Upsert opening hours
+    const hoursRows = hours.map(h => ({
+      provider_id: providerId,
+      day_of_week: h.day,
+      is_open:     h.open,
+      open_time:   h.open ? h.from + ":00" : null,
+      close_time:  h.open ? h.to   + ":00" : null,
+    }));
+
+    const { error: hoursErr } = await supabase
+      .from("provider_hours")
+      .upsert(hoursRows, { onConflict: "provider_id,day_of_week" });
+
+    setSaving(false);
+
+    if (hoursErr) {
+      showToast("Profile saved but hours failed. Please try again.");
+      return;
+    }
+
+    showToast("Profile saved successfully!", true);
+  };
+
+  const handleDiscard = async () => {
+    // Reload from DB
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setLoading(false); return; }
+
+    const { data: provider } = await supabase
+      .from("providers").select("*").eq("user_id", user.id).single();
+
+    if (provider) {
+      setName(provider.shop_name  ?? "");
+      setDesc(provider.description ?? "");
+      setServiceType(provider.service_type
+        ? provider.service_type.charAt(0).toUpperCase() + provider.service_type.slice(1)
+        : "Grooming");
+      setAddress(provider.address ?? "");
+      setPhone(provider.phone     ?? "");
+      setEmail(provider.email     ?? "");
+      setLineId(provider.line_id  ?? "");
+      setWebsite(provider.website ?? "");
+      if (provider.area) {
+        setSelectedAreas(provider.area.split(",").map((a: string) => a.trim()).filter(Boolean));
+      } else {
+        setSelectedAreas([]);
+      }
+
+      const { data: dbHours } = await supabase
+        .from("provider_hours").select("*").eq("provider_id", provider.id);
+
+      if (dbHours && dbHours.length > 0) {
+        setHours(prev => prev.map(h => {
+          const row = dbHours.find(r => r.day_of_week === h.day);
+          if (!row) return h;
+          return { day: h.day, open: row.is_open, from: pgTimeToHHMM(row.open_time), to: pgTimeToHHMM(row.close_time) };
+        }));
+      }
+    }
+
+    setLoading(false);
+    showToast("Changes discarded.");
+  };
+
+  // ── Progress ───────────────────────────────────────────────────────────────
   const infoComplete   = !!(name && desc && address);
   const hoursComplete  = hours.some(h => h.open);
   const photosComplete = !!(selectedLogo || selectedCover);
@@ -114,6 +274,16 @@ export default function ProfilePage() {
     { key: "hours",  label: "Opening Hours",   emoji: "🕐", done: hoursComplete  },
     { key: "photos", label: "Photos",          emoji: "🖼", done: photosComplete },
   ];
+
+  if (loading) {
+    return (
+      <main className="ovw-main">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#5a8fa8", fontSize: 14 }}>
+          Loading profile…
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="ovw-main">
@@ -322,10 +492,10 @@ export default function ProfilePage() {
 
             {/* ── Save bar ── */}
             <div className="prof-save-bar">
-              <button className="prof-save-btn" onClick={() => showToast("Profile saved successfully!", true)}>
-                Save Changes
+              <button className="prof-save-btn" onClick={handleSave} disabled={saving}>
+                {saving ? "Saving…" : "Save Changes"}
               </button>
-              <button className="prof-discard-btn" onClick={() => showToast("Changes discarded.")}>
+              <button className="prof-discard-btn" onClick={handleDiscard} disabled={saving}>
                 Discard
               </button>
             </div>

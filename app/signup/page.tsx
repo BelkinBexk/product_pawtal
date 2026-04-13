@@ -184,8 +184,10 @@ export default function SignupPage() {
     }
 
     if (data.user) {
-      // Update area on customers row (trigger doesn't write area)
-      await supabase.from("customers").update({ area }).eq("user_id", data.user.id);
+      // Update area + pet_type on customers row (not in signup metadata)
+      await supabase.from("customers")
+        .update({ area, pet_type: petType.toLowerCase() })
+        .eq("user_id", data.user.id);
 
       // Save pet details
       const { data: customer } = await supabase
