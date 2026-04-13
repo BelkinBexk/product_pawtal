@@ -149,6 +149,22 @@ function VendorTopbar() {
 function VendorSidebar() {
   const pathname = usePathname();
   const router   = useRouter();
+  const [shopName, setShopName] = useState("");
+  const [area,     setArea]     = useState("");
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase.from("providers").select("shop_name, area").eq("user_id", user.id).single()
+        .then(({ data }) => {
+          if (data) { setShopName(data.shop_name ?? ""); setArea(data.area ?? ""); }
+        });
+    });
+  }, []);
+
+  const initials = shopName
+    .split(" ").filter(Boolean).slice(0, 2)
+    .map(w => w[0].toUpperCase()).join("") || "…";
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
@@ -165,10 +181,10 @@ function VendorSidebar() {
       </div>
 
       <div className="vd-sidebar-profile">
-        <div className="vd-sidebar-avatar">NP</div>
+        <div className="vd-sidebar-avatar">{initials}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="vd-sidebar-name">Nong&apos;s Pet Spa</div>
-          <div className="vd-sidebar-biz">Sukhumvit 23</div>
+          <div className="vd-sidebar-name">{shopName || "Loading…"}</div>
+          <div className="vd-sidebar-biz">{area || ""}</div>
         </div>
         <div className="vd-sidebar-status">
           <div className="vd-status-dot" />
