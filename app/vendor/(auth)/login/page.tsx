@@ -15,6 +15,8 @@ const EN = {
   email: "Email", password: "Password", forgot: "Forgot password?",
   signingIn: "Signing in…", signIn: "Sign In",
   createAccount: "Create a Vendor Account", back: "← Back to For Business",
+  errRequired: "Please enter your Email and Password.",
+  errIncorrect: "Incorrect Email or Password. Please try again.",
   errNotVendor: "This account is not registered as a vendor. Please use the pet owner login instead.",
 };
 const TH = {
@@ -26,6 +28,8 @@ const TH = {
   email: "อีเมล", password: "รหัสผ่าน", forgot: "ลืมรหัสผ่าน?",
   signingIn: "กำลังเข้าสู่ระบบ…", signIn: "เข้าสู่ระบบแดชบอร์ด",
   createAccount: "สร้างบัญชีร้านค้า", back: "← กลับสู่หน้าธุรกิจ",
+  errRequired: "กรุณากรอกอีเมลและรหัสผ่าน",
+  errIncorrect: "อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาลองอีกครั้ง",
   errNotVendor: "บัญชีนี้ไม่ได้ลงทะเบียนเป็นร้านค้า กรุณาใช้หน้าเข้าสู่ระบบสำหรับเจ้าของสัตว์เลี้ยง",
 };
 
@@ -60,13 +64,19 @@ export default function VendorLoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (!email.trim() || !password.trim()) {
+      setError(T.errRequired);
+      return;
+    }
+
     setLoading(true);
 
     const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
 
     if (signInError) {
       setLoading(false);
-      setError(signInError.message);
+      setError(T.errIncorrect);
       return;
     }
 
@@ -119,8 +129,6 @@ export default function VendorLoginPage() {
           <h1 className="login-card-title">{T.title}</h1>
           <p className="login-card-sub">{T.subtitle}</p>
 
-          {error && <div className="login-error">{error}</div>}
-
           <form onSubmit={handleLogin}>
             <div className="login-field">
               <label htmlFor="vl-email">{T.email}</label>
@@ -131,7 +139,6 @@ export default function VendorLoginPage() {
                 placeholder="you@yourbusiness.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
                 autoComplete="email"
               />
             </div>
@@ -146,7 +153,6 @@ export default function VendorLoginPage() {
                   placeholder="••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  required
                   autoComplete="current-password"
                 />
                 <button type="button" className="login-eye" onClick={() => setShowPw((v) => !v)}>
@@ -166,6 +172,8 @@ export default function VendorLoginPage() {
               </div>
               <Link href="/forgot-password" className="login-forgot">{T.forgot}</Link>
             </div>
+
+            {error && <div className="login-error">{error}</div>}
 
             <button type="submit" className="login-btn" disabled={loading}>
               {loading ? T.signingIn : T.signIn}

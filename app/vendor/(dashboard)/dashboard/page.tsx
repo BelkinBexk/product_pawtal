@@ -1,31 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 
-// ── Mock data ─────────────────────────────────────────────────────────────────
-const bookings = [
-  { id: "BK001", pet: "Mochi", owner: "Natthida P.", service: "Full Grooming",    date: "Today",    time: "10:00",   status: "confirmed", amount: "฿630",   color: "#17A8FF", initials: "N" },
-  { id: "BK002", pet: "Luna",  owner: "Krit W.",     service: "Day Care (Full)",  date: "Today",    time: "14:30",   status: "confirmed", amount: "฿800",   color: "#F5A623", initials: "K" },
-  { id: "BK003", pet: "Buddy", owner: "Pim R.",      service: "Training Session", date: "Today",    time: "16:00",   status: "confirmed", amount: "฿680",   color: "#003459", initials: "P" },
-  { id: "BK004", pet: "Nala",  owner: "Suda C.",     service: "Cat Grooming",     date: "Tomorrow", time: "09:30",   status: "confirmed", amount: "฿525",   color: "#0B93E8", initials: "S" },
-  { id: "BK005", pet: "Max",   owner: "Tong V.",     service: "Full Grooming",    date: "Tomorrow", time: "11:00",   status: "confirmed", amount: "฿630",   color: "#22c55e", initials: "T" },
-  { id: "BK006", pet: "Coco",  owner: "May L.",      service: "Boarding (2n)",    date: "Dec 22",   time: "All day", status: "confirmed", amount: "฿1,800", color: "#8b5cf6", initials: "M" },
-  { id: "BK007", pet: "Bella", owner: "Arm K.",      service: "Day Care",         date: "Dec 23",   time: "08:00",   status: "confirmed", amount: "฿800",   color: "#f43f5e", initials: "A" },
-];
-
-const revenueWeeks = [
-  { label: "Mon", val: 4200 }, { label: "Tue", val: 6800 }, { label: "Wed", val: 5100 },
-  { label: "Thu", val: 9200 }, { label: "Fri", val: 7600 }, { label: "Sat", val: 12400 }, { label: "Sun", val: 8900 },
-];
-
-// Heatmap — 8am–6pm (11 hours) × Mon–Sun (7 days)
-// Data indexed as [day][hour], same as HTML prototype
+// ── Heatmap static data (visualisation only) ──────────────────────────────────
 const HM_HOUR_LABELS = ["8am","9am","10am","11am","12pm","1pm","2pm","3pm","4pm","5pm","6pm"];
 const HM_DAYS  = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-
-// Per-week data: key "0" = this week, "-1" = last week, "+1" = next week
-// Each entry: 7 arrays (one per day), each with 11 values (one per hour)
 const HM_DATA_STORE: Record<string, number[][]> = {
   "-1": [[1,1,3,2,1,1,2,2,1,0,0],[0,1,4,3,1,2,3,2,1,1,0],[0,1,2,2,1,1,2,1,0,0,0],[0,1,2,3,1,2,2,2,1,0,0],[1,1,3,4,2,2,3,3,1,1,1],[1,3,6,7,4,5,6,5,4,2,1],[1,2,4,5,2,3,4,3,2,2,0]],
    "0": [[1,2,4,3,1,2,3,2,1,1,0],[0,1,5,4,2,3,4,3,2,1,1],[1,2,3,3,1,2,2,2,1,0,0],[0,1,3,4,2,2,3,2,1,1,0],[1,2,4,5,2,3,4,3,2,2,1],[2,4,7,8,5,6,7,6,5,3,2],[1,2,5,6,3,4,5,4,3,2,1]],
@@ -55,22 +36,165 @@ function computeHeatmapInsights(data: number[][]) {
   return { peakDay, peakHour, peakVal, topOff };
 }
 
-const todayBk = bookings.filter(b => b.date === "Today");
-const upcoming = bookings.filter(b => b.date !== "Today" && b.status !== "cancelled").slice(0, 4);
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const AVATAR_COLORS = ["#22c55e","#17A8FF","#F5A623","#8b5cf6","#f43f5e","#0B93E8"];
+const colorFor = (i: number) => AVATAR_COLORS[i % AVATAR_COLORS.length];
 
-// ── Overview Page ─────────────────────────────────────────────────────────────
+function fmtTime12(iso: string) {
+  const d = new Date(iso);
+  const h = d.getHours(), m = d.getMinutes();
+  const h12 = h > 12 ? h - 12 : h === 0 ? 12 : h;
+  return `${h12}:${String(m).padStart(2, "0")}${h >= 12 ? "pm" : "am"}`;
+}
+
+function getMonday(d = new Date()) {
+  const n = new Date(d); n.setHours(0,0,0,0);
+  const day = n.getDay();
+  n.setDate(n.getDate() - (day === 0 ? 6 : day - 1));
+  return n;
+}
+
+type DashBooking = {
+  id: string;
+  booking_reference: string;
+  scheduled_at: string;
+  status: string;
+  total_amount: number;
+  customers: { first_name: string; last_name: string } | null;
+  pets: { name: string } | null;
+  services: { name: string; duration_min: number } | null;
+};
+
+// ── DEMO MODE ─────────────────────────────────────────────────────────────────
+const DEMO_MODE = true;
+
+const MOCK_DASH_BOOKINGS: DashBooking[] = [
+  { id:"mk01", booking_reference:"BK-202604-2341", scheduled_at:"2026-04-15T02:00:00Z", status:"completed",   total_amount:900, customers:{first_name:"Mintra",   last_name:"Saelim"},    pets:{name:"Butter"}, services:{name:"Full Grooming Package", duration_min:120} },
+  { id:"mk02", booking_reference:"BK-202604-2342", scheduled_at:"2026-04-15T03:30:00Z", status:"in_progress", total_amount:450, customers:{first_name:"Warat",    last_name:"Chaiwong"},  pets:{name:"Mochi"},  services:{name:"Bath & Brush",          duration_min:60}  },
+  { id:"mk03", booking_reference:"BK-202604-2343", scheduled_at:"2026-04-15T06:00:00Z", status:"confirmed",   total_amount:650, customers:{first_name:"Anchana",  last_name:"Pimjai"},    pets:{name:"Nala"},   services:{name:"Cat Grooming",          duration_min:90}  },
+  { id:"mk04", booking_reference:"BK-202604-2344", scheduled_at:"2026-04-15T07:30:00Z", status:"confirmed",   total_amount:900, customers:{first_name:"Prapai",   last_name:"Thaweesap"}, pets:{name:"Max"},    services:{name:"Full Grooming Package", duration_min:120} },
+  { id:"mk05", booking_reference:"BK-202604-2345", scheduled_at:"2026-04-15T09:00:00Z", status:"confirmed",   total_amount:250, customers:{first_name:"Natthida", last_name:"Phongsri"},  pets:{name:"Coco"},   services:{name:"Nail Trim & Ear Clean", duration_min:30}  },
+  { id:"mk06", booking_reference:"BK-202604-2338", scheduled_at:"2026-04-14T02:00:00Z", status:"completed",   total_amount:900, customers:{first_name:"Warat",    last_name:"Chaiwong"},  pets:{name:"Mochi"},  services:{name:"Full Grooming Package", duration_min:120} },
+  { id:"mk07", booking_reference:"BK-202604-2339", scheduled_at:"2026-04-14T04:00:00Z", status:"completed",   total_amount:650, customers:{first_name:"Anchana",  last_name:"Pimjai"},    pets:{name:"Nala"},   services:{name:"Cat Grooming",          duration_min:90}  },
+  { id:"mk08", booking_reference:"BK-202604-2340", scheduled_at:"2026-04-14T07:00:00Z", status:"completed",   total_amount:650, customers:{first_name:"Suda",     last_name:"Chomchan"},  pets:{name:"Luna"},   services:{name:"Cat Grooming",          duration_min:90}  },
+  { id:"mk09", booking_reference:"BK-202604-2335", scheduled_at:"2026-04-13T02:00:00Z", status:"completed",   total_amount:450, customers:{first_name:"Mintra",   last_name:"Saelim"},    pets:{name:"Butter"}, services:{name:"Bath & Brush",          duration_min:60}  },
+  { id:"mk10", booking_reference:"BK-202604-2336", scheduled_at:"2026-04-13T04:00:00Z", status:"completed",   total_amount:900, customers:{first_name:"Prapai",   last_name:"Thaweesap"}, pets:{name:"Max"},    services:{name:"Full Grooming Package", duration_min:120} },
+  { id:"mk11", booking_reference:"BK-202604-2337", scheduled_at:"2026-04-13T07:00:00Z", status:"completed",   total_amount:450, customers:{first_name:"Natthida", last_name:"Phongsri"},  pets:{name:"Coco"},   services:{name:"Bath & Brush",          duration_min:60}  },
+  { id:"mk12", booking_reference:"BK-202604-2346", scheduled_at:"2026-04-16T04:00:00Z", status:"confirmed",   total_amount:450, customers:{first_name:"Mintra",   last_name:"Saelim"},    pets:{name:"Butter"}, services:{name:"Bath & Brush",          duration_min:60}  },
+  { id:"mk13", booking_reference:"BK-202604-2348", scheduled_at:"2026-04-17T02:00:00Z", status:"confirmed",   total_amount:900, customers:{first_name:"Warat",    last_name:"Chaiwong"},  pets:{name:"Mochi"},  services:{name:"Full Grooming Package", duration_min:120} },
+  { id:"mk14", booking_reference:"BK-202604-2349", scheduled_at:"2026-04-18T02:00:00Z", status:"confirmed",   total_amount:350, customers:{first_name:"Prapai",   last_name:"Thaweesap"}, pets:{name:"Max"},    services:{name:"Full Day Care",         duration_min:480} },
+  { id:"mk15", booking_reference:"BK-202604-2351", scheduled_at:"2026-04-18T06:00:00Z", status:"confirmed",   total_amount:900, customers:{first_name:"Mintra",   last_name:"Saelim"},    pets:{name:"Butter"}, services:{name:"Full Grooming Package", duration_min:120} },
+];
+
+// ── Page ──────────────────────────────────────────────────────────────────────
 export default function VendorDashboard() {
-  const [hmOffset, setHmOffset] = useState(0); // 0=this week, -1=last, +1=next
+  const [hmOffset, setHmOffset] = useState(0);
+  const [loading, setLoading]   = useState(true);
+  const [bookings, setBookings] = useState<DashBooking[]>([]);
+  const [ratingAvg,  setRatingAvg]  = useState(0);
+  const [reviewCount, setReviewCount] = useState(0);
+
+  useEffect(() => {
+    (async () => {
+      if (DEMO_MODE) {
+        setRatingAvg(4.9); setReviewCount(47); setBookings(MOCK_DASH_BOOKINGS); setLoading(false); return;
+      }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+
+      const { data: prov } = await supabase
+        .from("providers")
+        .select("id, rating, review_count")
+        .eq("user_id", user.id)
+        .single();
+      if (!prov) { setLoading(false); return; }
+
+      setRatingAvg(prov.rating ?? 0);
+      setReviewCount(prov.review_count ?? 0);
+
+      const monthStart = new Date();
+      monthStart.setDate(1); monthStart.setHours(0,0,0,0);
+
+      const { data: bks } = await supabase
+        .from("bookings")
+        .select(`
+          id, booking_reference, scheduled_at, status, total_amount,
+          customers(first_name, last_name),
+          pets(name),
+          services(name, duration_min)
+        `)
+        .eq("provider_id", prov.id)
+        .gte("scheduled_at", monthStart.toISOString())
+        .order("scheduled_at");
+
+      if (bks) setBookings(bks as unknown as DashBooking[]);
+      setLoading(false);
+    })();
+  }, []);
+
+  // ── Computed values ──────────────────────────────────────────────────────────
+  const now        = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayEnd   = new Date(todayStart.getTime() + 86400000);
+  const weekStart  = getMonday();
+
+  const todayBks = bookings.filter(b => {
+    const d = new Date(b.scheduled_at);
+    return d >= todayStart && d < todayEnd && b.status !== "cancelled";
+  });
+
+  const upcomingBks = bookings.filter(b => {
+    const d = new Date(b.scheduled_at);
+    return d >= todayEnd && b.status !== "cancelled";
+  }).slice(0, 4);
+
+  const sum = (filter: (b: DashBooking) => boolean) =>
+    bookings.filter(filter).reduce((s, b) => s + (b.total_amount ?? 0), 0);
+
+  const revenueToday = sum(b => { const d = new Date(b.scheduled_at); return d >= todayStart && d < todayEnd && b.status === "completed"; });
+  const revenueWeek  = sum(b => new Date(b.scheduled_at) >= weekStart && b.status === "completed");
+  const revenueMonth = sum(b => b.status === "completed");
+
+  const DAY_LABELS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  const revenueWeekBars = DAY_LABELS.map((label, i) => {
+    const ds = new Date(weekStart); ds.setDate(weekStart.getDate() + i);
+    const de = new Date(ds.getTime() + 86400000);
+    const val = sum(b => { const d = new Date(b.scheduled_at); return d >= ds && d < de && b.status === "completed"; });
+    return { label, val };
+  });
+  const maxBar = Math.max(...revenueWeekBars.map(b => b.val), 1);
+
+  const doneCount  = bookings.filter(b => b.status === "completed").length;
+  const totalCount = bookings.filter(b => !["pending","new","cancelled"].includes(b.status)).length;
+  const pct    = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+  const r      = 21;
+  const circ   = +(2 * Math.PI * r).toFixed(2);
+  const offset = +(circ * (1 - pct / 100)).toFixed(2);
+
   const heatmapData = HM_DATA_STORE[String(Math.max(-1, Math.min(1, hmOffset)))] ?? HM_DATA_STORE["0"];
   const hmMax = Math.max(...heatmapData.flat());
   const { peakDay, peakHour, peakVal, topOff } = computeHeatmapInsights(heatmapData);
   const hmWeekLabel = hmOffset === 0 ? "This week" : hmOffset === -1 ? "Last week" : "Next week";
 
-  const pct = 95;
-  const r = 21;
-  const circ = +(2 * Math.PI * r).toFixed(2);
-  const offset = +(circ * (1 - pct / 100)).toFixed(2);
-  const maxBar = Math.max(...revenueWeeks.map(b => b.val));
+  function petName(b: DashBooking) {
+    return b.pets?.name ?? "Pet";
+  }
+  function ownerFirst(b: DashBooking) {
+    return b.customers?.first_name ?? "Customer";
+  }
+  function svcName(b: DashBooking) {
+    return b.services?.name ?? "Service";
+  }
+
+  if (loading) {
+    return (
+      <main className="ovw-main">
+        <div className="ovw-content" style={{ display:"flex", alignItems:"center", justifyContent:"center", height:300 }}>
+          <div style={{ color:"#7eb5d6", fontSize:13 }}>Loading dashboard…</div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="ovw-main">
@@ -90,16 +214,18 @@ export default function VendorDashboard() {
               </div>
             </div>
             <span className="rev-card-today-pill">Today</span>
-            <div className="rev-card-main">฿2,110</div>
-            <div className="rev-card-change">↑ +฿340 vs yesterday</div>
+            <div className="rev-card-main">฿{revenueToday.toLocaleString()}</div>
+            <div className="rev-card-change" style={{ color: revenueToday > 0 ? "#22c55e" : "#9ec9e0" }}>
+              {revenueToday > 0 ? `↑ ฿${revenueToday.toLocaleString()} earned` : "No completed bookings yet"}
+            </div>
             <div className="rev-card-divider" />
             <div className="rev-card-row">
               <div className="rev-card-sub-label">This week</div>
-              <div className="rev-card-sub-val">฿12,400</div>
+              <div className="rev-card-sub-val">฿{revenueWeek.toLocaleString()}</div>
             </div>
             <div className="rev-card-row">
               <div className="rev-card-sub-label">This month</div>
-              <div className="rev-card-sub-val">฿42,800</div>
+              <div className="rev-card-sub-val">฿{revenueMonth.toLocaleString()}</div>
             </div>
           </div>
 
@@ -114,8 +240,10 @@ export default function VendorDashboard() {
                 </svg>
               </div>
             </div>
-            <div className="stat-card-num">3</div>
-            <div className="stat-card-change change-up">↑ 3 confirmed today</div>
+            <div className="stat-card-num">{todayBks.length}</div>
+            <div className={`stat-card-change ${todayBks.length > 0 ? "change-up" : "change-neutral"}`}>
+              {todayBks.length > 0 ? `↑ ${todayBks.length} confirmed today` : "No bookings today"}
+            </div>
           </div>
 
           {/* Completion Rate */}
@@ -139,7 +267,9 @@ export default function VendorDashboard() {
               </div>
               <div>
                 <div className="completion-num">{pct}%</div>
-                <div className="completion-change">↑ 2% vs last month</div>
+                <div className="completion-change change-neutral">
+                  {totalCount > 0 ? `${doneCount} of ${totalCount} completed` : "No bookings yet"}
+                </div>
               </div>
             </div>
           </div>
@@ -154,33 +284,37 @@ export default function VendorDashboard() {
                 </svg>
               </div>
             </div>
-            <div className="stat-card-num">4.9</div>
-            <div className="stat-card-change change-neutral">★ 128 total reviews</div>
+            <div className="stat-card-num">{ratingAvg > 0 ? ratingAvg.toFixed(1) : "—"}</div>
+            <div className="stat-card-change change-neutral">★ {reviewCount} total review{reviewCount !== 1 ? "s" : ""}</div>
           </div>
         </div>
 
         {/* ── Today at a glance ── */}
         <div className="today-glance">
           <div className="today-glance-header">
-            <div className="today-glance-title">Today at a glance &middot; {todayBk.length} appointments</div>
+            <div className="today-glance-title">Today at a glance · {todayBks.length} appointment{todayBks.length !== 1 ? "s" : ""}</div>
             <Link href="/vendor/calendar" className="panel-action">Open in Calendar →</Link>
           </div>
           <div className="today-glance-body">
-            {todayBk.map(b => (
+            {todayBks.length === 0 ? (
+              <div className="glance-slot-empty" style={{ color:"#9ec9e0" }}>No bookings scheduled for today.</div>
+            ) : todayBks.map((b, i) => (
               <div key={b.id} className="glance-slot" style={{ borderLeftColor: "#22c55e" }}>
-                <div className="glance-time">{b.time}</div>
+                <div className="glance-time">{fmtTime12(b.scheduled_at)}</div>
                 <div>
-                  <div className="glance-pet">{b.pet} · {b.owner.split(" ")[0]}</div>
-                  <div className="glance-service">{b.service} · {b.amount}</div>
+                  <div className="glance-pet">{petName(b)} · {ownerFirst(b)}</div>
+                  <div className="glance-service">{svcName(b)} · ฿{(b.total_amount ?? 0).toLocaleString()}</div>
                 </div>
-                <span style={{ fontSize:11, fontWeight:600, padding:"3px 10px", borderRadius:100, background:"rgba(34,197,94,0.12)", color:"#16a34a", whiteSpace:"nowrap" }}>Confirmed</span>
+                <span style={{ fontSize:11, fontWeight:600, padding:"3px 10px", borderRadius:100, background:"rgba(34,197,94,0.12)", color:"#16a34a", whiteSpace:"nowrap" }}>
+                  {b.status === "in_progress" ? "In Progress" : b.status.charAt(0).toUpperCase() + b.status.slice(1)}
+                </span>
               </div>
             ))}
             <div className="glance-slot-empty">+ Add slot</div>
           </div>
         </div>
 
-        {/* ── Heatmap ── */}
+        {/* ── Heatmap (static visualisation) ── */}
         <div className="heatmap-panel">
           <div className="heatmap-header">
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -215,15 +349,11 @@ export default function VendorDashboard() {
                         const val = heatmapData[di]?.[hi] ?? 0;
                         const isPeak = di === peakDay && hi === peakHour;
                         return (
-                          <div
-                            key={di}
-                            className="hm-cell"
-                            style={{
-                              background: hmCellColor(val, hmMax),
-                              outline: isPeak ? "2px solid #17A8FF" : undefined,
-                              outlineOffset: isPeak ? 2 : undefined,
-                            }}
-                          >
+                          <div key={di} className="hm-cell" style={{
+                            background: hmCellColor(val, hmMax),
+                            outline: isPeak ? "2px solid #17A8FF" : undefined,
+                            outlineOffset: isPeak ? 2 : undefined,
+                          }}>
                             <div className="hm-tooltip">{HM_DAYS[di]} {HM_HOUR_LABELS[hi]} · {val} booking{val !== 1 ? "s" : ""}</div>
                           </div>
                         );
@@ -259,20 +389,30 @@ export default function VendorDashboard() {
               <Link href="/vendor/bookings" className="panel-action">View all</Link>
             </div>
             <div className="panel-body">
-              {upcoming.map(b => (
-                <div key={b.id} className="booking-row">
-                  <div className="bk-avatar" style={{ background: b.color }}>{b.initials}</div>
-                  <div>
-                    <div className="bk-name">{b.pet} · {b.owner}</div>
-                    <div className="bk-service">{b.service} · {b.amount}</div>
+              {upcomingBks.length === 0 ? (
+                <div style={{ padding:"16px 0", fontSize:12, color:"#9ec9e0", textAlign:"center" }}>No upcoming bookings this week.</div>
+              ) : upcomingBks.map((b, i) => {
+                const d = new Date(b.scheduled_at);
+                const dayLabel = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d.getDay()];
+                return (
+                  <div key={b.id} className="booking-row">
+                    <div className="bk-avatar" style={{ background: colorFor(i) }}>
+                      {(b.customers?.first_name?.[0] ?? "?").toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="bk-name">{petName(b)} · {b.customers ? `${b.customers.first_name} ${b.customers.last_name}` : "Customer"}</div>
+                      <div className="bk-service">{svcName(b)} · ฿{(b.total_amount ?? 0).toLocaleString()}</div>
+                    </div>
+                    <div className="bk-time">
+                      <div className="bk-time-main">{fmtTime12(b.scheduled_at)}</div>
+                      <div style={{ marginTop: 3, fontSize: 11, color: "#9ec9e0" }}>{dayLabel} {d.getDate()}/{d.getMonth()+1}</div>
+                    </div>
+                    <span style={{ fontSize:11, fontWeight:600, padding:"3px 10px", borderRadius:100, background:"rgba(34,197,94,0.12)", color:"#16a34a", whiteSpace:"nowrap" }}>
+                      {b.status.charAt(0).toUpperCase() + b.status.slice(1)}
+                    </span>
                   </div>
-                  <div className="bk-time">
-                    <div className="bk-time-main">{b.time}</div>
-                    <div style={{ marginTop: 3, fontSize: 11, color: "#9ec9e0" }}>{b.date}</div>
-                  </div>
-                  <span style={{ fontSize:11, fontWeight:600, padding:"3px 10px", borderRadius:100, background:"rgba(34,197,94,0.12)", color:"#16a34a", whiteSpace:"nowrap" }}>Confirmed</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -283,23 +423,30 @@ export default function VendorDashboard() {
             </div>
             <div className="panel-body">
               <div style={{ textAlign: "center", paddingBottom: 16 }}>
-                <div style={{ fontSize: 11, color: "#5a8fa8", marginBottom: 4 }}>December 2024</div>
-                <div style={{ fontSize: 32, fontWeight: 700, color: "#00171F", letterSpacing: -1.5, lineHeight: 1 }}>฿42,800</div>
-                <div style={{ fontSize: 12, color: "#22c55e", fontWeight: 500, marginTop: 4 }}>↑ 18% vs last month</div>
+                <div style={{ fontSize: 11, color: "#5a8fa8", marginBottom: 4 }}>
+                  {now.toLocaleString("en-US", { month: "long", year: "numeric" })}
+                </div>
+                <div style={{ fontSize: 32, fontWeight: 700, color: "#00171F", letterSpacing: -1.5, lineHeight: 1 }}>
+                  ฿{revenueMonth.toLocaleString()}
+                </div>
+                <div style={{ fontSize: 12, color: "#9ec9e0", fontWeight: 500, marginTop: 4 }}>
+                  {revenueMonth > 0 ? "Month to date" : "No revenue yet this month"}
+                </div>
               </div>
               <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 80 }}>
-                {revenueWeeks.map((b, i) => (
+                {revenueWeekBars.map((b, i) => (
                   <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", height: "100%", justifyContent: "flex-end" }}>
                     <div style={{
                       borderRadius: "5px 5px 0 0",
                       height: `${Math.round((b.val / maxBar) * 100)}%`,
-                      background: i === 5 ? "#17A8FF" : "rgba(23,168,255,0.18)",
+                      minHeight: b.val > 0 ? 4 : 0,
+                      background: i === new Date().getDay() - 1 ? "#17A8FF" : "rgba(23,168,255,0.18)",
                     }} />
                   </div>
                 ))}
               </div>
               <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
-                {revenueWeeks.map((b, i) => (
+                {revenueWeekBars.map((b, i) => (
                   <div key={i} style={{ flex: 1, textAlign: "center", fontSize: 9, color: "#7eb5d6" }}>{b.label}</div>
                 ))}
               </div>

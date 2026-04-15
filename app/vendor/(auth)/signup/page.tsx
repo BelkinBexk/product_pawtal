@@ -8,6 +8,8 @@ import { supabase } from "@/lib/supabase";
 const SERVICE_TYPES = ["Grooming", "Day Care", "Training", "Boarding", "Vet Checkup", "Dog Walking", "Pet Taxi", "Other"];
 const LOCATIONS     = ["Sukhumvit", "Thonglor", "Asok", "Phrom Phong", "Ekkamai", "On Nut", "Other"];
 
+type Errs = Record<string, string>;
+
 export default function VendorSignupPage() {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -29,30 +31,44 @@ export default function VendorSignupPage() {
   // Step 3 — submit
   const [pdpa,    setPdpa]    = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState("");
+  const [errs,    setErrs]    = useState<Errs>({});
+
+  const clearErr = (field: string) =>
+    setErrs(prev => { const next = { ...prev }; delete next[field]; return next; });
 
   // ── Step 1 validation ──────────────────────────────────────────────────────
   const handleStep1 = (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
+    const next: Errs = {};
+    if (!firstName.trim()) next.firstName = "First name is required.";
+    if (!lastName.trim())  next.lastName  = "Last name is required.";
+    if (!phone.trim())     next.phone     = "Phone number is required.";
+    if (!email.trim())     next.email     = "Email is required.";
+    if (!password)         next.password  = "Password is required.";
+    else if (password.length < 8) next.password = "Password must be at least 8 characters.";
+    if (Object.keys(next).length) { setErrs(next); return; }
+    setErrs({});
     setStep(2);
   };
 
   // ── Step 2 validation ──────────────────────────────────────────────────────
   const handleStep2 = (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    if (!serviceType) { setError("Please select a service type."); return; }
-    if (!area)        { setError("Please select your area."); return; }
+    const next: Errs = {};
+    if (!shopName.trim()) next.shopName    = "Business name is required.";
+    if (!serviceType)     next.serviceType = "Please select a service type.";
+    if (!area)            next.area        = "Please select your area.";
+    if (!address.trim())  next.address     = "Address is required.";
+    if (Object.keys(next).length) { setErrs(next); return; }
+    setErrs({});
     setStep(3);
   };
 
   // ── Step 3 submit — create account ────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    if (!pdpa) { setError("You must agree to the PDPA consent to continue."); return; }
+    if (!pdpa) { setErrs({ pdpa: "You must agree to the PDPA consent to continue." }); return; }
+    setErrs({});
 
     setLoading(true);
 
@@ -77,7 +93,7 @@ export default function VendorSignupPage() {
 
     if (signUpError) {
       setLoading(false);
-      setError(signUpError.message);
+      setErrs({ submit: signUpError.message });
       return;
     }
 
@@ -155,8 +171,6 @@ export default function VendorSignupPage() {
             ))}
           </div>
 
-          {error && <div className="login-error">{error}</div>}
-
           {/* ── Step 1: Personal Info ── */}
           {step === 1 && (
             <>
@@ -168,25 +182,29 @@ export default function VendorSignupPage() {
                   <div className="login-field">
                     <label htmlFor="vs-fname">First Name</label>
                     <input id="vs-fname" type="text" className="login-input" placeholder="Somchai"
-                      value={firstName} onChange={e => setFirstName(e.target.value)} required />
+                      value={firstName} onChange={e => { setFirstName(e.target.value); clearErr("firstName"); }} />
+                    {errs.firstName && <div className="login-field-error">{errs.firstName}</div>}
                   </div>
                   <div className="login-field">
                     <label htmlFor="vs-lname">Last Name</label>
                     <input id="vs-lname" type="text" className="login-input" placeholder="Jaidee"
-                      value={lastName} onChange={e => setLastName(e.target.value)} required />
+                      value={lastName} onChange={e => { setLastName(e.target.value); clearErr("lastName"); }} />
+                    {errs.lastName && <div className="login-field-error">{errs.lastName}</div>}
                   </div>
                 </div>
 
                 <div className="login-field">
                   <label htmlFor="vs-phone">Phone Number</label>
                   <input id="vs-phone" type="tel" className="login-input" placeholder="08X-XXX-XXXX"
-                    value={phone} onChange={e => setPhone(e.target.value)} required />
+                    value={phone} onChange={e => { setPhone(e.target.value); clearErr("phone"); }} />
+                  {errs.phone && <div className="login-field-error">{errs.phone}</div>}
                 </div>
 
                 <div className="login-field">
                   <label htmlFor="vs-email">Email</label>
                   <input id="vs-email" type="email" className="login-input" placeholder="you@yourbusiness.com"
-                    value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" />
+                    value={email} onChange={e => { setEmail(e.target.value); clearErr("email"); }} autoComplete="email" />
+                  {errs.email && <div className="login-field-error">{errs.email}</div>}
                 </div>
 
                 <div className="login-field">
@@ -194,7 +212,7 @@ export default function VendorSignupPage() {
                   <div className="login-input-wrap">
                     <input id="vs-pw" type={showPw ? "text" : "password"} className="login-input"
                       placeholder="Min. 8 characters"
-                      value={password} onChange={e => setPassword(e.target.value)} required />
+                      value={password} onChange={e => { setPassword(e.target.value); clearErr("password"); }} />
                     <button type="button" className="login-eye" onClick={() => setShowPw(v => !v)}>
                       {showPw
                         ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
@@ -202,6 +220,7 @@ export default function VendorSignupPage() {
                       }
                     </button>
                   </div>
+                  {errs.password && <div className="login-field-error">{errs.password}</div>}
                 </div>
 
                 <button type="submit" className="login-btn">Continue →</button>
@@ -224,26 +243,29 @@ export default function VendorSignupPage() {
                 <div className="login-field">
                   <label htmlFor="vs-shop">Business / Shop Name</label>
                   <input id="vs-shop" type="text" className="login-input" placeholder="Happy Paws Grooming"
-                    value={shopName} onChange={e => setShopName(e.target.value)} required />
+                    value={shopName} onChange={e => { setShopName(e.target.value); clearErr("shopName"); }} />
+                  {errs.shopName && <div className="login-field-error">{errs.shopName}</div>}
                 </div>
 
                 <div className="login-field">
                   <label htmlFor="vs-stype">Service Type</label>
                   <select id="vs-stype" className="login-input su-select"
-                    value={serviceType} onChange={e => setServiceType(e.target.value)}>
+                    value={serviceType} onChange={e => { setServiceType(e.target.value); clearErr("serviceType"); }}>
                     <option value="">Select your main service…</option>
                     {SERVICE_TYPES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
+                  {errs.serviceType && <div className="login-field-error">{errs.serviceType}</div>}
                 </div>
 
                 <div className="su-row">
                   <div className="login-field">
                     <label htmlFor="vs-area">Area / Location</label>
                     <select id="vs-area" className="login-input su-select"
-                      value={area} onChange={e => setArea(e.target.value)}>
+                      value={area} onChange={e => { setArea(e.target.value); clearErr("area"); }}>
                       <option value="">Select area…</option>
                       {LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
                     </select>
+                    {errs.area && <div className="login-field-error">{errs.area}</div>}
                   </div>
                 </div>
 
@@ -251,15 +273,16 @@ export default function VendorSignupPage() {
                   <label htmlFor="vs-addr">Address</label>
                   <textarea id="vs-addr" className="login-input su-textarea"
                     placeholder="e.g. 123/45 Sukhumvit Soi 39, Khlong Toei Nuea, Watthana, Bangkok 10110"
-                    value={address} onChange={e => setAddress(e.target.value)} rows={3} required />
+                    value={address} onChange={e => { setAddress(e.target.value); clearErr("address"); }} rows={3} />
+                  {errs.address && <div className="login-field-error">{errs.address}</div>}
                 </div>
 
-                <div style={{ display: "flex", gap: 12 }}>
-                  <button type="button" className="login-create-btn" style={{ marginTop: 0 }}
-                    onClick={() => { setError(""); setStep(1); }}>
+                <div style={{ display: "flex", gap: 12, alignItems: "stretch" }}>
+                  <button type="button" className="login-create-btn" style={{ marginTop: 0, marginBottom: 0, flex: 1, padding: "16px" }}
+                    onClick={() => { setErrs({}); setStep(1); }}>
                     ← Back
                   </button>
-                  <button type="submit" className="login-btn" style={{ marginTop: 0 }}>
+                  <button type="submit" className="login-btn" style={{ marginTop: 0, marginBottom: 0, flex: 1, padding: "16px" }}>
                     Review →
                   </button>
                 </div>
@@ -278,7 +301,7 @@ export default function VendorSignupPage() {
                 <div className="vsu-review-card">
                   <div className="vsu-review-header">
                     <span className="vsu-review-title">Personal Information</span>
-                    <button type="button" className="vsu-review-edit" onClick={() => { setError(""); setStep(1); }}>Edit</button>
+                    <button type="button" className="vsu-review-edit" onClick={() => { setErrs({}); setStep(1); }}>Edit</button>
                   </div>
                   <div className="vsu-review-grid">
                     <div className="vsu-review-item">
@@ -300,7 +323,7 @@ export default function VendorSignupPage() {
                 <div className="vsu-review-card">
                   <div className="vsu-review-header">
                     <span className="vsu-review-title">Business Information</span>
-                    <button type="button" className="vsu-review-edit" onClick={() => { setError(""); setStep(2); }}>Edit</button>
+                    <button type="button" className="vsu-review-edit" onClick={() => { setErrs({}); setStep(2); }}>Edit</button>
                   </div>
                   <div className="vsu-review-grid">
                     <div className="vsu-review-item" style={{ gridColumn: "1 / -1" }}>
@@ -325,7 +348,7 @@ export default function VendorSignupPage() {
                 {/* PDPA */}
                 <div className="su-pdpa">
                   <input id="vs-pdpa" type="checkbox" className="su-checkbox"
-                    checked={pdpa} onChange={e => setPdpa(e.target.checked)} />
+                    checked={pdpa} onChange={e => { setPdpa(e.target.checked); setErrs(prev => { const n = { ...prev }; delete n.pdpa; return n; }); }} />
                   <label htmlFor="vs-pdpa" className="su-pdpa-label">
                     I agree to Pawtal&apos;s{" "}
                     <a href="#" className="su-pdpa-link">Privacy Policy</a>,{" "}
@@ -333,13 +356,15 @@ export default function VendorSignupPage() {
                     <a href="#" className="su-pdpa-link">PDPA</a>.
                   </label>
                 </div>
+                {errs.pdpa && <div className="login-field-error" style={{ marginTop: 6 }}>{errs.pdpa}</div>}
+                {errs.submit && <div className="login-error" style={{ marginTop: 12 }}>{errs.submit}</div>}
 
-                <div style={{ display: "flex", gap: 12 }}>
-                  <button type="button" className="login-create-btn" style={{ marginTop: 0 }}
-                    onClick={() => { setError(""); setStep(2); }}>
+                <div style={{ display: "flex", gap: 12, alignItems: "stretch" }}>
+                  <button type="button" className="login-create-btn" style={{ marginTop: 0, marginBottom: 0, flex: 1, padding: "16px" }}
+                    onClick={() => { setErrs({}); setStep(2); }}>
                     ← Back
                   </button>
-                  <button type="submit" className="login-btn" style={{ marginTop: 0 }} disabled={loading}>
+                  <button type="submit" className="login-btn" style={{ marginTop: 0, marginBottom: 0, flex: 1, padding: "16px" }} disabled={loading}>
                     {loading ? "Creating account…" : "Create Vendor Account"}
                   </button>
                 </div>
