@@ -90,10 +90,11 @@ function dbToCalStatus(s: string): CalStatus {
 }
 
 function statusColor(s: CalStatus): string {
-  if (s === "in-progress") return "#17A8FF";
-  if (s === "completed")   return "#64748b";
+  if (s === "confirmed")   return "#17A8FF";
+  if (s === "in-progress") return "#003459";
+  if (s === "completed")   return "#10B981";
   if (s === "cancelled")   return "#ef4444";
-  return "#22c55e";
+  return "#17A8FF";
 }
 
 function mapToCalEvent(b: DbBooking): CalEvent {
@@ -122,36 +123,11 @@ function mapToCalEvent(b: DbBooking): CalEvent {
   };
 }
 
-// ── Demo mode ──────────────────────────────────────────────────────────────────
-const DEMO_MODE = true;
-
-const MOCK_CAL_BOOKINGS: DbBooking[] = [
-  { id:"mk01", booking_reference:"BK-202604-2341", scheduled_at:"2026-04-15T02:00:00Z", status:"completed",   total_amount:900, pet_name:null, pet_notes:null, customer_id:"c0000001-0000-4000-8000-000000000001", customers:{first_name:"Mintra",   last_name:"Saelim",    phone:"081-234-5678"}, pets:{name:"Butter", breed:"Poodle",           weight_kg:4.2, medical_notes:null}, services:{name:"Full Grooming Package", category:"Grooming", duration_min:120} },
-  { id:"mk02", booking_reference:"BK-202604-2342", scheduled_at:"2026-04-15T03:30:00Z", status:"in_progress", total_amount:450, pet_name:null, pet_notes:null, customer_id:"c0000002-0000-4000-8000-000000000002", customers:{first_name:"Warat",    last_name:"Chaiwong",  phone:"082-345-6789"}, pets:{name:"Mochi",  breed:"Shih Tzu",         weight_kg:3.8, medical_notes:null}, services:{name:"Bath & Brush",          category:"Grooming", duration_min:60}  },
-  { id:"mk03", booking_reference:"BK-202604-2343", scheduled_at:"2026-04-15T06:00:00Z", status:"confirmed",   total_amount:650, pet_name:null, pet_notes:null, customer_id:"c0000003-0000-4000-8000-000000000003", customers:{first_name:"Anchana",  last_name:"Pimjai",    phone:"083-456-7890"}, pets:{name:"Nala",   breed:"Persian",          weight_kg:3.2, medical_notes:null}, services:{name:"Cat Grooming",          category:"Grooming", duration_min:90}  },
-  { id:"mk04", booking_reference:"BK-202604-2344", scheduled_at:"2026-04-15T07:30:00Z", status:"confirmed",   total_amount:900, pet_name:null, pet_notes:null, customer_id:"c0000004-0000-4000-8000-000000000004", customers:{first_name:"Prapai",   last_name:"Thaweesap", phone:"084-567-8901"}, pets:{name:"Max",    breed:"Golden Retriever", weight_kg:28,  medical_notes:null}, services:{name:"Full Grooming Package", category:"Grooming", duration_min:120} },
-  { id:"mk05", booking_reference:"BK-202604-2345", scheduled_at:"2026-04-15T09:00:00Z", status:"confirmed",   total_amount:250, pet_name:null, pet_notes:null, customer_id:"c0000005-0000-4000-8000-000000000005", customers:{first_name:"Natthida", last_name:"Phongsri",  phone:"085-678-9012"}, pets:{name:"Coco",   breed:"French Bulldog",   weight_kg:9,   medical_notes:null}, services:{name:"Nail Trim & Ear Clean", category:"Grooming", duration_min:30}  },
-  { id:"mk06", booking_reference:"BK-202604-2338", scheduled_at:"2026-04-14T02:00:00Z", status:"completed",   total_amount:900, pet_name:null, pet_notes:null, customer_id:"c0000002-0000-4000-8000-000000000002", customers:{first_name:"Warat",    last_name:"Chaiwong",  phone:"082-345-6789"}, pets:{name:"Mochi",  breed:"Shih Tzu",         weight_kg:3.8, medical_notes:null}, services:{name:"Full Grooming Package", category:"Grooming", duration_min:120} },
-  { id:"mk07", booking_reference:"BK-202604-2339", scheduled_at:"2026-04-14T04:00:00Z", status:"completed",   total_amount:650, pet_name:null, pet_notes:null, customer_id:"c0000003-0000-4000-8000-000000000003", customers:{first_name:"Anchana",  last_name:"Pimjai",    phone:"083-456-7890"}, pets:{name:"Nala",   breed:"Persian",          weight_kg:3.2, medical_notes:null}, services:{name:"Cat Grooming",          category:"Grooming", duration_min:90}  },
-  { id:"mk08", booking_reference:"BK-202604-2340", scheduled_at:"2026-04-14T07:00:00Z", status:"completed",   total_amount:650, pet_name:null, pet_notes:null, customer_id:"c0000006-0000-4000-8000-000000000006", customers:{first_name:"Suda",     last_name:"Chomchan",  phone:"086-789-0123"}, pets:{name:"Luna",   breed:"Ragdoll",          weight_kg:5.1, medical_notes:null}, services:{name:"Cat Grooming",          category:"Grooming", duration_min:90}  },
-  { id:"mk09", booking_reference:"BK-202604-2335", scheduled_at:"2026-04-13T02:00:00Z", status:"completed",   total_amount:450, pet_name:null, pet_notes:null, customer_id:"c0000001-0000-4000-8000-000000000001", customers:{first_name:"Mintra",   last_name:"Saelim",    phone:"081-234-5678"}, pets:{name:"Butter", breed:"Poodle",           weight_kg:4.2, medical_notes:null}, services:{name:"Bath & Brush",          category:"Grooming", duration_min:60}  },
-  { id:"mk10", booking_reference:"BK-202604-2336", scheduled_at:"2026-04-13T04:00:00Z", status:"completed",   total_amount:900, pet_name:null, pet_notes:null, customer_id:"c0000004-0000-4000-8000-000000000004", customers:{first_name:"Prapai",   last_name:"Thaweesap", phone:"084-567-8901"}, pets:{name:"Max",    breed:"Golden Retriever", weight_kg:28,  medical_notes:null}, services:{name:"Full Grooming Package", category:"Grooming", duration_min:120} },
-  { id:"mk11", booking_reference:"BK-202604-2337", scheduled_at:"2026-04-13T07:00:00Z", status:"completed",   total_amount:450, pet_name:null, pet_notes:null, customer_id:"c0000005-0000-4000-8000-000000000005", customers:{first_name:"Natthida", last_name:"Phongsri",  phone:"085-678-9012"}, pets:{name:"Coco",   breed:"French Bulldog",   weight_kg:9,   medical_notes:null}, services:{name:"Bath & Brush",          category:"Grooming", duration_min:60}  },
-  { id:"mk12", booking_reference:"BK-202604-2346", scheduled_at:"2026-04-16T04:00:00Z", status:"confirmed",   total_amount:450, pet_name:null, pet_notes:null, customer_id:"c0000001-0000-4000-8000-000000000001", customers:{first_name:"Mintra",   last_name:"Saelim",    phone:"081-234-5678"}, pets:{name:"Butter", breed:"Poodle",           weight_kg:4.2, medical_notes:null}, services:{name:"Bath & Brush",          category:"Grooming", duration_min:60}  },
-  { id:"mk13", booking_reference:"BK-202604-2347", scheduled_at:"2026-04-16T09:30:00Z", status:"confirmed",   total_amount:250, pet_name:null, pet_notes:null, customer_id:"c0000003-0000-4000-8000-000000000003", customers:{first_name:"Anchana",  last_name:"Pimjai",    phone:"083-456-7890"}, pets:{name:"Nala",   breed:"Persian",          weight_kg:3.2, medical_notes:null}, services:{name:"Nail Trim & Ear Clean", category:"Grooming", duration_min:30}  },
-  { id:"mk14", booking_reference:"BK-202604-2348", scheduled_at:"2026-04-17T02:00:00Z", status:"confirmed",   total_amount:900, pet_name:null, pet_notes:null, customer_id:"c0000002-0000-4000-8000-000000000002", customers:{first_name:"Warat",    last_name:"Chaiwong",  phone:"082-345-6789"}, pets:{name:"Mochi",  breed:"Shih Tzu",         weight_kg:3.8, medical_notes:null}, services:{name:"Full Grooming Package", category:"Grooming", duration_min:120} },
-  { id:"mk15", booking_reference:"BK-202604-2349", scheduled_at:"2026-04-18T02:00:00Z", status:"confirmed",   total_amount:350, pet_name:null, pet_notes:null, customer_id:"c0000004-0000-4000-8000-000000000004", customers:{first_name:"Prapai",   last_name:"Thaweesap", phone:"084-567-8901"}, pets:{name:"Max",    breed:"Golden Retriever", weight_kg:28,  medical_notes:null}, services:{name:"Full Day Care",         category:"Day Care", duration_min:480} },
-  { id:"mk16", booking_reference:"BK-202604-2350", scheduled_at:"2026-04-18T04:30:00Z", status:"confirmed",   total_amount:650, pet_name:null, pet_notes:null, customer_id:"c0000003-0000-4000-8000-000000000003", customers:{first_name:"Anchana",  last_name:"Pimjai",    phone:"083-456-7890"}, pets:{name:"Nala",   breed:"Persian",          weight_kg:3.2, medical_notes:null}, services:{name:"Cat Grooming",          category:"Grooming", duration_min:90}  },
-  { id:"mk17", booking_reference:"BK-202604-2351", scheduled_at:"2026-04-18T06:00:00Z", status:"confirmed",   total_amount:900, pet_name:null, pet_notes:null, customer_id:"c0000001-0000-4000-8000-000000000001", customers:{first_name:"Mintra",   last_name:"Saelim",    phone:"081-234-5678"}, pets:{name:"Butter", breed:"Poodle",           weight_kg:4.2, medical_notes:null}, services:{name:"Full Grooming Package", category:"Grooming", duration_min:120} },
-  { id:"mk18", booking_reference:"BK-202604-2352", scheduled_at:"2026-04-18T07:00:00Z", status:"confirmed",   total_amount:450, pet_name:null, pet_notes:null, customer_id:"c0000006-0000-4000-8000-000000000006", customers:{first_name:"Suda",     last_name:"Chomchan",  phone:"086-789-0123"}, pets:{name:"Luna",   breed:"Ragdoll",          weight_kg:5.1, medical_notes:null}, services:{name:"Bath & Brush",          category:"Grooming", duration_min:60}  },
-  { id:"mk19", booking_reference:"BK-202604-2353", scheduled_at:"2026-04-18T08:30:00Z", status:"confirmed",   total_amount:450, pet_name:null, pet_notes:null, customer_id:"c0000002-0000-4000-8000-000000000002", customers:{first_name:"Warat",    last_name:"Chaiwong",  phone:"082-345-6789"}, pets:{name:"Mochi",  breed:"Shih Tzu",         weight_kg:3.8, medical_notes:null}, services:{name:"Bath & Brush",          category:"Grooming", duration_min:60}  },
-  { id:"mk20", booking_reference:"BK-202604-2341", scheduled_at:"2026-04-13T02:00:00Z", status:"completed",   total_amount:900, pet_name:null, pet_notes:null, customer_id:"c0000001-0000-4000-8000-000000000001", customers:{first_name:"Mintra",   last_name:"Saelim",    phone:"081-234-5678"}, pets:{name:"Butter", breed:"Poodle",           weight_kg:4.2, medical_notes:null}, services:{name:"Full Grooming Package", category:"Grooming", duration_min:120} },
-];
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
-function CalHeading({ view, base, calEvents, today }: {
-  view: string; base: Date; calEvents: CalEvent[]; today: Date;
+function CalHeading({ view, base, calEvents }: {
+  view: string; base: Date; calEvents: CalEvent[];
 }) {
   if (view === "week") {
     const ws = getWeekStart(base);
@@ -475,11 +451,11 @@ function BookingDetailView({ ev, onBack, onStatusChange }: {
   const timeStr   = `${dayLabel} ${dateStr}, ${fmtTime(ev.hour, ev.min)} · ${fmtDur(ev.dur)}`;
 
   const statusColor2 =
-    status === "confirmed"   ? "#22c55e" :
-    status === "in-progress" ? "#17A8FF" :
-    status === "completed"   ? "#64748b" : "#ef4444";
+    status === "confirmed"   ? "#17A8FF" :
+    status === "in-progress" ? "#003459" :
+    status === "completed"   ? "#10B981" : "#ef4444";
   const statusLabel =
-    status === "in-progress" ? "In Progress" :
+    status === "in-progress" ? "Checked-in" :
     status.charAt(0).toUpperCase() + status.slice(1);
 
   const update = async (s: CalStatus) => {
@@ -676,9 +652,6 @@ export default function CalendarPage() {
   // ── Load from Supabase ─────────────────────────────────────────────────────
   useEffect(() => {
     (async () => {
-      if (DEMO_MODE) {
-        setRawBookings(MOCK_CAL_BOOKINGS); setLoading(false); return;
-      }
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
       const { data: prov } = await supabase.from("providers").select("id").eq("user_id", user.id).single();
@@ -752,7 +725,7 @@ export default function CalendarPage() {
                 <button className="cal-nav-btn" onClick={() => navigate(1)}>›</button>
               </div>
               <div>
-                <CalHeading view={view} base={base} calEvents={calEvents} today={TODAY} />
+                <CalHeading view={view} base={base} calEvents={calEvents} />
               </div>
             </div>
             <div className="cal-toolbar-right">

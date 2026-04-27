@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -36,22 +36,177 @@ type TableRow = { type: "group"; label: string } | { type: "row"; booking: Booki
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const STATUS_CONFIG: Record<BookingStatus, { label: string; color: string; dot: string }> = {
-  "confirmed":   { label:"Confirmed",   color:"#16a34a", dot:"#16a34a" },
-  "in-progress": { label:"In Progress", color:"#17A8FF", dot:"#17A8FF" },
-  "completed":   { label:"Completed",   color:"#64748b", dot:"#94a3b8" },
-  "cancelled":   { label:"Cancelled",   color:"#dc2626", dot:"#ef4444" },
+  "confirmed":   { label:"Confirmed",  color:"#17A8FF", dot:"#17A8FF" },
+  "in-progress": { label:"Checked-in", color:"#003459", dot:"#003459" },
+  "completed":   { label:"Completed",  color:"#10B981", dot:"#10B981" },
+  "cancelled":   { label:"Cancelled",  color:"#ef4444", dot:"#ef4444" },
   "pending":     { label:"Pending",     color:"#d97706", dot:"#f59e0b" },
 };
 
-const DATE_PRESETS = [
-  { key:"today",     label:"Today"      },
-  { key:"yesterday", label:"Yesterday"  },
-  { key:"week",      label:"This Week"  },
-  { key:"month",     label:"This Month" },
-  { key:"all",       label:"All Time"   },
-];
+const STATUS_OPTIONS = ["All", "Confirmed", "Checked-in", "Completed", "Cancelled"] as const;
 
-const STATUS_TABS = ["All", "Confirmed", "In Progress", "Completed", "Cancelled"] as const;
+function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+
+function toISO(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const WEEKDAYS    = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+
+function StatusSelect({ value, onChange, options }: {
+  value: string;
+  onChange: (v: string) => void;
+  options: readonly string[];
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    if (open) document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [open]);
+
+  return (
+    <div className="ss-wrap" ref={ref}>
+      <button
+        className={`ss-trigger${open ? " open" : ""}`}
+        onClick={() => setOpen(o => !o)}
+        type="button"
+      >
+        <span className="ss-value">{value}</span>
+        <svg viewBox="0 0 10 6" fill="none" width="9" height="9" style={{ flexShrink:0, transition:"transform 0.15s", transform: open ? "rotate(180deg)" : undefined }}>
+          <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+      {open && (
+        <div className="ss-popover">
+          {options.map(o => (
+            <button
+              key={o}
+              className={`ss-option${o === value ? " selected" : ""}`}
+              onClick={() => { onChange(o); setOpen(false); }}
+              type="button"
+            >
+              {o === value && (
+                <svg viewBox="0 0 12 12" fill="none" width="11" height="11" style={{ flexShrink:0, color:"var(--blue)" }}>
+                  <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+              {o !== value && <span style={{ width:11, flexShrink:0 }} />}
+              {o}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DatePickerField({ value, onChange, min, max }: {
+  value: string;
+  onChange: (v: string) => void;
+  min?: string;
+  max?: string;
+}) {
+  const [open, setOpen]           = useState(false);
+  const ref                       = useRef<HTMLDivElement>(null);
+  const selected                  = value ? new Date(value + "T00:00:00") : null;
+  const [viewYear,  setViewYear]  = useState(() => selected ? selected.getFullYear()  : new Date().getFullYear());
+  const [viewMonth, setViewMonth] = useState(() => selected ? selected.getMonth()     : new Date().getMonth());
+
+  useEffect(() => {
+    if (value) {
+      const d = new Date(value + "T00:00:00");
+      setViewYear(d.getFullYear());
+      setViewMonth(d.getMonth());
+    }
+  }, [value]);
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    if (open) document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [open]);
+
+  const firstDow      = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth   = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const daysInPrev    = new Date(viewYear, viewMonth, 0).getDate();
+
+  const cells: { date: Date; outside: boolean }[] = [];
+  for (let i = firstDow - 1; i >= 0; i--)
+    cells.push({ date: new Date(viewYear, viewMonth - 1, daysInPrev - i), outside: true });
+  for (let d = 1; d <= daysInMonth; d++)
+    cells.push({ date: new Date(viewYear, viewMonth, d), outside: false });
+  let next = 1;
+  while (cells.length % 7 !== 0)
+    cells.push({ date: new Date(viewYear, viewMonth + 1, next++), outside: true });
+
+  const prevMonth = () => viewMonth === 0  ? (setViewMonth(11), setViewYear(y => y-1)) : setViewMonth(m => m-1);
+  const nextMonth = () => viewMonth === 11 ? (setViewMonth(0),  setViewYear(y => y+1)) : setViewMonth(m => m+1);
+
+  const disabled = (d: Date) => (min && toISO(d) < min) || (max && toISO(d) > max) || false;
+
+  const displayVal = selected
+    ? selected.toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" })
+    : "Select date";
+
+  return (
+    <div className="dp-wrap" ref={ref}>
+      <div className={`bk-date-field dp-trigger${open ? " focused" : ""}`} onClick={() => setOpen(o => !o)}>
+        <span className={selected ? "dp-value" : "dp-placeholder"}>{displayVal}</span>
+        <svg viewBox="0 0 16 16" fill="none" width="13" height="13" style={{ color:"var(--blue)", flexShrink:0, marginLeft:6 }}>
+          <rect x="1" y="2" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="1.4"/>
+          <path d="M5 1v2M11 1v2M1 6h14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+        </svg>
+      </div>
+
+      {open && (
+        <div className="dp-popover">
+          <div className="dp-header">
+            <button className="dp-nav-btn" onClick={prevMonth}>‹</button>
+            <span className="dp-month-year">{MONTH_NAMES[viewMonth]} {viewYear}</span>
+            <button className="dp-nav-btn" onClick={nextMonth}>›</button>
+          </div>
+          <div className="dp-weekdays">
+            {WEEKDAYS.map(d => <span key={d} className="dp-weekday">{d}</span>)}
+          </div>
+          <div className="dp-grid">
+            {cells.map((cell, i) => {
+              const iso  = toISO(cell.date);
+              const isSel   = iso === value;
+              const isTod   = iso === todayISO();
+              const isDisab = disabled(cell.date);
+              return (
+                <button
+                  key={i}
+                  className={[
+                    "dp-day",
+                    cell.outside ? "outside" : "",
+                    isSel        ? "selected" : "",
+                    isTod && !isSel ? "today" : "",
+                    isDisab      ? "disabled" : "",
+                  ].filter(Boolean).join(" ")}
+                  onClick={() => { if (!isDisab) { onChange(iso); setOpen(false); } }}
+                >
+                  {cell.date.getDate()}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const AVATAR_COLORS = ["#22c55e","#17A8FF","#F5A623","#8b5cf6","#f43f5e","#0B93E8","#003459"];
 const colorFor = (i: number) => AVATAR_COLORS[i % AVATAR_COLORS.length];
@@ -90,19 +245,6 @@ function uiToDbStatus(s: BookingStatus): string {
   return s;
 }
 
-function getDateRange(preset: string) {
-  const now  = new Date();
-  const tod  = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const day  = now.getDay();
-  const mon  = new Date(tod); mon.setDate(tod.getDate() - (day === 0 ? 6 : day - 1));
-  const mStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const mEnd   = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  if (preset === "today")     return { from: tod, to: new Date(tod.getTime() + 86400000) };
-  if (preset === "yesterday") return { from: new Date(tod.getTime() - 86400000), to: tod };
-  if (preset === "week")      return { from: mon, to: new Date(mon.getTime() + 7 * 86400000) };
-  if (preset === "month")     return { from: mStart, to: mEnd };
-  return { from: new Date(0), to: new Date(9999, 0, 1) };
-}
 
 function hexToRgba(hex: string, alpha: number) {
   const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
@@ -367,6 +509,142 @@ function ActionDropdown({ booking, onStatusChange }: {
   onStatusChange: (id: string, s: BookingStatus) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [pos,  setPos]  = useState({ top: 0, left: 0 });
+  const dropRef         = useRef<HTMLDivElement>(null);
+  const btnRef          = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (
+        dropRef.current && !dropRef.current.contains(e.target as Node) &&
+        btnRef.current  && !btnRef.current.contains(e.target as Node)
+      ) setOpen(false);
+    };
+    if (open) document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [open]);
+
+  const handleOpen = () => {
+    if (btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      setPos({ top: r.bottom + 6, left: r.right - 160 });
+    }
+    setOpen(o => !o);
+  };
+
+  if (booking.status === "completed") return <span style={{ fontSize:11, color:"var(--muted)" }}>—</span>;
+  if (booking.status === "cancelled") return <span style={{ fontSize:11, color:"#dc2626" }}>Cancelled</span>;
+
+  return (
+    <>
+      <button ref={btnRef} className="bk-action-btn" onClick={handleOpen}>
+        Actions
+        <svg viewBox="0 0 10 6" fill="none" width="9" height="9" style={{ transition:"transform 0.15s", transform: open ? "rotate(180deg)" : undefined }}>
+          <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+      {open && (
+        <div ref={dropRef} className="bk-action-dropdown open"
+          style={{ position:"fixed", top:pos.top, left:pos.left, zIndex:1000 }}>
+          {booking.status === "confirmed" && (
+            <button className="bk-action-dropdown-item" onClick={() => { onStatusChange(booking.id, "in-progress"); setOpen(false); }}>
+              <svg viewBox="0 0 16 16" fill="none" width="13" height="13" style={{ color:"var(--blue)" }}>
+                <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.4"/>
+                <path d="M8 5v3l2 2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+              </svg>
+              Check in
+            </button>
+          )}
+          {booking.status === "in-progress" && (
+            <button className="bk-action-dropdown-item" onClick={() => { onStatusChange(booking.id, "completed"); setOpen(false); }}>
+              <svg viewBox="0 0 16 16" fill="none" width="13" height="13" style={{ color:"#16a34a" }}>
+                <path d="M3 8l4 4 6-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Mark complete
+            </button>
+          )}
+          <div className="bk-action-dropdown-divider" />
+          <button className="bk-action-dropdown-item danger" onClick={() => { onStatusChange(booking.id, "cancelled"); setOpen(false); }}>
+            <svg viewBox="0 0 16 16" fill="none" width="13" height="13">
+              <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            Cancel booking
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ── New Booking Page ──────────────────────────────────────────────────────────
+
+type BookingService = {
+  id:             string;
+  name:           string;
+  category:       string;
+  duration_min:   number;
+  base_price:     number;
+  varies_by_size: boolean;
+};
+
+const CAT_DOT_COLORS: Record<string, string> = {
+  "Grooming":    "#17A8FF",
+  "Bath & Trim": "#0B93E8",
+  "Day Care":    "#22c55e",
+  "Training":    "#F5A623",
+  "Boarding":    "#8b5cf6",
+};
+
+const CAT_EMOJI: Record<string, string> = {
+  "Grooming": "✂️", "Bath & Trim": "🛁", "Day Care": "🏡", "Training": "🐾", "Boarding": "🏨",
+};
+
+const TIME_SLOTS: { value: string; label: string }[] = (() => {
+  const slots: { value: string; label: string }[] = [];
+  for (let h = 8; h <= 20; h++) {
+    for (let m = 0; m < 60; m += 30) {
+      if (h === 20 && m > 0) break;
+      const value = `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`;
+      const h12   = h > 12 ? h - 12 : h === 0 ? 12 : h;
+      const ampm  = h >= 12 ? "PM" : "AM";
+      slots.push({ value, label: `${h12}:${String(m).padStart(2,"0")} ${ampm}` });
+    }
+  }
+  return slots;
+})();
+
+function generateBookingRef(): string {
+  const now = new Date();
+  const y   = now.getFullYear();
+  const mo  = String(now.getMonth() + 1).padStart(2, "0");
+  const n   = String(Math.floor(2500 + Math.random() * 1000));
+  return `BK-${y}${mo}-${n}`;
+}
+
+type NewBookingForm = {
+  serviceId:     string;
+  date:          string;
+  time:          string;
+  customerName:  string;
+  customerPhone: string;
+  petName:       string;
+  breed:         string;
+  notes:         string;
+};
+
+const EMPTY_FORM: NewBookingForm = {
+  serviceId: "", date: todayISO(), time: "09:00",
+  customerName: "", customerPhone: "", petName: "", breed: "", notes: "",
+};
+
+// ── Generic dropdown — same look as StatusSelect, full-width for form use ─────
+function FormDropdown({ value, onChange, options, placeholder }: {
+  value:       string;
+  onChange:    (v: string) => void;
+  options:     { value: string; label: string }[];
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -377,106 +655,377 @@ function ActionDropdown({ booking, onStatusChange }: {
     return () => document.removeEventListener("mousedown", h);
   }, [open]);
 
-  if (booking.status === "completed") return <span style={{ fontSize:11, color:"var(--muted)" }}>—</span>;
-  if (booking.status === "cancelled") return <span style={{ fontSize:11, color:"#dc2626" }}>Cancelled</span>;
+  const selected = options.find(o => o.value === value);
 
   return (
-    <div className="bk-action-wrap" ref={ref}>
-      <button className="bk-action-btn" onClick={() => setOpen(o => !o)}>
-        Actions
-        <svg viewBox="0 0 10 6" fill="none" width="9" height="9" style={{ transition:"transform 0.15s", transform: open ? "rotate(180deg)" : undefined }}>
+    <div className="add-bk-dd-wrap" ref={ref}>
+      <button
+        className={`add-bk-dd-trigger${open ? " open" : ""}${!value ? " placeholder" : ""}`}
+        onClick={() => setOpen(o => !o)}
+        type="button"
+      >
+        <span className="add-bk-dd-trigger-label">
+          {selected?.label ?? placeholder ?? "Select…"}
+        </span>
+        <svg viewBox="0 0 10 6" fill="none" width="9" height="9"
+          style={{ flexShrink:0, transition:"transform 0.15s", transform: open ? "rotate(180deg)" : undefined }}>
           <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       </button>
-      <div className={`bk-action-dropdown${open ? " open" : ""}`}>
-        {booking.status === "confirmed" && (
-          <button className="bk-action-dropdown-item" onClick={() => { onStatusChange(booking.id, "in-progress"); setOpen(false); }}>
-            <svg viewBox="0 0 16 16" fill="none" width="13" height="13" style={{ color:"var(--blue)" }}>
-              <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.4"/>
-              <path d="M8 5v3l2 2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-            </svg>
-            Check in
-          </button>
-        )}
-        {booking.status === "in-progress" && (
-          <button className="bk-action-dropdown-item" onClick={() => { onStatusChange(booking.id, "completed"); setOpen(false); }}>
-            <svg viewBox="0 0 16 16" fill="none" width="13" height="13" style={{ color:"#16a34a" }}>
-              <path d="M3 8l4 4 6-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Mark complete
-          </button>
-        )}
-        <div className="bk-action-dropdown-divider" />
-        <button className="bk-action-dropdown-item danger" onClick={() => { onStatusChange(booking.id, "cancelled"); setOpen(false); }}>
-          <svg viewBox="0 0 16 16" fill="none" width="13" height="13">
-            <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-          </svg>
-          Cancel booking
-        </button>
-      </div>
+      {open && (
+        <div className="add-bk-dd-popover">
+          {options.map(o => (
+            <button
+              key={o.value}
+              className={`add-bk-dd-option${o.value === value ? " selected" : ""}`}
+              onClick={() => { onChange(o.value); setOpen(false); }}
+              type="button"
+            >
+              {o.value === value
+                ? <svg viewBox="0 0 12 12" fill="none" width="11" height="11" style={{ flexShrink:0, color:"#17A8FF" }}>
+                    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                : <span style={{ width:11, flexShrink:0, display:"inline-block" }} />
+              }
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-// ── Demo mode ─────────────────────────────────────────────────────────────────
-const DEMO_MODE = true;
+function AddBookingPage({ services, onBack, onCreated }: {
+  services:  BookingService[];
+  onBack:    () => void;
+  onCreated: (b: DbBooking) => void;
+}) {
+  const [form, setForm] = useState<NewBookingForm>(EMPTY_FORM);
 
-const MOCK_DB_BOOKINGS: DbBooking[] = [
-  { id:"mk01", booking_reference:"BK-202604-2341", scheduled_at:"2026-04-15T02:00:00Z", status:"completed",   total_amount:900, pet_name:null, pet_notes:null, customer_id:"c0000001-0000-4000-8000-000000000001", customers:{id:"c0000001-0000-4000-8000-000000000001", first_name:"Mintra",   last_name:"Saelim",    phone:"081-234-5678"}, pets:{name:"Butter", breed:"Poodle",           weight_kg:4.2, medical_notes:null}, services:{name:"Full Grooming Package", category:"Grooming", duration_min:120} },
-  { id:"mk02", booking_reference:"BK-202604-2342", scheduled_at:"2026-04-15T03:30:00Z", status:"in_progress", total_amount:450, pet_name:null, pet_notes:null, customer_id:"c0000002-0000-4000-8000-000000000002", customers:{id:"c0000002-0000-4000-8000-000000000002", first_name:"Warat",    last_name:"Chaiwong",  phone:"082-345-6789"}, pets:{name:"Mochi",  breed:"Shih Tzu",         weight_kg:3.8, medical_notes:null}, services:{name:"Bath & Brush",          category:"Grooming", duration_min:60}  },
-  { id:"mk03", booking_reference:"BK-202604-2343", scheduled_at:"2026-04-15T06:00:00Z", status:"confirmed",   total_amount:650, pet_name:null, pet_notes:null, customer_id:"c0000003-0000-4000-8000-000000000003", customers:{id:"c0000003-0000-4000-8000-000000000003", first_name:"Anchana",  last_name:"Pimjai",    phone:"083-456-7890"}, pets:{name:"Nala",   breed:"Persian",          weight_kg:3.2, medical_notes:null}, services:{name:"Cat Grooming",          category:"Grooming", duration_min:90}  },
-  { id:"mk04", booking_reference:"BK-202604-2344", scheduled_at:"2026-04-15T07:30:00Z", status:"confirmed",   total_amount:900, pet_name:null, pet_notes:null, customer_id:"c0000004-0000-4000-8000-000000000004", customers:{id:"c0000004-0000-4000-8000-000000000004", first_name:"Prapai",   last_name:"Thaweesap", phone:"084-567-8901"}, pets:{name:"Max",    breed:"Golden Retriever", weight_kg:28,  medical_notes:null}, services:{name:"Full Grooming Package", category:"Grooming", duration_min:120} },
-  { id:"mk05", booking_reference:"BK-202604-2345", scheduled_at:"2026-04-15T09:00:00Z", status:"confirmed",   total_amount:250, pet_name:null, pet_notes:null, customer_id:"c0000005-0000-4000-8000-000000000005", customers:{id:"c0000005-0000-4000-8000-000000000005", first_name:"Natthida", last_name:"Phongsri",  phone:"085-678-9012"}, pets:{name:"Coco",   breed:"French Bulldog",   weight_kg:9,   medical_notes:null}, services:{name:"Nail Trim & Ear Clean", category:"Grooming", duration_min:30}  },
-  { id:"mk06", booking_reference:"BK-202604-2338", scheduled_at:"2026-04-14T02:00:00Z", status:"completed",   total_amount:900, pet_name:null, pet_notes:null, customer_id:"c0000002-0000-4000-8000-000000000002", customers:{id:"c0000002-0000-4000-8000-000000000002", first_name:"Warat",    last_name:"Chaiwong",  phone:"082-345-6789"}, pets:{name:"Mochi",  breed:"Shih Tzu",         weight_kg:3.8, medical_notes:null}, services:{name:"Full Grooming Package", category:"Grooming", duration_min:120} },
-  { id:"mk07", booking_reference:"BK-202604-2339", scheduled_at:"2026-04-14T04:00:00Z", status:"completed",   total_amount:650, pet_name:null, pet_notes:null, customer_id:"c0000003-0000-4000-8000-000000000003", customers:{id:"c0000003-0000-4000-8000-000000000003", first_name:"Anchana",  last_name:"Pimjai",    phone:"083-456-7890"}, pets:{name:"Nala",   breed:"Persian",          weight_kg:3.2, medical_notes:null}, services:{name:"Cat Grooming",          category:"Grooming", duration_min:90}  },
-  { id:"mk08", booking_reference:"BK-202604-2340", scheduled_at:"2026-04-14T07:00:00Z", status:"completed",   total_amount:650, pet_name:null, pet_notes:null, customer_id:"c0000006-0000-4000-8000-000000000006", customers:{id:"c0000006-0000-4000-8000-000000000006", first_name:"Suda",     last_name:"Chomchan",  phone:"086-789-0123"}, pets:{name:"Luna",   breed:"Ragdoll",          weight_kg:5.1, medical_notes:null}, services:{name:"Cat Grooming",          category:"Grooming", duration_min:90}  },
-  { id:"mk09", booking_reference:"BK-202604-2335", scheduled_at:"2026-04-13T02:00:00Z", status:"completed",   total_amount:450, pet_name:null, pet_notes:null, customer_id:"c0000001-0000-4000-8000-000000000001", customers:{id:"c0000001-0000-4000-8000-000000000001", first_name:"Mintra",   last_name:"Saelim",    phone:"081-234-5678"}, pets:{name:"Butter", breed:"Poodle",           weight_kg:4.2, medical_notes:null}, services:{name:"Bath & Brush",          category:"Grooming", duration_min:60}  },
-  { id:"mk10", booking_reference:"BK-202604-2336", scheduled_at:"2026-04-13T04:00:00Z", status:"completed",   total_amount:900, pet_name:null, pet_notes:null, customer_id:"c0000004-0000-4000-8000-000000000004", customers:{id:"c0000004-0000-4000-8000-000000000004", first_name:"Prapai",   last_name:"Thaweesap", phone:"084-567-8901"}, pets:{name:"Max",    breed:"Golden Retriever", weight_kg:28,  medical_notes:null}, services:{name:"Full Grooming Package", category:"Grooming", duration_min:120} },
-  { id:"mk11", booking_reference:"BK-202604-2337", scheduled_at:"2026-04-13T07:00:00Z", status:"completed",   total_amount:450, pet_name:null, pet_notes:null, customer_id:"c0000005-0000-4000-8000-000000000005", customers:{id:"c0000005-0000-4000-8000-000000000005", first_name:"Natthida", last_name:"Phongsri",  phone:"085-678-9012"}, pets:{name:"Coco",   breed:"French Bulldog",   weight_kg:9,   medical_notes:null}, services:{name:"Bath & Brush",          category:"Grooming", duration_min:60}  },
-  { id:"mk12", booking_reference:"BK-202604-2346", scheduled_at:"2026-04-16T04:00:00Z", status:"confirmed",   total_amount:450, pet_name:null, pet_notes:null, customer_id:"c0000001-0000-4000-8000-000000000001", customers:{id:"c0000001-0000-4000-8000-000000000001", first_name:"Mintra",   last_name:"Saelim",    phone:"081-234-5678"}, pets:{name:"Butter", breed:"Poodle",           weight_kg:4.2, medical_notes:null}, services:{name:"Bath & Brush",          category:"Grooming", duration_min:60}  },
-  { id:"mk13", booking_reference:"BK-202604-2347", scheduled_at:"2026-04-16T09:30:00Z", status:"confirmed",   total_amount:250, pet_name:null, pet_notes:null, customer_id:"c0000003-0000-4000-8000-000000000003", customers:{id:"c0000003-0000-4000-8000-000000000003", first_name:"Anchana",  last_name:"Pimjai",    phone:"083-456-7890"}, pets:{name:"Nala",   breed:"Persian",          weight_kg:3.2, medical_notes:null}, services:{name:"Nail Trim & Ear Clean", category:"Grooming", duration_min:30}  },
-  { id:"mk14", booking_reference:"BK-202604-2348", scheduled_at:"2026-04-17T02:00:00Z", status:"confirmed",   total_amount:900, pet_name:null, pet_notes:null, customer_id:"c0000002-0000-4000-8000-000000000002", customers:{id:"c0000002-0000-4000-8000-000000000002", first_name:"Warat",    last_name:"Chaiwong",  phone:"082-345-6789"}, pets:{name:"Mochi",  breed:"Shih Tzu",         weight_kg:3.8, medical_notes:null}, services:{name:"Full Grooming Package", category:"Grooming", duration_min:120} },
-  { id:"mk15", booking_reference:"BK-202604-2349", scheduled_at:"2026-04-18T02:00:00Z", status:"confirmed",   total_amount:350, pet_name:null, pet_notes:null, customer_id:"c0000004-0000-4000-8000-000000000004", customers:{id:"c0000004-0000-4000-8000-000000000004", first_name:"Prapai",   last_name:"Thaweesap", phone:"084-567-8901"}, pets:{name:"Max",    breed:"Golden Retriever", weight_kg:28,  medical_notes:null}, services:{name:"Full Day Care",         category:"Day Care", duration_min:480} },
-  { id:"mk16", booking_reference:"BK-202604-2350", scheduled_at:"2026-04-18T03:00:00Z", status:"confirmed",   total_amount:650, pet_name:null, pet_notes:null, customer_id:"c0000003-0000-4000-8000-000000000003", customers:{id:"c0000003-0000-4000-8000-000000000003", first_name:"Anchana",  last_name:"Pimjai",    phone:"083-456-7890"}, pets:{name:"Nala",   breed:"Persian",          weight_kg:3.2, medical_notes:null}, services:{name:"Cat Grooming",          category:"Grooming", duration_min:90}  },
-  { id:"mk17", booking_reference:"BK-202604-2351", scheduled_at:"2026-04-18T06:00:00Z", status:"confirmed",   total_amount:900, pet_name:null, pet_notes:null, customer_id:"c0000001-0000-4000-8000-000000000001", customers:{id:"c0000001-0000-4000-8000-000000000001", first_name:"Mintra",   last_name:"Saelim",    phone:"081-234-5678"}, pets:{name:"Butter", breed:"Poodle",           weight_kg:4.2, medical_notes:null}, services:{name:"Full Grooming Package", category:"Grooming", duration_min:120} },
-  { id:"mk18", booking_reference:"BK-202604-2320", scheduled_at:"2026-04-11T04:00:00Z", status:"cancelled",   total_amount:900, pet_name:null, pet_notes:null, customer_id:"c0000006-0000-4000-8000-000000000006", customers:{id:"c0000006-0000-4000-8000-000000000006", first_name:"Suda",     last_name:"Chomchan",  phone:"086-789-0123"}, pets:{name:"Luna",   breed:"Ragdoll",          weight_kg:5.1, medical_notes:null}, services:{name:"Full Grooming Package", category:"Grooming", duration_min:120} },
-];
+  const selectedSvc = services.find(s => s.id === form.serviceId);
+  const formValid   = !!(form.serviceId && form.date && form.time && form.customerName.trim() && form.customerPhone.trim() && form.petName.trim() && form.breed.trim());
+  const set = (k: keyof NewBookingForm, v: string) => setForm(f => ({ ...f, [k]: v }));
+
+  const serviceOptions = services.map(svc => ({
+    value: svc.id,
+    label: `${svc.name}${svc.varies_by_size ? "" : ` — ฿${svc.base_price.toLocaleString()}`} (${fmtDur(svc.duration_min)})`,
+  }));
+  const timeOptions = TIME_SLOTS.map(t => ({ value: t.value, label: t.label }));
+
+  const displayDate = form.date
+    ? new Date(form.date + "T00:00:00").toLocaleDateString("en-GB", { weekday:"short", day:"numeric", month:"short", year:"numeric" })
+    : "—";
+  const displayTime = TIME_SLOTS.find(t => t.value === form.time)?.label ?? form.time;
+
+  const handleCreate = () => {
+    if (!selectedSvc || !formValid) return;
+    const [fName, ...rest] = form.customerName.trim().split(" ");
+    const lName = rest.join(" ") || "—";
+    const uid   = `manual-${Date.now()}`;
+    onCreated({
+      id:                uid,
+      booking_reference: generateBookingRef(),
+      scheduled_at:      `${form.date}T${form.time}:00+07:00`,
+      status:            "confirmed",
+      total_amount:      selectedSvc.base_price,
+      pet_name:          form.petName.trim(),
+      pet_notes:         form.notes.trim() || null,
+      customer_id:       uid,
+      customers: { id: uid, first_name: fName, last_name: lName, phone: form.customerPhone.trim() || null },
+      pets: { name: form.petName.trim(), breed: form.breed.trim() || null, weight_kg: null, medical_notes: form.notes.trim() || null },
+      services: { name: selectedSvc.name, category: selectedSvc.category, duration_min: selectedSvc.duration_min },
+    });
+    onBack();
+  };
+
+  const summaryRows: { icon: React.ReactNode; label: string; val: string; muted: boolean }[] = [
+    {
+      icon: <path d="M2 4h12M2 8h8M2 12h10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>,
+      label: "Service",
+      val:   selectedSvc ? selectedSvc.name : "Not selected",
+      muted: !selectedSvc,
+    },
+    {
+      icon: <><rect x="1" y="2" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M5 1v2M11 1v2M1 6h14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></>,
+      label: "Date",
+      val:   form.date ? displayDate : "Not set",
+      muted: !form.date,
+    },
+    {
+      icon: <><circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.4"/><path d="M8 5v3l2 2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></>,
+      label: "Time",
+      val:   selectedSvc ? `${displayTime} · ${fmtDur(selectedSvc.duration_min)}` : displayTime,
+      muted: false,
+    },
+    {
+      icon: <><circle cx="8" cy="5" r="3" stroke="currentColor" strokeWidth="1.4"/><path d="M2 13c0-3.31 2.69-6 6-6s6 2.69 6 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></>,
+      label: "Customer",
+      val:   form.customerName.trim() || "Not set",
+      muted: !form.customerName.trim(),
+    },
+    {
+      icon: <><circle cx="8" cy="6" r="2.5" stroke="currentColor" strokeWidth="1.4"/><path d="M3 13c0-2.76 2.24-5 5-5s5 2.24 5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></>,
+      label: "Pet",
+      val:   form.petName.trim()
+               ? `${form.petName.trim()}${form.breed.trim() ? ` · ${form.breed.trim()}` : ""}`
+               : "Not set",
+      muted: !form.petName.trim(),
+    },
+  ];
+
+  return (
+    <main className="vd-main" style={{ overflowY:"auto" }}>
+      <div className="vd-content">
+
+        <button className="add-bk-back" onClick={onBack} type="button">
+          <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
+            <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Back to Bookings
+        </button>
+
+        <div style={{ marginBottom:24 }}>
+          <div className="add-bk-page-title">New Booking</div>
+          <div className="add-bk-page-sub">Manual entry · confirmed on creation</div>
+        </div>
+
+        <div className="add-bk-form-layout">
+
+          {/* ── Left: all form panels ── */}
+          <div>
+
+            {/* Service */}
+            <div className="add-bk-panel">
+              <div className="add-bk-section-title">Service <span style={{ color:"#ef4444", marginLeft:2 }}>*</span></div>
+              <div className="add-bk-field">
+                {services.length === 0 ? (
+                  <div className="add-bk-svc-hint-empty">
+                    <svg viewBox="0 0 16 16" fill="none" width="13" height="13" style={{ flexShrink:0 }}>
+                      <path d="M8 2a6 6 0 100 12A6 6 0 008 2zM8 7v3M8 5.5v.5" stroke="#b0ccd8" strokeWidth="1.4" strokeLinecap="round"/>
+                    </svg>
+                    No active services — add services in the Services page first.
+                  </div>
+                ) : (
+                  <>
+                    <FormDropdown
+                      value={form.serviceId}
+                      onChange={v => set("serviceId", v)}
+                      options={serviceOptions}
+                      placeholder="— Select a service —"
+                    />
+                    {selectedSvc ? (
+                      <div className="add-bk-svc-hint">
+                        <span className="add-bk-svc-hint-dot" style={{ background: CAT_DOT_COLORS[selectedSvc.category] ?? "#9ec9e0" }} />
+                        <span>{selectedSvc.category}</span>
+                        <span className="add-bk-svc-hint-sep">·</span>
+                        <span>{fmtDur(selectedSvc.duration_min)}</span>
+                        {!selectedSvc.varies_by_size && (
+                          <>
+                            <span className="add-bk-svc-hint-sep">·</span>
+                            <span style={{ fontWeight:600, color:"#003459" }}>฿{selectedSvc.base_price.toLocaleString()}</span>
+                          </>
+                        )}
+                      </div>
+                    ) : null}
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Schedule */}
+            <div className="add-bk-panel">
+              <div className="add-bk-section-title">Schedule</div>
+              <div className="add-bk-2col">
+                <div className="add-bk-field">
+                  <label className="add-bk-label">Date <span className="req">*</span></label>
+                  <div className="add-bk-dp-wrap">
+                    <DatePickerField value={form.date} onChange={v => set("date", v)} />
+                  </div>
+                </div>
+                <div className="add-bk-field">
+                  <label className="add-bk-label">Start Time <span className="req">*</span></label>
+                  <FormDropdown
+                    value={form.time}
+                    onChange={v => set("time", v)}
+                    options={timeOptions}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Customer */}
+            <div className="add-bk-panel">
+              <div className="add-bk-section-title">Customer</div>
+              <div className="add-bk-2col">
+                <div className="add-bk-field">
+                  <label className="add-bk-label">Full Name <span className="req">*</span></label>
+                  <input
+                    type="text"
+                    className="add-bk-input"
+                    placeholder="e.g. Mintra Saelim"
+                    value={form.customerName}
+                    onChange={e => set("customerName", e.target.value)}
+                  />
+                </div>
+                <div className="add-bk-field">
+                  <label className="add-bk-label">Phone <span className="req">*</span></label>
+                  <input
+                    type="text"
+                    className="add-bk-input"
+                    placeholder="e.g. 081-234-5678"
+                    value={form.customerPhone}
+                    onChange={e => set("customerPhone", e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Pet */}
+            <div className="add-bk-panel">
+              <div className="add-bk-section-title">Pet</div>
+              <div className="add-bk-2col">
+                <div className="add-bk-field">
+                  <label className="add-bk-label">Pet Name <span className="req">*</span></label>
+                  <input
+                    type="text"
+                    className="add-bk-input"
+                    placeholder="e.g. Butter"
+                    value={form.petName}
+                    onChange={e => set("petName", e.target.value)}
+                  />
+                </div>
+                <div className="add-bk-field">
+                  <label className="add-bk-label">Breed <span className="req">*</span></label>
+                  <input
+                    type="text"
+                    className="add-bk-input"
+                    placeholder="e.g. Poodle"
+                    value={form.breed}
+                    onChange={e => set("breed", e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="add-bk-field">
+                <label className="add-bk-label">Health Notes</label>
+                <textarea
+                  className="add-bk-input add-bk-textarea"
+                  placeholder="Any allergies, conditions, or special instructions…"
+                  value={form.notes}
+                  onChange={e => set("notes", e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Action bar */}
+            <div className="add-bk-action-bar">
+              <button className="add-bk-btn-secondary" onClick={onBack} type="button">
+                Cancel
+              </button>
+              <button
+                className="add-bk-btn-primary"
+                disabled={!formValid}
+                onClick={handleCreate}
+                type="button"
+              >
+                <svg viewBox="0 0 16 16" fill="none" width="13" height="13">
+                  <path d="M3 8l4 4 6-6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Create Booking
+              </button>
+            </div>
+
+          </div>
+
+          {/* ── Right: sticky summary ── */}
+          <div className="add-bk-summary-col">
+            <div className="add-bk-summary-card">
+              <div className="add-bk-summary-head">
+                <svg viewBox="0 0 16 16" fill="none" width="14" height="14" style={{ color:"#17A8FF", flexShrink:0 }}>
+                  <rect x="1" y="2" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="1.4"/>
+                  <path d="M5 1v2M11 1v2M1 6h14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+                </svg>
+                <div className="add-bk-summary-head-title">Booking Summary</div>
+              </div>
+              <div className="add-bk-summary-body">
+                {summaryRows.map(row => (
+                  <div key={row.label} className="add-bk-summary-row">
+                    <div className="add-bk-summary-icon">
+                      <svg viewBox="0 0 16 16" fill="none" width="13" height="13">{row.icon}</svg>
+                    </div>
+                    <div className="add-bk-summary-text">
+                      <div className="add-bk-summary-label">{row.label}</div>
+                      <div className={`add-bk-summary-val${row.muted ? " muted" : ""}`}>{row.val}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="add-bk-summary-foot">
+                <div className="add-bk-summary-foot-label">Total</div>
+                <div className="add-bk-summary-foot-amount">
+                  {selectedSvc
+                    ? (selectedSvc.varies_by_size ? "By size" : `฿${selectedSvc.base_price.toLocaleString()}`)
+                    : "—"}
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+  );
+}
+
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function BookingsPage() {
-  const [statusTab,  setStatusTab]  = useState<string>("All");
-  const [datePreset, setDatePreset] = useState("today");
-  const [drOpen,     setDrOpen]     = useState(false);
-  const [search,     setSearch]     = useState("");
-  const [statuses,   setStatuses]   = useState<Record<string, BookingStatus>>({});
-  const [selected,   setSelected]   = useState<Booking | null>(null);
-  const [loading,    setLoading]    = useState(true);
-  const [rawBookings, setRawBookings] = useState<DbBooking[]>([]);
-  const drRef = useRef<HTMLDivElement>(null);
+  const [statusTab,       setStatusTab]       = useState<string>("All");
+  const [dateFrom,        setDateFrom]        = useState(todayISO());
+  const [dateTo,          setDateTo]          = useState(todayISO());
+  const [search,          setSearch]          = useState("");
+  const [statuses,        setStatuses]        = useState<Record<string, BookingStatus>>({});
+  const [selected,        setSelected]        = useState<Booking | null>(null);
+  const [loading,         setLoading]         = useState(true);
+  const [rawBookings,     setRawBookings]     = useState<DbBooking[]>([]);
+  const [bookingServices, setBookingServices] = useState<BookingService[]>([]);
+  const [view,            setView]            = useState<"list" | "add-booking">("list");
 
   // ── Load from Supabase ─────────────────────────────────────────────────────
   useEffect(() => {
     (async () => {
-      if (DEMO_MODE) {
-        setRawBookings(MOCK_DB_BOOKINGS); setLoading(false); return;
-      }
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
-      const { data: prov } = await supabase.from("providers").select("id").eq("user_id", user.id).single();
+
+      const { data: prov } = await supabase
+        .from("providers")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+
       if (!prov) { setLoading(false); return; }
 
-      const { data: bks } = await supabase
-        .from("bookings")
-        .select(`
-          id, booking_reference, scheduled_at, status, total_amount, pet_name, pet_notes, customer_id,
-          customers(id, first_name, last_name, phone),
-          pets(name, breed, weight_kg, medical_notes),
-          services(name, category, duration_min)
-        `)
-        .eq("provider_id", prov.id)
-        .order("scheduled_at", { ascending: false });
+      const [{ data: bks }, { data: svcs }] = await Promise.all([
+        supabase
+          .from("bookings")
+          .select(`
+            id, booking_reference, scheduled_at, status, total_amount, pet_name, pet_notes, customer_id,
+            customers(id, first_name, last_name, phone),
+            pets(name, breed, weight_kg, medical_notes),
+            services(name, category, duration_min)
+          `)
+          .eq("provider_id", prov.id)
+          .order("scheduled_at", { ascending: false }),
+        supabase
+          .from("services")
+          .select("id, name, category, duration_min, base_price, varies_by_size")
+          .eq("provider_id", prov.id)
+          .eq("is_active", true)
+          .order("sort_order", { ascending: true }),
+      ]);
 
-      if (bks) setRawBookings(bks as unknown as DbBooking[]);
+      if (bks)  setRawBookings(bks as unknown as DbBooking[]);
+      if (svcs) setBookingServices(svcs as BookingService[]);
       setLoading(false);
     })();
   }, []);
@@ -486,14 +1035,6 @@ export default function BookingsPage() {
     [rawBookings]
   );
 
-  useEffect(() => {
-    const h = (e: MouseEvent) => {
-      if (drRef.current && !drRef.current.contains(e.target as Node)) setDrOpen(false);
-    };
-    if (drOpen) document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, [drOpen]);
-
   const getStatus = (b: Booking): BookingStatus => statuses[b.id] ?? b.status;
 
   const handleStatusChange = async (id: string, s: BookingStatus) => {
@@ -501,23 +1042,36 @@ export default function BookingsPage() {
     await supabase.from("bookings").update({ status: uiToDbStatus(s) }).eq("id", id);
   };
 
+  const handleBookingCreated = (newBk: DbBooking) => {
+    setRawBookings(prev => [newBk, ...prev]);
+    setView("list");
+  };
+
   const dateFiltered = useMemo(() => {
-    const { from, to } = getDateRange(datePreset);
     return bookings.filter(b => {
       const d = new Date(b.scheduledAt);
-      return d >= from && d < to;
+      if (dateFrom) {
+        const from = new Date(dateFrom + "T00:00:00");
+        if (d < from) return false;
+      }
+      if (dateTo) {
+        const to = new Date(dateTo + "T23:59:59");
+        if (d > to) return false;
+      }
+      return true;
     });
-  }, [bookings, datePreset]);
+  }, [bookings, dateFrom, dateTo]);
 
   const filtered = useMemo(() => {
     return dateFiltered.filter(b => {
       const status = getStatus(b);
       const matchStatus =
-        statusTab === "All"         ? true :
-        statusTab === "Confirmed"   ? status === "confirmed" :
-        statusTab === "In Progress" ? status === "in-progress" :
-        statusTab === "Completed"   ? status === "completed" :
-        statusTab === "Cancelled"   ? status === "cancelled" : true;
+        statusTab === "All"        ? true :
+        statusTab === "Confirmed"  ? status === "confirmed"   :
+        statusTab === "Checked-in" ? status === "in-progress" :
+        statusTab === "Completed"  ? status === "completed"   :
+        statusTab === "Cancelled"  ? status === "cancelled"   :
+        statusTab === "Pending"    ? status === "pending"     : true;
       const q = search.toLowerCase();
       const matchSearch = !q ||
         b.petName.toLowerCase().includes(q) ||
@@ -530,20 +1084,9 @@ export default function BookingsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateFiltered, statusTab, search, statuses]);
 
-  const counts = useMemo(() => ({
-    "All":         dateFiltered.length,
-    "Confirmed":   dateFiltered.filter(b => getStatus(b) === "confirmed").length,
-    "In Progress": dateFiltered.filter(b => getStatus(b) === "in-progress").length,
-    "Completed":   dateFiltered.filter(b => getStatus(b) === "completed").length,
-    "Cancelled":   dateFiltered.filter(b => getStatus(b) === "cancelled").length,
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [dateFiltered, statuses]);
-
   const tableRows = useMemo<TableRow[]>(() => {
     return filtered.map(b => ({ type:"row" as const, booking:b }));
   }, [filtered]);
-
-  const dateLabel = DATE_PRESETS.find(p => p.key === datePreset)?.label ?? "Today";
 
   if (selected) {
     return (
@@ -555,61 +1098,63 @@ export default function BookingsPage() {
     );
   }
 
+  if (view === "add-booking") {
+    return (
+      <AddBookingPage
+        services={bookingServices}
+        onBack={() => setView("list")}
+        onCreated={handleBookingCreated}
+      />
+    );
+  }
+
   return (
     <main className="vd-main" style={{ overflow:"hidden" }}>
       <div className="vd-content">
 
-        <div style={{ marginBottom:14 }}>
-          <div style={{ fontSize:20, fontWeight:700, color:"var(--text)", letterSpacing:"-0.5px" }}>Bookings · {dateLabel}</div>
-          <div style={{ fontSize:12, color:"var(--muted)", fontWeight:300, marginTop:2 }}>
-            {loading ? "Loading…" : `${filtered.length} appointment${filtered.length !== 1 ? "s" : ""} in range`}
-          </div>
-        </div>
-
-        {/* Tab row + date picker */}
-        <div className="bk-tabrow">
-          <div className="bk-tabs">
-            {STATUS_TABS.map(tab => (
-              <button key={tab} className={`bk-tab${statusTab === tab ? " active" : ""}`} onClick={() => setStatusTab(tab)}>
-                {tab}
-                <span className="bk-tab-count">{counts[tab]}</span>
-              </button>
-            ))}
-          </div>
-          <div className="bk-date-select-wrap" ref={drRef}>
-            <button className={`bk-dr-trigger${drOpen ? " open" : ""}`} onClick={() => setDrOpen(o => !o)}>
-              <svg viewBox="0 0 16 16" fill="none" width="13" height="13" style={{ color:"var(--blue)" }}>
-                <rect x="1" y="2" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="1.4"/>
-                <path d="M5 1v2M11 1v2M1 6h14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-              </svg>
-              {dateLabel}
-              <svg viewBox="0 0 10 6" fill="none" width="9" height="9" className="bk-dr-chevron">
-                <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-            <div className={`bk-dr-popover${drOpen ? " open" : ""}`} style={{ minWidth:160 }}>
-              <div className="bk-dr-presets" style={{ width:"100%", borderRight:"none" }}>
-                {DATE_PRESETS.map(p => (
-                  <button key={p.key} className={`bk-dr-preset${datePreset === p.key ? " active" : ""}`}
-                    onClick={() => { setDatePreset(p.key); setDrOpen(false); }}>
-                    {p.label}
-                  </button>
-                ))}
-              </div>
+        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:14 }}>
+          <div>
+            <div style={{ fontSize:20, fontWeight:700, color:"var(--text)", letterSpacing:"-0.5px" }}>Bookings</div>
+            <div style={{ fontSize:12, color:"var(--muted)", fontWeight:300, marginTop:2 }}>
+              {loading ? "Loading…" : `${filtered.length} appointment${filtered.length !== 1 ? "s" : ""} in range`}
             </div>
           </div>
+          <button
+            className="vd-new-booking"
+            onClick={() => setView("add-booking")}
+            type="button"
+          >
+            <svg viewBox="0 0 12 12" fill="none" width="12" height="12" style={{ marginRight:6, flexShrink:0 }}>
+              <path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+            </svg>
+            Add Booking
+          </button>
         </div>
 
-        {/* Toolbar */}
+        {/* Toolbar — search + status dropdown on left · date range + export on right */}
         <div className="bk-toolbar">
-          <div className="bk-search-wrap">
-            <svg className="bk-search-icon" viewBox="0 0 24 24" fill="none" stroke="#9ec9e0" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <input type="text" className="bk-search" placeholder="Search pet, owner or ref…"
-              value={search} onChange={e => setSearch(e.target.value)} />
+
+          {/* Left: search + status dropdown */}
+          <div style={{ display:"flex", alignItems:"center", gap:8, flex:1 }}>
+            <div className="bk-search-wrap">
+              <svg className="bk-search-icon" viewBox="0 0 24 24" fill="none" stroke="#9ec9e0" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input type="text" className="bk-search" placeholder="Search pet, owner or ref…"
+                value={search} onChange={e => setSearch(e.target.value)} />
+            </div>
+            <StatusSelect
+              value={statusTab}
+              onChange={setStatusTab}
+              options={STATUS_OPTIONS}
+            />
           </div>
+
+          {/* Right: date range + export */}
           <div className="bk-toolbar-right">
+            <DatePickerField value={dateFrom} onChange={setDateFrom} max={dateTo || undefined} />
+            <span className="bk-daterange-sep">–</span>
+            <DatePickerField value={dateTo} onChange={setDateTo} min={dateFrom || undefined} />
             <button className="bk-export-btn">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -617,6 +1162,7 @@ export default function BookingsPage() {
               Export
             </button>
           </div>
+
         </div>
 
         {/* Table */}
@@ -662,10 +1208,7 @@ export default function BookingsPage() {
                       )}
                     </td>
                     <td><span className="bk-svc-tag" style={{ color:b.serviceColor, background:b.serviceBg }}>{b.service}</span></td>
-                    <td>
-                      <div className="bk-time-main">{b.time}</div>
-                      <div className="bk-time-dur">{b.dur}</div>
-                    </td>
+                    <td className="bk-time-main">{b.time}</td>
                     <td className="bk-amount">฿{b.amount.toLocaleString()}</td>
                     <td className="bk-ref">{b.ref}</td>
                     <td>

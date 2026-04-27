@@ -4,14 +4,27 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
-// ── Heatmap static data (visualisation only) ──────────────────────────────────
+// ── Heatmap helpers ───────────────────────────────────────────────────────────
 const HM_HOUR_LABELS = ["8am","9am","10am","11am","12pm","1pm","2pm","3pm","4pm","5pm","6pm"];
 const HM_DAYS  = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-const HM_DATA_STORE: Record<string, number[][]> = {
-  "-1": [[1,1,3,2,1,1,2,2,1,0,0],[0,1,4,3,1,2,3,2,1,1,0],[0,1,2,2,1,1,2,1,0,0,0],[0,1,2,3,1,2,2,2,1,0,0],[1,1,3,4,2,2,3,3,1,1,1],[1,3,6,7,4,5,6,5,4,2,1],[1,2,4,5,2,3,4,3,2,2,0]],
-   "0": [[1,2,4,3,1,2,3,2,1,1,0],[0,1,5,4,2,3,4,3,2,1,1],[1,2,3,3,1,2,2,2,1,0,0],[0,1,3,4,2,2,3,2,1,1,0],[1,2,4,5,2,3,4,3,2,2,1],[2,4,7,8,5,6,7,6,5,3,2],[1,2,5,6,3,4,5,4,3,2,1]],
-   "1": [[1,2,3,3,1,2,2,2,1,1,0],[0,1,4,4,2,2,3,2,1,1,0],[1,1,3,3,1,2,2,2,1,0,0],[0,1,3,3,2,2,3,2,1,1,0],[1,2,4,4,2,3,3,3,2,1,1],[2,3,6,7,4,5,6,5,4,2,1],[1,2,4,5,3,3,5,4,3,2,1]],
-};
+
+// Build a 7-day × 11-hour count matrix from real bookings for a given week offset
+function buildHeatmap(bookings: DashBooking[], weekOffset: number): number[][] {
+  const ws = getMonday();
+  ws.setDate(ws.getDate() + weekOffset * 7);
+  const we = new Date(ws.getTime() + 7 * 86400000);
+  const data: number[][] = Array.from({ length: 7 }, () => new Array(11).fill(0));
+  bookings.forEach(b => {
+    if (b.status === "cancelled") return;
+    const d = new Date(b.scheduled_at);
+    if (d < ws || d >= we) return;
+    const dayIdx  = (d.getDay() + 6) % 7;   // Mon=0 … Sun=6
+    const hourIdx = d.getHours() - 8;        // 8am=0 … 6pm=10
+    if (hourIdx < 0 || hourIdx > 10) return;
+    data[dayIdx][hourIdx]++;
+  });
+  return data;
+}
 
 function hmCellColor(v: number, maxVal: number) {
   if (v === 0) return "#f4f8fc";
@@ -65,26 +78,6 @@ type DashBooking = {
   services: { name: string; duration_min: number } | null;
 };
 
-// ── DEMO MODE ─────────────────────────────────────────────────────────────────
-const DEMO_MODE = true;
-
-const MOCK_DASH_BOOKINGS: DashBooking[] = [
-  { id:"mk01", booking_reference:"BK-202604-2341", scheduled_at:"2026-04-15T02:00:00Z", status:"completed",   total_amount:900, customers:{first_name:"Mintra",   last_name:"Saelim"},    pets:{name:"Butter"}, services:{name:"Full Grooming Package", duration_min:120} },
-  { id:"mk02", booking_reference:"BK-202604-2342", scheduled_at:"2026-04-15T03:30:00Z", status:"in_progress", total_amount:450, customers:{first_name:"Warat",    last_name:"Chaiwong"},  pets:{name:"Mochi"},  services:{name:"Bath & Brush",          duration_min:60}  },
-  { id:"mk03", booking_reference:"BK-202604-2343", scheduled_at:"2026-04-15T06:00:00Z", status:"confirmed",   total_amount:650, customers:{first_name:"Anchana",  last_name:"Pimjai"},    pets:{name:"Nala"},   services:{name:"Cat Grooming",          duration_min:90}  },
-  { id:"mk04", booking_reference:"BK-202604-2344", scheduled_at:"2026-04-15T07:30:00Z", status:"confirmed",   total_amount:900, customers:{first_name:"Prapai",   last_name:"Thaweesap"}, pets:{name:"Max"},    services:{name:"Full Grooming Package", duration_min:120} },
-  { id:"mk05", booking_reference:"BK-202604-2345", scheduled_at:"2026-04-15T09:00:00Z", status:"confirmed",   total_amount:250, customers:{first_name:"Natthida", last_name:"Phongsri"},  pets:{name:"Coco"},   services:{name:"Nail Trim & Ear Clean", duration_min:30}  },
-  { id:"mk06", booking_reference:"BK-202604-2338", scheduled_at:"2026-04-14T02:00:00Z", status:"completed",   total_amount:900, customers:{first_name:"Warat",    last_name:"Chaiwong"},  pets:{name:"Mochi"},  services:{name:"Full Grooming Package", duration_min:120} },
-  { id:"mk07", booking_reference:"BK-202604-2339", scheduled_at:"2026-04-14T04:00:00Z", status:"completed",   total_amount:650, customers:{first_name:"Anchana",  last_name:"Pimjai"},    pets:{name:"Nala"},   services:{name:"Cat Grooming",          duration_min:90}  },
-  { id:"mk08", booking_reference:"BK-202604-2340", scheduled_at:"2026-04-14T07:00:00Z", status:"completed",   total_amount:650, customers:{first_name:"Suda",     last_name:"Chomchan"},  pets:{name:"Luna"},   services:{name:"Cat Grooming",          duration_min:90}  },
-  { id:"mk09", booking_reference:"BK-202604-2335", scheduled_at:"2026-04-13T02:00:00Z", status:"completed",   total_amount:450, customers:{first_name:"Mintra",   last_name:"Saelim"},    pets:{name:"Butter"}, services:{name:"Bath & Brush",          duration_min:60}  },
-  { id:"mk10", booking_reference:"BK-202604-2336", scheduled_at:"2026-04-13T04:00:00Z", status:"completed",   total_amount:900, customers:{first_name:"Prapai",   last_name:"Thaweesap"}, pets:{name:"Max"},    services:{name:"Full Grooming Package", duration_min:120} },
-  { id:"mk11", booking_reference:"BK-202604-2337", scheduled_at:"2026-04-13T07:00:00Z", status:"completed",   total_amount:450, customers:{first_name:"Natthida", last_name:"Phongsri"},  pets:{name:"Coco"},   services:{name:"Bath & Brush",          duration_min:60}  },
-  { id:"mk12", booking_reference:"BK-202604-2346", scheduled_at:"2026-04-16T04:00:00Z", status:"confirmed",   total_amount:450, customers:{first_name:"Mintra",   last_name:"Saelim"},    pets:{name:"Butter"}, services:{name:"Bath & Brush",          duration_min:60}  },
-  { id:"mk13", booking_reference:"BK-202604-2348", scheduled_at:"2026-04-17T02:00:00Z", status:"confirmed",   total_amount:900, customers:{first_name:"Warat",    last_name:"Chaiwong"},  pets:{name:"Mochi"},  services:{name:"Full Grooming Package", duration_min:120} },
-  { id:"mk14", booking_reference:"BK-202604-2349", scheduled_at:"2026-04-18T02:00:00Z", status:"confirmed",   total_amount:350, customers:{first_name:"Prapai",   last_name:"Thaweesap"}, pets:{name:"Max"},    services:{name:"Full Day Care",         duration_min:480} },
-  { id:"mk15", booking_reference:"BK-202604-2351", scheduled_at:"2026-04-18T06:00:00Z", status:"confirmed",   total_amount:900, customers:{first_name:"Mintra",   last_name:"Saelim"},    pets:{name:"Butter"}, services:{name:"Full Grooming Package", duration_min:120} },
-];
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function VendorDashboard() {
@@ -96,24 +89,28 @@ export default function VendorDashboard() {
 
   useEffect(() => {
     (async () => {
-      if (DEMO_MODE) {
-        setRatingAvg(4.9); setReviewCount(47); setBookings(MOCK_DASH_BOOKINGS); setLoading(false); return;
-      }
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
 
       const { data: prov } = await supabase
         .from("providers")
-        .select("id, rating, review_count")
+        .select("id, rating_avg, review_count")
         .eq("user_id", user.id)
         .single();
       if (!prov) { setLoading(false); return; }
 
-      setRatingAvg(prov.rating ?? 0);
+      setRatingAvg(prov.rating_avg ?? 0);
       setReviewCount(prov.review_count ?? 0);
 
-      const monthStart = new Date();
-      monthStart.setDate(1); monthStart.setHours(0,0,0,0);
+      // Load from start of current month (for monthly revenue chart) while
+      // still covering last/next week for the heatmap nav.
+      const rangeStart = new Date();
+      rangeStart.setDate(1);
+      rangeStart.setHours(0, 0, 0, 0);
+
+      const rangeEnd = new Date();
+      rangeEnd.setDate(rangeEnd.getDate() + 14);
+      rangeEnd.setHours(23, 59, 59, 999);
 
       const { data: bks } = await supabase
         .from("bookings")
@@ -124,7 +121,8 @@ export default function VendorDashboard() {
           services(name, duration_min)
         `)
         .eq("provider_id", prov.id)
-        .gte("scheduled_at", monthStart.toISOString())
+        .gte("scheduled_at", rangeStart.toISOString())
+        .lte("scheduled_at", rangeEnd.toISOString())
         .order("scheduled_at");
 
       if (bks) setBookings(bks as unknown as DashBooking[]);
@@ -151,18 +149,21 @@ export default function VendorDashboard() {
   const sum = (filter: (b: DashBooking) => boolean) =>
     bookings.filter(filter).reduce((s, b) => s + (b.total_amount ?? 0), 0);
 
+  const monthStart  = new Date(now.getFullYear(), now.getMonth(), 1);
   const revenueToday = sum(b => { const d = new Date(b.scheduled_at); return d >= todayStart && d < todayEnd && b.status === "completed"; });
   const revenueWeek  = sum(b => new Date(b.scheduled_at) >= weekStart && b.status === "completed");
-  const revenueMonth = sum(b => b.status === "completed");
+  const revenueMonth = sum(b => { const d = new Date(b.scheduled_at); return d >= monthStart && b.status === "completed"; });
 
-  const DAY_LABELS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-  const revenueWeekBars = DAY_LABELS.map((label, i) => {
-    const ds = new Date(weekStart); ds.setDate(weekStart.getDate() + i);
-    const de = new Date(ds.getTime() + 86400000);
+  // 4 weekly bars for the current month (W1 = days 1-7, W2 = 8-14, W3 = 15-21, W4 = 22-end)
+  const revenueMonthBars = [0, 1, 2, 3].map(wi => {
+    const ds = new Date(monthStart); ds.setDate(1 + wi * 7);
+    const de = new Date(monthStart); de.setDate(1 + (wi + 1) * 7);
     const val = sum(b => { const d = new Date(b.scheduled_at); return d >= ds && d < de && b.status === "completed"; });
-    return { label, val };
+    return { label: `W${wi + 1}`, val };
   });
-  const maxBar = Math.max(...revenueWeekBars.map(b => b.val), 1);
+  const maxBar = Math.max(...revenueMonthBars.map(b => b.val), 1);
+  // Index of the current week within this month (0-3)
+  const currentWeekIdx = Math.min(Math.floor((now.getDate() - 1) / 7), 3);
 
   const doneCount  = bookings.filter(b => b.status === "completed").length;
   const totalCount = bookings.filter(b => !["pending","new","cancelled"].includes(b.status)).length;
@@ -171,7 +172,7 @@ export default function VendorDashboard() {
   const circ   = +(2 * Math.PI * r).toFixed(2);
   const offset = +(circ * (1 - pct / 100)).toFixed(2);
 
-  const heatmapData = HM_DATA_STORE[String(Math.max(-1, Math.min(1, hmOffset)))] ?? HM_DATA_STORE["0"];
+  const heatmapData = buildHeatmap(bookings, Math.max(-1, Math.min(1, hmOffset)));
   const hmMax = Math.max(...heatmapData.flat());
   const { peakDay, peakHour, peakVal, topOff } = computeHeatmapInsights(heatmapData);
   const hmWeekLabel = hmOffset === 0 ? "This week" : hmOffset === -1 ? "Last week" : "Next week";
@@ -298,18 +299,29 @@ export default function VendorDashboard() {
           <div className="today-glance-body">
             {todayBks.length === 0 ? (
               <div className="glance-slot-empty" style={{ color:"#9ec9e0" }}>No bookings scheduled for today.</div>
-            ) : todayBks.map((b, i) => (
-              <div key={b.id} className="glance-slot" style={{ borderLeftColor: "#22c55e" }}>
-                <div className="glance-time">{fmtTime12(b.scheduled_at)}</div>
-                <div>
-                  <div className="glance-pet">{petName(b)} · {ownerFirst(b)}</div>
-                  <div className="glance-service">{svcName(b)} · ฿{(b.total_amount ?? 0).toLocaleString()}</div>
-                </div>
-                <span style={{ fontSize:11, fontWeight:600, padding:"3px 10px", borderRadius:100, background:"rgba(34,197,94,0.12)", color:"#16a34a", whiteSpace:"nowrap" }}>
-                  {b.status === "in_progress" ? "In Progress" : b.status.charAt(0).toUpperCase() + b.status.slice(1)}
-                </span>
-              </div>
-            ))}
+            ) : todayBks.map(b => {
+                const sc =
+                  b.status === "confirmed"   ? { bg:"rgba(23,168,255,0.12)", fg:"#17A8FF", border:"#17A8FF" } :
+                  b.status === "in_progress" ? { bg:"rgba(0,52,89,0.10)",    fg:"#003459", border:"#003459" } :
+                  b.status === "completed"   ? { bg:"rgba(16,185,129,0.12)", fg:"#10B981", border:"#10B981" } :
+                  b.status === "cancelled"   ? { bg:"rgba(239,68,68,0.10)",  fg:"#ef4444", border:"#ef4444" } :
+                                               { bg:"rgba(245,158,11,0.12)", fg:"#d97706", border:"#d97706" };
+                const label =
+                  b.status === "in_progress" ? "Checked-in" :
+                  b.status.charAt(0).toUpperCase() + b.status.slice(1);
+                return (
+                  <div key={b.id} className="glance-slot" style={{ borderLeftColor: sc.border }}>
+                    <div className="glance-time">{fmtTime12(b.scheduled_at)}</div>
+                    <div>
+                      <div className="glance-pet">{petName(b)} · {ownerFirst(b)}</div>
+                      <div className="glance-service">{svcName(b)} · ฿{(b.total_amount ?? 0).toLocaleString()}</div>
+                    </div>
+                    <span style={{ fontSize:11, fontWeight:600, padding:"3px 10px", borderRadius:100, background:sc.bg, color:sc.fg, whiteSpace:"nowrap" }}>
+                      {label}
+                    </span>
+                  </div>
+                );
+              })}
             <div className="glance-slot-empty">+ Add slot</div>
           </div>
         </div>
@@ -394,6 +406,15 @@ export default function VendorDashboard() {
               ) : upcomingBks.map((b, i) => {
                 const d = new Date(b.scheduled_at);
                 const dayLabel = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d.getDay()];
+                const sc =
+                  b.status === "confirmed"   ? { bg:"rgba(23,168,255,0.12)", fg:"#17A8FF" } :
+                  b.status === "in_progress" ? { bg:"rgba(0,52,89,0.10)",    fg:"#003459" } :
+                  b.status === "completed"   ? { bg:"rgba(16,185,129,0.12)", fg:"#10B981" } :
+                  b.status === "cancelled"   ? { bg:"rgba(239,68,68,0.10)",  fg:"#ef4444" } :
+                                               { bg:"rgba(245,158,11,0.12)", fg:"#d97706" };
+                const label =
+                  b.status === "in_progress" ? "Checked-in" :
+                  b.status.charAt(0).toUpperCase() + b.status.slice(1);
                 return (
                   <div key={b.id} className="booking-row">
                     <div className="bk-avatar" style={{ background: colorFor(i) }}>
@@ -407,8 +428,8 @@ export default function VendorDashboard() {
                       <div className="bk-time-main">{fmtTime12(b.scheduled_at)}</div>
                       <div style={{ marginTop: 3, fontSize: 11, color: "#9ec9e0" }}>{dayLabel} {d.getDate()}/{d.getMonth()+1}</div>
                     </div>
-                    <span style={{ fontSize:11, fontWeight:600, padding:"3px 10px", borderRadius:100, background:"rgba(34,197,94,0.12)", color:"#16a34a", whiteSpace:"nowrap" }}>
-                      {b.status.charAt(0).toUpperCase() + b.status.slice(1)}
+                    <span style={{ fontSize:11, fontWeight:600, padding:"3px 10px", borderRadius:100, background:sc.bg, color:sc.fg, whiteSpace:"nowrap" }}>
+                      {label}
                     </span>
                   </div>
                 );
@@ -434,20 +455,20 @@ export default function VendorDashboard() {
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 80 }}>
-                {revenueWeekBars.map((b, i) => (
+                {revenueMonthBars.map((bar, i) => (
                   <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", height: "100%", justifyContent: "flex-end" }}>
                     <div style={{
                       borderRadius: "5px 5px 0 0",
-                      height: `${Math.round((b.val / maxBar) * 100)}%`,
-                      minHeight: b.val > 0 ? 4 : 0,
-                      background: i === new Date().getDay() - 1 ? "#17A8FF" : "rgba(23,168,255,0.18)",
+                      height: `${Math.round((bar.val / maxBar) * 100)}%`,
+                      minHeight: bar.val > 0 ? 4 : 0,
+                      background: i === currentWeekIdx ? "#17A8FF" : "rgba(23,168,255,0.18)",
                     }} />
                   </div>
                 ))}
               </div>
               <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
-                {revenueWeekBars.map((b, i) => (
-                  <div key={i} style={{ flex: 1, textAlign: "center", fontSize: 9, color: "#7eb5d6" }}>{b.label}</div>
+                {revenueMonthBars.map((bar, i) => (
+                  <div key={i} style={{ flex: 1, textAlign: "center", fontSize: 9, color: i === currentWeekIdx ? "#17A8FF" : "#7eb5d6", fontWeight: i === currentWeekIdx ? 600 : 400 }}>{bar.label}</div>
                 ))}
               </div>
             </div>

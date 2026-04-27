@@ -41,41 +41,6 @@ function statusBadge(s: string) {
   return "badge badge-completed";
 }
 
-// ── Demo mode ─────────────────────────────────────────────────────────────────
-const DEMO_MODE = true;
-
-const MOCK_CUST_BOOKINGS: DbBooking[] = [
-  // Mintra — 8 visits
-  { id:"mk01", scheduled_at:"2026-04-15T02:00:00Z", status:"completed",   total_amount:900, customer_id:"c0000001-0000-4000-8000-000000000001", customers:{id:"c0000001-0000-4000-8000-000000000001", first_name:"Mintra",   last_name:"Saelim",    phone:"081-234-5678"}, pets:{name:"Butter", breed:"Poodle"} },
-  { id:"mk09", scheduled_at:"2026-04-13T02:00:00Z", status:"completed",   total_amount:450, customer_id:"c0000001-0000-4000-8000-000000000001", customers:{id:"c0000001-0000-4000-8000-000000000001", first_name:"Mintra",   last_name:"Saelim",    phone:"081-234-5678"}, pets:{name:"Butter", breed:"Poodle"} },
-  { id:"mk12", scheduled_at:"2026-04-16T04:00:00Z", status:"confirmed",   total_amount:450, customer_id:"c0000001-0000-4000-8000-000000000001", customers:{id:"c0000001-0000-4000-8000-000000000001", first_name:"Mintra",   last_name:"Saelim",    phone:"081-234-5678"}, pets:{name:"Butter", breed:"Poodle"} },
-  { id:"mk17", scheduled_at:"2026-04-18T06:00:00Z", status:"confirmed",   total_amount:900, customer_id:"c0000001-0000-4000-8000-000000000001", customers:{id:"c0000001-0000-4000-8000-000000000001", first_name:"Mintra",   last_name:"Saelim",    phone:"081-234-5678"}, pets:{name:"Butter", breed:"Poodle"} },
-  { id:"mr20", scheduled_at:"2026-03-28T02:00:00Z", status:"completed",   total_amount:900, customer_id:"c0000001-0000-4000-8000-000000000001", customers:{id:"c0000001-0000-4000-8000-000000000001", first_name:"Mintra",   last_name:"Saelim",    phone:"081-234-5678"}, pets:{name:"Butter", breed:"Poodle"} },
-  { id:"mr21", scheduled_at:"2026-03-14T02:00:00Z", status:"completed",   total_amount:900, customer_id:"c0000001-0000-4000-8000-000000000001", customers:{id:"c0000001-0000-4000-8000-000000000001", first_name:"Mintra",   last_name:"Saelim",    phone:"081-234-5678"}, pets:{name:"Butter", breed:"Poodle"} },
-  { id:"mr22", scheduled_at:"2026-02-26T02:00:00Z", status:"completed",   total_amount:900, customer_id:"c0000001-0000-4000-8000-000000000001", customers:{id:"c0000001-0000-4000-8000-000000000001", first_name:"Mintra",   last_name:"Saelim",    phone:"081-234-5678"}, pets:{name:"Butter", breed:"Poodle"} },
-  { id:"mr23", scheduled_at:"2026-01-25T02:00:00Z", status:"completed",   total_amount:900, customer_id:"c0000001-0000-4000-8000-000000000001", customers:{id:"c0000001-0000-4000-8000-000000000001", first_name:"Mintra",   last_name:"Saelim",    phone:"081-234-5678"}, pets:{name:"Butter", breed:"Poodle"} },
-  // Warat — 6 visits
-  { id:"mk02", scheduled_at:"2026-04-15T03:30:00Z", status:"in_progress", total_amount:450, customer_id:"c0000002-0000-4000-8000-000000000002", customers:{id:"c0000002-0000-4000-8000-000000000002", first_name:"Warat",    last_name:"Chaiwong",  phone:"082-345-6789"}, pets:{name:"Mochi",  breed:"Shih Tzu"} },
-  { id:"mk06", scheduled_at:"2026-04-14T02:00:00Z", status:"completed",   total_amount:900, customer_id:"c0000002-0000-4000-8000-000000000002", customers:{id:"c0000002-0000-4000-8000-000000000002", first_name:"Warat",    last_name:"Chaiwong",  phone:"082-345-6789"}, pets:{name:"Mochi",  breed:"Shih Tzu"} },
-  { id:"mk14", scheduled_at:"2026-04-17T02:00:00Z", status:"confirmed",   total_amount:900, customer_id:"c0000002-0000-4000-8000-000000000002", customers:{id:"c0000002-0000-4000-8000-000000000002", first_name:"Warat",    last_name:"Chaiwong",  phone:"082-345-6789"}, pets:{name:"Mochi",  breed:"Shih Tzu"} },
-  { id:"mr30", scheduled_at:"2026-03-25T04:00:00Z", status:"completed",   total_amount:450, customer_id:"c0000002-0000-4000-8000-000000000002", customers:{id:"c0000002-0000-4000-8000-000000000002", first_name:"Warat",    last_name:"Chaiwong",  phone:"082-345-6789"}, pets:{name:"Mochi",  breed:"Shih Tzu"} },
-  { id:"mr31", scheduled_at:"2026-02-18T02:00:00Z", status:"completed",   total_amount:900, customer_id:"c0000002-0000-4000-8000-000000000002", customers:{id:"c0000002-0000-4000-8000-000000000002", first_name:"Warat",    last_name:"Chaiwong",  phone:"082-345-6789"}, pets:{name:"Mochi",  breed:"Shih Tzu"} },
-  { id:"mr32", scheduled_at:"2026-01-18T04:00:00Z", status:"completed",   total_amount:900, customer_id:"c0000002-0000-4000-8000-000000000002", customers:{id:"c0000002-0000-4000-8000-000000000002", first_name:"Warat",    last_name:"Chaiwong",  phone:"082-345-6789"}, pets:{name:"Mochi",  breed:"Shih Tzu"} },
-  // Anchana — 4 visits
-  { id:"mk03", scheduled_at:"2026-04-15T06:00:00Z", status:"confirmed",   total_amount:650, customer_id:"c0000003-0000-4000-8000-000000000003", customers:{id:"c0000003-0000-4000-8000-000000000003", first_name:"Anchana",  last_name:"Pimjai",    phone:"083-456-7890"}, pets:{name:"Nala",   breed:"Persian"} },
-  { id:"mk07", scheduled_at:"2026-04-14T04:00:00Z", status:"completed",   total_amount:650, customer_id:"c0000003-0000-4000-8000-000000000003", customers:{id:"c0000003-0000-4000-8000-000000000003", first_name:"Anchana",  last_name:"Pimjai",    phone:"083-456-7890"}, pets:{name:"Nala",   breed:"Persian"} },
-  { id:"mk16", scheduled_at:"2026-04-18T03:00:00Z", status:"confirmed",   total_amount:650, customer_id:"c0000003-0000-4000-8000-000000000003", customers:{id:"c0000003-0000-4000-8000-000000000003", first_name:"Anchana",  last_name:"Pimjai",    phone:"083-456-7890"}, pets:{name:"Nala",   breed:"Persian"} },
-  { id:"mr40", scheduled_at:"2026-03-21T02:00:00Z", status:"completed",   total_amount:650, customer_id:"c0000003-0000-4000-8000-000000000003", customers:{id:"c0000003-0000-4000-8000-000000000003", first_name:"Anchana",  last_name:"Pimjai",    phone:"083-456-7890"}, pets:{name:"Nala",   breed:"Persian"} },
-  // Prapai — 3 visits
-  { id:"mk04", scheduled_at:"2026-04-15T07:30:00Z", status:"confirmed",   total_amount:900, customer_id:"c0000004-0000-4000-8000-000000000004", customers:{id:"c0000004-0000-4000-8000-000000000004", first_name:"Prapai",   last_name:"Thaweesap", phone:"084-567-8901"}, pets:{name:"Max",    breed:"Golden Retriever"} },
-  { id:"mk10", scheduled_at:"2026-04-13T04:00:00Z", status:"completed",   total_amount:900, customer_id:"c0000004-0000-4000-8000-000000000004", customers:{id:"c0000004-0000-4000-8000-000000000004", first_name:"Prapai",   last_name:"Thaweesap", phone:"084-567-8901"}, pets:{name:"Max",    breed:"Golden Retriever"} },
-  { id:"mk15", scheduled_at:"2026-04-18T02:00:00Z", status:"confirmed",   total_amount:350, customer_id:"c0000004-0000-4000-8000-000000000004", customers:{id:"c0000004-0000-4000-8000-000000000004", first_name:"Prapai",   last_name:"Thaweesap", phone:"084-567-8901"}, pets:{name:"Max",    breed:"Golden Retriever"} },
-  // Suda — 2 visits
-  { id:"mk08", scheduled_at:"2026-04-14T07:00:00Z", status:"completed",   total_amount:650, customer_id:"c0000006-0000-4000-8000-000000000006", customers:{id:"c0000006-0000-4000-8000-000000000006", first_name:"Suda",     last_name:"Chomchan",  phone:"086-789-0123"}, pets:{name:"Luna",   breed:"Ragdoll"} },
-  { id:"mk18", scheduled_at:"2026-04-18T07:00:00Z", status:"confirmed",   total_amount:450, customer_id:"c0000006-0000-4000-8000-000000000006", customers:{id:"c0000006-0000-4000-8000-000000000006", first_name:"Suda",     last_name:"Chomchan",  phone:"086-789-0123"}, pets:{name:"Luna",   breed:"Ragdoll"} },
-  // Natthida — 1 visit
-  { id:"mk11", scheduled_at:"2026-04-13T07:00:00Z", status:"completed",   total_amount:450, customer_id:"c0000005-0000-4000-8000-000000000005", customers:{id:"c0000005-0000-4000-8000-000000000005", first_name:"Natthida", last_name:"Phongsri",  phone:"085-678-9012"}, pets:{name:"Coco",   breed:"French Bulldog"} },
-];
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function CustomersPage() {
@@ -85,9 +50,6 @@ export default function CustomersPage() {
 
   useEffect(() => {
     (async () => {
-      if (DEMO_MODE) {
-        setRawBookings(MOCK_CUST_BOOKINGS); setLoading(false); return;
-      }
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
       const { data: prov } = await supabase.from("providers").select("id").eq("user_id", user.id).single();

@@ -37,53 +37,6 @@ function relDate(iso: string): string {
   return d.toLocaleDateString("en-GB", { day:"numeric", month:"short" });
 }
 
-// ── Demo mode ─────────────────────────────────────────────────────────────────
-const DEMO_MODE = true;
-
-const MOCK_REVIEWS: DbReview[] = [
-  {
-    id:"rv01", rating:5, created_at:"2026-04-15T05:00:00Z", is_read:true,
-    comment:"Butter always looks absolutely stunning after every visit! The team is so gentle and patient — she used to be nervous about grooming but now she walks in happily. Highly recommend to any dog parent in the area.",
-    reply:"Thank you so much Khun Mintra! We love having Butter here — she's such a sweetheart 🐾 See you next time!", replied_at:"2026-04-15T06:00:00Z",
-    customers:{first_name:"Mintra", last_name:"Saelim"},
-    bookings:{booking_reference:"BK-202604-2341", services:{name:"Full Grooming Package", category:"Grooming"}},
-  },
-  {
-    id:"rv02", rating:5, created_at:"2026-04-14T08:00:00Z", is_read:false,
-    comment:"Mochi came back smelling amazing and looking fluffy as a cloud. The team takes great care and the shop is very clean. Will keep coming back every month!",
-    reply:null, replied_at:null,
-    customers:{first_name:"Warat", last_name:"Chaiwong"},
-    bookings:{booking_reference:"BK-202604-2338", services:{name:"Bath & Brush", category:"Grooming"}},
-  },
-  {
-    id:"rv03", rating:5, created_at:"2026-04-13T09:00:00Z", is_read:true,
-    comment:"As a cat owner I was worried Nala would be stressed, but the staff really know how to handle cats. She was calm the whole time and came home looking beautiful. Thank you!",
-    reply:"We love our feline clients! Nala is a gem — calm and gorgeous as always. Thank you for trusting us with her 🐱", replied_at:"2026-04-13T10:00:00Z",
-    customers:{first_name:"Anchana", last_name:"Pimjai"},
-    bookings:{booking_reference:"BK-202604-2339", services:{name:"Cat Grooming", category:"Grooming"}},
-  },
-  {
-    id:"rv04", rating:4, created_at:"2026-04-10T08:00:00Z", is_read:false,
-    comment:"Max (my Golden) had a great grooming session. He's a big boy and they handled him perfectly. The only thing is the waiting area was a bit busy but the service itself was top notch.",
-    reply:null, replied_at:null,
-    customers:{first_name:"Prapai", last_name:"Thaweesap"},
-    bookings:{booking_reference:"BK-202604-2336", services:{name:"Full Grooming Package", category:"Grooming"}},
-  },
-  {
-    id:"rv05", rating:5, created_at:"2026-04-08T07:00:00Z", is_read:true,
-    comment:"Luna's first time here and it could not have gone better. She can be very picky but she let them groom her without any fuss! The coat looks incredible. Booking again next week.",
-    reply:"Luna is such a beautiful Ragdoll! We're so glad her first visit went smoothly. Looking forward to seeing her again soon 💙", replied_at:"2026-04-08T08:00:00Z",
-    customers:{first_name:"Suda", last_name:"Chomchan"},
-    bookings:{booking_reference:"BK-202604-2340", services:{name:"Cat Grooming", category:"Grooming"}},
-  },
-  {
-    id:"rv06", rating:5, created_at:"2026-04-03T06:00:00Z", is_read:true,
-    comment:"Quick and efficient bath & brush session for Butter. Always consistent high quality. I've been coming here for over a year and never disappointed.",
-    reply:"A whole year — thank you for your loyalty Khun Mintra! Butter is one of our favourite regulars 🐩", replied_at:"2026-04-03T07:00:00Z",
-    customers:{first_name:"Mintra", last_name:"Saelim"},
-    bookings:{booking_reference:"BK-202603-2301", services:{name:"Bath & Brush", category:"Grooming"}},
-  },
-];
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function ReviewsPage() {
@@ -98,24 +51,16 @@ export default function ReviewsPage() {
 
   useEffect(() => {
     (async () => {
-      if (DEMO_MODE) {
-        setRatingAvg(4.9); setReviewCount(47);
-        setReviews(MOCK_REVIEWS);
-        const existing: Record<string, string> = {};
-        MOCK_REVIEWS.forEach(r => { if (r.reply) existing[r.id] = r.reply; });
-        setReplies(existing);
-        setLoading(false); return;
-      }
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
       const { data: prov } = await supabase
         .from("providers")
-        .select("id, rating, review_count")
+        .select("id, rating_avg, review_count")
         .eq("user_id", user.id)
         .single();
       if (!prov) { setLoading(false); return; }
 
-      setRatingAvg(prov.rating ?? 0);
+      setRatingAvg(prov.rating_avg ?? 0);
       setReviewCount(prov.review_count ?? 0);
 
       const { data: rvs } = await supabase

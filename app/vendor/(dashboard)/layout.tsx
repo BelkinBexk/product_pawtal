@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -16,7 +16,7 @@ const NAV_MAIN = [
     icon: `<svg viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="14" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M5 1v2M11 1v2M1 6h14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="5" cy="10" r="1" fill="currentColor"/><circle cx="8" cy="10" r="1" fill="currentColor"/><circle cx="11" cy="10" r="1" fill="currentColor"/></svg>`,
   },
   {
-    key: "bookings", label: "Bookings", href: "/vendor/bookings", badge: "3",
+    key: "bookings", label: "Bookings", href: "/vendor/bookings", badge: null,
     icon: `<svg viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="14" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M5 1v2M11 1v2M1 6h14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
   },
   {
@@ -26,10 +26,6 @@ const NAV_MAIN = [
   {
     key: "reviews", label: "Reviews", href: "/vendor/reviews", badge: null,
     icon: `<svg viewBox="0 0 16 16" fill="none"><path d="M8 1l1.8 3.6L14 5.3l-3 2.9.7 4.1L8 10.4 4.3 12.3l.7-4.1L2 5.3l4.2-.7z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
-  },
-  {
-    key: "customers", label: "Customers", href: "/vendor/customers", badge: null,
-    icon: `<svg viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M1 13c0-2.76 2.24-5 5-5s5 2.24 5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="12" cy="7" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M14 13c0-1.66-.9-3-2-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
   },
 ];
 
@@ -148,7 +144,6 @@ function VendorTopbar() {
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 function VendorSidebar() {
   const pathname = usePathname();
-  const router   = useRouter();
   const [shopName, setShopName] = useState("");
   const [area,     setArea]     = useState("");
 
@@ -170,7 +165,9 @@ function VendorSidebar() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.push("/vendor/login");
+    // Hard navigation so the (auth) route group mounts cleanly with no
+    // stale dashboard state lingering from the previous session.
+    window.location.assign("/vendor/login");
   };
 
   return (

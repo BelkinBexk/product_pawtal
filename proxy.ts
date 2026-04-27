@@ -56,11 +56,25 @@ export async function proxy(req: NextRequest) {
   }
 
   // ── Redirect logged-in users away from login/signup ───────────────────────
+  // Customer login: only bounce customer-role sessions → /deals.
+  // A provider hitting /login is intentional (separate journeys) — let them through.
   if (session && (pathname === "/login" || pathname === "/signup")) {
     const role = session.user.user_metadata?.role;
-    const url = req.nextUrl.clone();
-    url.pathname = role === "provider" ? "/vendor/dashboard" : "/deals";
-    return NextResponse.redirect(url);
+    if (role !== "provider") {
+      const url = req.nextUrl.clone();
+      url.pathname = "/deals";
+      return NextResponse.redirect(url);
+    }
+  }
+
+  // Vendor login: only bounce provider-role sessions → /vendor/dashboard.
+  if (session && pathname === "/vendor/login") {
+    const role = session.user.user_metadata?.role;
+    if (role === "provider") {
+      const url = req.nextUrl.clone();
+      url.pathname = "/vendor/dashboard";
+      return NextResponse.redirect(url);
+    }
   }
 
   return res;

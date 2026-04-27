@@ -34,55 +34,6 @@ const colorFor = (i: number) => AVATAR_COLORS[i % AVATAR_COLORS.length];
 
 const CIRC = 2 * Math.PI * 38;
 
-// ── Demo mode ─────────────────────────────────────────────────────────────────
-const DEMO_MODE = true;
-
-const MOCK_REV_BOOKINGS: RevBooking[] = [
-  // Apr 15 (today)
-  { id:"mk01", booking_reference:"BK-202604-2341", scheduled_at:"2026-04-15T02:00:00Z", status:"completed",   total_amount:900, customer_id:"c0000001", customers:{first_name:"Mintra",   last_name:"Saelim"},    services:{name:"Full Grooming Package", category:"Grooming"} },
-  { id:"mk02", booking_reference:"BK-202604-2342", scheduled_at:"2026-04-15T03:30:00Z", status:"in_progress", total_amount:450, customer_id:"c0000002", customers:{first_name:"Warat",    last_name:"Chaiwong"},  services:{name:"Bath & Brush",          category:"Grooming"} },
-  // Apr 14
-  { id:"mk06", booking_reference:"BK-202604-2338", scheduled_at:"2026-04-14T02:00:00Z", status:"completed",   total_amount:900, customer_id:"c0000002", customers:{first_name:"Warat",    last_name:"Chaiwong"},  services:{name:"Full Grooming Package", category:"Grooming"} },
-  { id:"mk07", booking_reference:"BK-202604-2339", scheduled_at:"2026-04-14T04:00:00Z", status:"completed",   total_amount:650, customer_id:"c0000003", customers:{first_name:"Anchana",  last_name:"Pimjai"},    services:{name:"Cat Grooming",          category:"Grooming"} },
-  { id:"mk08", booking_reference:"BK-202604-2340", scheduled_at:"2026-04-14T07:00:00Z", status:"completed",   total_amount:650, customer_id:"c0000006", customers:{first_name:"Suda",     last_name:"Chomchan"},  services:{name:"Cat Grooming",          category:"Grooming"} },
-  // Apr 13
-  { id:"mk09", booking_reference:"BK-202604-2335", scheduled_at:"2026-04-13T02:00:00Z", status:"completed",   total_amount:450, customer_id:"c0000001", customers:{first_name:"Mintra",   last_name:"Saelim"},    services:{name:"Bath & Brush",          category:"Grooming"} },
-  { id:"mk10", booking_reference:"BK-202604-2336", scheduled_at:"2026-04-13T04:00:00Z", status:"completed",   total_amount:900, customer_id:"c0000004", customers:{first_name:"Prapai",   last_name:"Thaweesap"}, services:{name:"Full Grooming Package", category:"Grooming"} },
-  { id:"mk11", booking_reference:"BK-202604-2337", scheduled_at:"2026-04-13T07:00:00Z", status:"completed",   total_amount:450, customer_id:"c0000005", customers:{first_name:"Natthida", last_name:"Phongsri"},  services:{name:"Bath & Brush",          category:"Grooming"} },
-  // Apr 10
-  { id:"mk19", booking_reference:"BK-202604-2330", scheduled_at:"2026-04-10T02:00:00Z", status:"completed",   total_amount:900, customer_id:"c0000002", customers:{first_name:"Warat",    last_name:"Chaiwong"},  services:{name:"Full Grooming Package", category:"Grooming"} },
-  // Mar (6 bookings ~฿4,400)
-  { id:"mk20", booking_reference:"BK-202603-2301", scheduled_at:"2026-03-28T02:00:00Z", status:"completed",   total_amount:900, customer_id:"c0000001", customers:{first_name:"Mintra",   last_name:"Saelim"},    services:{name:"Full Grooming Package", category:"Grooming"} },
-  { id:"mk21", booking_reference:"BK-202603-2302", scheduled_at:"2026-03-25T04:00:00Z", status:"completed",   total_amount:650, customer_id:"c0000003", customers:{first_name:"Anchana",  last_name:"Pimjai"},    services:{name:"Cat Grooming",          category:"Grooming"} },
-  { id:"mk22", booking_reference:"BK-202603-2303", scheduled_at:"2026-03-21T02:00:00Z", status:"completed",   total_amount:900, customer_id:"c0000004", customers:{first_name:"Prapai",   last_name:"Thaweesap"}, services:{name:"Full Grooming Package", category:"Grooming"} },
-  { id:"mk23", booking_reference:"BK-202603-2304", scheduled_at:"2026-03-18T03:00:00Z", status:"completed",   total_amount:450, customer_id:"c0000002", customers:{first_name:"Warat",    last_name:"Chaiwong"},  services:{name:"Bath & Brush",          category:"Grooming"} },
-  { id:"mk24", booking_reference:"BK-202603-2305", scheduled_at:"2026-03-14T02:00:00Z", status:"completed",   total_amount:900, customer_id:"c0000001", customers:{first_name:"Mintra",   last_name:"Saelim"},    services:{name:"Full Grooming Package", category:"Grooming"} },
-  { id:"mk25", booking_reference:"BK-202603-2306", scheduled_at:"2026-03-07T04:00:00Z", status:"completed",   total_amount:350, customer_id:"c0000004", customers:{first_name:"Prapai",   last_name:"Thaweesap"}, services:{name:"Full Day Care",         category:"Day Care"} },
-  // Feb
-  { id:"mk30", booking_reference:"BK-202602-2201", scheduled_at:"2026-02-26T02:00:00Z", status:"completed",   total_amount:900, customer_id:"c0000001", customers:{first_name:"Mintra",   last_name:"Saelim"},    services:{name:"Full Grooming Package", category:"Grooming"} },
-  { id:"mk31", booking_reference:"BK-202602-2202", scheduled_at:"2026-02-21T04:00:00Z", status:"completed",   total_amount:650, customer_id:"c0000003", customers:{first_name:"Anchana",  last_name:"Pimjai"},    services:{name:"Cat Grooming",          category:"Grooming"} },
-  { id:"mk32", booking_reference:"BK-202602-2203", scheduled_at:"2026-02-18T02:00:00Z", status:"completed",   total_amount:900, customer_id:"c0000002", customers:{first_name:"Warat",    last_name:"Chaiwong"},  services:{name:"Full Grooming Package", category:"Grooming"} },
-  { id:"mk33", booking_reference:"BK-202602-2204", scheduled_at:"2026-02-14T03:00:00Z", status:"completed",   total_amount:450, customer_id:"c0000005", customers:{first_name:"Natthida", last_name:"Phongsri"},  services:{name:"Bath & Brush",          category:"Grooming"} },
-  { id:"mk34", booking_reference:"BK-202602-2205", scheduled_at:"2026-02-07T02:00:00Z", status:"completed",   total_amount:900, customer_id:"c0000004", customers:{first_name:"Prapai",   last_name:"Thaweesap"}, services:{name:"Full Grooming Package", category:"Grooming"} },
-  // Jan
-  { id:"mk40", booking_reference:"BK-202601-2101", scheduled_at:"2026-01-25T02:00:00Z", status:"completed",   total_amount:900, customer_id:"c0000001", customers:{first_name:"Mintra",   last_name:"Saelim"},    services:{name:"Full Grooming Package", category:"Grooming"} },
-  { id:"mk41", booking_reference:"BK-202601-2102", scheduled_at:"2026-01-18T04:00:00Z", status:"completed",   total_amount:650, customer_id:"c0000003", customers:{first_name:"Anchana",  last_name:"Pimjai"},    services:{name:"Cat Grooming",          category:"Grooming"} },
-  { id:"mk42", booking_reference:"BK-202601-2103", scheduled_at:"2026-01-11T02:00:00Z", status:"completed",   total_amount:900, customer_id:"c0000002", customers:{first_name:"Warat",    last_name:"Chaiwong"},  services:{name:"Full Grooming Package", category:"Grooming"} },
-  { id:"mk43", booking_reference:"BK-202601-2104", scheduled_at:"2026-01-04T03:00:00Z", status:"completed",   total_amount:450, customer_id:"c0000005", customers:{first_name:"Natthida", last_name:"Phongsri"},  services:{name:"Bath & Brush",          category:"Grooming"} },
-  // Dec 2025
-  { id:"mk50", booking_reference:"BK-202512-2001", scheduled_at:"2025-12-27T02:00:00Z", status:"completed",   total_amount:900, customer_id:"c0000001", customers:{first_name:"Mintra",   last_name:"Saelim"},    services:{name:"Full Grooming Package", category:"Grooming"} },
-  { id:"mk51", booking_reference:"BK-202512-2002", scheduled_at:"2025-12-20T04:00:00Z", status:"completed",   total_amount:650, customer_id:"c0000006", customers:{first_name:"Suda",     last_name:"Chomchan"},  services:{name:"Cat Grooming",          category:"Grooming"} },
-  { id:"mk52", booking_reference:"BK-202512-2003", scheduled_at:"2025-12-13T02:00:00Z", status:"completed",   total_amount:900, customer_id:"c0000004", customers:{first_name:"Prapai",   last_name:"Thaweesap"}, services:{name:"Full Grooming Package", category:"Grooming"} },
-  { id:"mk53", booking_reference:"BK-202512-2004", scheduled_at:"2025-12-06T02:00:00Z", status:"completed",   total_amount:900, customer_id:"c0000002", customers:{first_name:"Warat",    last_name:"Chaiwong"},  services:{name:"Full Grooming Package", category:"Grooming"} },
-  // Nov 2025
-  { id:"mk60", booking_reference:"BK-202511-1901", scheduled_at:"2025-11-29T02:00:00Z", status:"completed",   total_amount:900, customer_id:"c0000001", customers:{first_name:"Mintra",   last_name:"Saelim"},    services:{name:"Full Grooming Package", category:"Grooming"} },
-  { id:"mk61", booking_reference:"BK-202511-1902", scheduled_at:"2025-11-15T04:00:00Z", status:"completed",   total_amount:650, customer_id:"c0000003", customers:{first_name:"Anchana",  last_name:"Pimjai"},    services:{name:"Cat Grooming",          category:"Grooming"} },
-  { id:"mk62", booking_reference:"BK-202511-1903", scheduled_at:"2025-11-08T02:00:00Z", status:"completed",   total_amount:900, customer_id:"c0000002", customers:{first_name:"Warat",    last_name:"Chaiwong"},  services:{name:"Full Grooming Package", category:"Grooming"} },
-];
-const MOCK_PAYOUTS: Payout[] = [
-  { id:"py01", net_amount:21240, status:"pending"   },
-  { id:"py02", net_amount:22140, status:"paid"      },
-];
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function RevenuePage() {
@@ -93,9 +44,6 @@ export default function RevenuePage() {
 
   useEffect(() => {
     (async () => {
-      if (DEMO_MODE) {
-        setBookings(MOCK_REV_BOOKINGS); setPayouts(MOCK_PAYOUTS); setLoading(false); return;
-      }
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
       const { data: prov } = await supabase.from("providers").select("id").eq("user_id", user.id).single();
@@ -154,10 +102,14 @@ export default function RevenuePage() {
   const DAY_LABELS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
   const MONTH_LABELS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
+  // Week chart counts all non-cancelled bookings (completed + confirmed) so
+  // every day of the week shows a bar, not only past-completed days.
+  const activeBookings = bookings.filter(b => b.status !== "cancelled");
+
   const weekChartData = DAY_LABELS.map((label, i) => {
     const ds = new Date(weekStart); ds.setDate(weekStart.getDate() + i);
     const de = new Date(ds.getTime() + 86400000);
-    const val = completed
+    const val = activeBookings
       .filter(b => { const d = new Date(b.scheduled_at); return d >= ds && d < de; })
       .reduce((s, b) => s + (b.total_amount ?? 0), 0);
     return { label, val };
@@ -175,7 +127,9 @@ export default function RevenuePage() {
   const chartData  = chartMode === "week" ? weekChartData : monthChartData;
   const maxVal     = Math.max(...chartData.map(d => d.val), 1);
   const chartTotal = chartData.reduce((s, d) => s + d.val, 0).toLocaleString();
-  const chartLabel = chartMode === "week" ? `This week · Total ฿${chartTotal}` : `6 months · Total ฿${chartTotal}`;
+  const chartLabel = chartMode === "week"
+    ? `This week · Total ฿${chartTotal}`
+    : `6 months · Total ฿${chartTotal}`;
 
   // ── Service breakdown donut ────────────────────────────────────────────────
   const catTotals = useMemo(() => {
@@ -219,13 +173,20 @@ export default function RevenuePage() {
     { label:"This Month",       value:`฿${revenueMonth.toLocaleString()}`, change: revenueMonth > 0 ? "Month to date" : "No revenue yet",      dir:"up"      as const },
     { label:"This Week",        value:`฿${revenueWeek.toLocaleString()}`,  change: revenueWeek  > 0 ? "Week to date"  : "No revenue this week", dir:"up"      as const },
     { label:"Avg. per Booking", value: avgPerBooking > 0 ? `฿${avgPerBooking.toLocaleString()}` : "—", change:"Based on completed bookings",    dir:"up"      as const },
-    { label:"Pending Payout",   value: pendingPayout > 0 ? `฿${pendingPayout.toLocaleString()}` : "฿0", change:"From provider_payouts table",  dir:"neutral" as const },
+    { label:"Pending Payout",   value: pendingPayout > 0 ? `฿${pendingPayout.toLocaleString()}` : "฿0", change: pendingPayout > 0 ? "Transfers Mon, 28 Apr" : "No pending payout", dir:"neutral" as const },
   ];
 
   const badgeClass = (s: string) =>
-    s === "completed" ? "badge-completed" :
-    s === "confirmed" ? "badge-confirmed" :
-    s === "cancelled" ? "badge-cancelled" : "badge-pending";
+    s === "completed"   ? "badge-completed" :
+    s === "confirmed"   ? "badge-confirmed" :
+    s === "cancelled"   ? "badge-cancelled" :
+    s === "in_progress" ? "badge-in-progress" : "badge-pending";
+
+  const statusLabel = (s: string) =>
+    s === "completed"   ? "Completed"  :
+    s === "in_progress" ? "Checked-in" :
+    s === "confirmed"   ? "Confirmed"  :
+    s === "cancelled"   ? "Cancelled"  : "Pending";
 
   return (
     <main className="ovw-main">
@@ -233,7 +194,7 @@ export default function RevenuePage() {
 
         {/* ── Stat cards ── */}
         <div className="stats-row">
-          {statCards.map((c, ci) => (
+          {statCards.map((c) => (
             <div key={c.label} className="stat-card">
               <div className="stat-card-label">
                 {c.label}
@@ -276,8 +237,11 @@ export default function RevenuePage() {
                 {chartData.map((d, i) => (
                   <div key={i} className="chart-bar-group">
                     <div className={`chart-bar${i === chartData.length - 1 ? " active" : ""}`}
-                      style={{ height:`${Math.round((d.val / maxVal) * 100)}%` }}>
-                      <div className="chart-bar-tooltip">฿{d.val.toLocaleString()}</div>
+                      style={{
+                        height: d.val > 0 ? `${Math.max(Math.round((d.val / maxVal) * 148), 6)}px` : "2px",
+                        background: d.val === 0 ? "#e8f4ff" : i === chartData.length - 1 ? "#17A8FF" : "#7dc8ff",
+                      }}>
+                      {d.val > 0 && <div className="chart-bar-tooltip">฿{d.val.toLocaleString()}</div>}
                     </div>
                   </div>
                 ))}
@@ -364,7 +328,7 @@ export default function RevenuePage() {
                     <td>{new Date(b.scheduled_at).toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" })}</td>
                     <td style={{ fontWeight:600 }}>฿{(b.total_amount ?? 0).toLocaleString()}</td>
                     <td>
-                      <span className={`badge ${badgeClass(b.status)}`}>{b.status}</span>
+                      <span className={`badge ${badgeClass(b.status)}`}>{statusLabel(b.status)}</span>
                     </td>
                   </tr>
                 ))}

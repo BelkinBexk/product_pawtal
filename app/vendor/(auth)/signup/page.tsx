@@ -37,13 +37,21 @@ export default function VendorSignupPage() {
     setErrs(prev => { const next = { ...prev }; delete next[field]; return next; });
 
   // ── Step 1 validation ──────────────────────────────────────────────────────
-  const handleStep1 = (e: React.FormEvent) => {
+  const handleStep1 = (e: { preventDefault(): void }) => {
     e.preventDefault();
     const next: Errs = {};
     if (!firstName.trim()) next.firstName = "First name is required.";
     if (!lastName.trim())  next.lastName  = "Last name is required.";
-    if (!phone.trim())     next.phone     = "Phone number is required.";
-    if (!email.trim())     next.email     = "Email is required.";
+    if (!phone.trim()) {
+      next.phone = "Phone number is required.";
+    } else if (!/^0[689]\d{8}$/.test(phone.replace(/[-\s]/g, ""))) {
+      next.phone = "Invalid phone number.";
+    }
+    if (!email.trim()) {
+      next.email = "Email is required.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) {
+      next.email = "Invalid email address.";
+    }
     if (!password)         next.password  = "Password is required.";
     else if (password.length < 8) next.password = "Password must be at least 8 characters.";
     if (Object.keys(next).length) { setErrs(next); return; }
@@ -52,7 +60,7 @@ export default function VendorSignupPage() {
   };
 
   // ── Step 2 validation ──────────────────────────────────────────────────────
-  const handleStep2 = (e: React.FormEvent) => {
+  const handleStep2 = (e: { preventDefault(): void }) => {
     e.preventDefault();
     const next: Errs = {};
     if (!shopName.trim()) next.shopName    = "Business name is required.";
@@ -65,7 +73,7 @@ export default function VendorSignupPage() {
   };
 
   // ── Step 3 submit — create account ────────────────────────────────────────
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: { preventDefault(): void }) => {
     e.preventDefault();
     if (!pdpa) { setErrs({ pdpa: "You must agree to the PDPA consent to continue." }); return; }
     setErrs({});
@@ -202,7 +210,7 @@ export default function VendorSignupPage() {
 
                 <div className="login-field">
                   <label htmlFor="vs-email">Email</label>
-                  <input id="vs-email" type="email" className="login-input" placeholder="you@yourbusiness.com"
+                  <input id="vs-email" type="text" className="login-input" placeholder="you@yourbusiness.com"
                     value={email} onChange={e => { setEmail(e.target.value); clearErr("email"); }} autoComplete="email" />
                   {errs.email && <div className="login-field-error">{errs.email}</div>}
                 </div>

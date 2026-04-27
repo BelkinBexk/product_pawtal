@@ -27,21 +27,7 @@ const DEFAULT_HOURS: DayHour[] = [
   { day: "Sunday",    open: false, from: "10:00", to: "17:00" },
 ];
 
-const MOCK_LOGOS = [
-  { id: "logo1", label: "Paw",      bg: "#17A8FF", emoji: "🐾" },
-  { id: "logo2", label: "Star",     bg: "#F5A623", emoji: "⭐" },
-  { id: "logo3", label: "Heart",    bg: "#f43f5e", emoji: "♥" },
-  { id: "logo4", label: "Leaf",     bg: "#22c55e", emoji: "🍃" },
-  { id: "logo5", label: "Crown",    bg: "#8b5cf6", emoji: "👑" },
-  { id: "logo6", label: "Scissors", bg: "#0B93E8", emoji: "✂️" },
-];
-
-const MOCK_COVERS = [
-  { id: "cover1", label: "Ocean blue",  from: "#e8f4ff", to: "#c7e8ff" },
-  { id: "cover2", label: "Mint teal",   from: "#e0fff8", to: "#b3ece1" },
-  { id: "cover3", label: "Soft purple", from: "#f3e8ff", to: "#ddc9ff" },
-  { id: "cover4", label: "Fresh green", from: "#dcfce7", to: "#bbf7d0" },
-];
+const STORAGE_BUCKET = "provider-images";
 
 // Convert "HH:MM:SS" (Postgres time) → "HH:MM"
 function pgTimeToHHMM(t: string | null | undefined): string {
@@ -70,6 +56,7 @@ export default function ProfilePage() {
 
   // Business info
   const [providerId,   setProviderId]   = useState<string | null>(null);
+  const [userId,       setUserId]       = useState<string | null>(null);
   const [name,         setName]         = useState("");
   const [desc,         setDesc]         = useState("");
   const [serviceType,  setServiceType]  = useState("Grooming");
@@ -83,9 +70,11 @@ export default function ProfilePage() {
   // Hours
   const [hours, setHours] = useState<DayHour[]>(DEFAULT_HOURS);
 
-  // Photos (mock selections — real upload deferred)
-  const [selectedLogo,  setSelectedLogo]  = useState<string>("logo1");
-  const [selectedCover, setSelectedCover] = useState<string>("cover1");
+  // Photos — real URLs stored in providers table
+  const [logoUrl,        setLogoUrl]        = useState<string | null>(null);
+  const [coverUrl,       setCoverUrl]       = useState<string | null>(null);
+  const [logoUploading,  setLogoUploading]  = useState(false);
+  const [coverUploading, setCoverUploading] = useState(false);
 
   // UI state
   const [loading,  setLoading]  = useState(true);
@@ -101,7 +90,8 @@ export default function ProfilePage() {
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) { setLoading(false); return; }
+      setUserId(user.id);
 
       // Load provider row
       const { data: provider } = await supabase
@@ -122,6 +112,8 @@ export default function ProfilePage() {
         setEmail(provider.email      ?? "");
         setLineId(provider.line_id   ?? "");
         setWebsite(provider.website  ?? "");
+        setLogoUrl(provider.logo_url   ?? null);
+        setCoverUrl(provider.cover_url ?? null);
         // area is stored comma-separated
         if (provider.area) {
           setSelectedAreas(provider.area.split(",").map((a: string) => a.trim()).filter(Boolean));
@@ -173,6 +165,8 @@ export default function ProfilePage() {
         line_id:      lineId.trim() || null,
         website:      website.trim() || null,
         area:         selectedAreas.join(", ") || null,
+        logo_url:     logoUrl  || null,
+        cover_url:    coverUrl || null,
       })
       .eq("id", providerId);
 
@@ -225,6 +219,8 @@ export default function ProfilePage() {
       setEmail(provider.email     ?? "");
       setLineId(provider.line_id  ?? "");
       setWebsite(provider.website ?? "");
+      setLogoUrl(provider.logo_url   ?? null);
+      setCoverUrl(provider.cover_url ?? null);
       if (provider.area) {
         setSelectedAreas(provider.area.split(",").map((a: string) => a.trim()).filter(Boolean));
       } else {
@@ -250,15 +246,13 @@ export default function ProfilePage() {
   // ── Progress ───────────────────────────────────────────────────────────────
   const infoComplete   = !!(name && desc && address);
   const hoursComplete  = hours.some(h => h.open);
-  const photosComplete = !!(selectedLogo || selectedCover);
+  const photosComplete = !!(logoUrl || coverUrl);
   const progress = (infoComplete ? 40 : 0) + (hoursComplete ? 30 : 0) + (photosComplete ? 30 : 0);
 
   // Live preview helpers
   const today = new Date().toLocaleDateString("en-US", { weekday: "long" });
   const isOpenToday = hours.some(h => h.day === today && h.open);
   const todayHours  = hours.find(h => h.day === today && h.open);
-  const logoObj  = MOCK_LOGOS.find(l => l.id === selectedLogo);
-  const coverObj = MOCK_COVERS.find(c => c.id === selectedCover);
 
   const toggleArea = (area: string) =>
     setSelectedAreas(prev => prev.includes(area) ? prev.filter(a => a !== area) : [...prev, area]);
@@ -268,6 +262,74 @@ export default function ProfilePage() {
 
   const setHourTime = (i: number, field: "from" | "to", val: string) =>
     setHours(prev => prev.map((h, idx) => idx === i ? { ...h, [field]: val } : h));
+
+  // ── Image upload helpers ───────────────────────────────────────────────────
+  const uploadImage = async (
+    file: File,
+    slot: "logo" | "cover",
+    setUploading: (v: boolean) => void,
+    setUrl: (v: string | null) => void,
+    maxBytes: number,
+  ) => {
+    if (!providerId || !userId) return;
+    if (file.size > maxBytes) {
+      showToast(`File too large. Max ${Math.round(maxBytes / 1024 / 1024)} MB allowed.`);
+      return;
+    }
+    setUploading(true);
+    // Use auth user ID as folder so storage UPDATE/DELETE policies (auth.uid() check) pass
+    const ext  = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+    const path = `${userId}/${slot}.${ext}`;
+
+    const { error: upErr } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .upload(path, file, { upsert: true, contentType: file.type });
+
+    if (upErr) {
+      console.error("[storage upload]", upErr);
+      setUploading(false);
+      showToast(`Upload failed: ${upErr.message}`);
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from(STORAGE_BUCKET)
+      .getPublicUrl(path);
+
+    const col = slot === "logo" ? "logo_url" : "cover_url";
+    const { error: dbErr } = await supabase
+      .from("providers")
+      .update({ [col]: publicUrl })
+      .eq("id", providerId);
+
+    setUploading(false);
+    if (dbErr) {
+      showToast("Upload saved but DB update failed.");
+      return;
+    }
+
+    setUrl(publicUrl);
+    showToast(slot === "logo" ? "Logo updated!" : "Cover photo updated!", true);
+  };
+
+  const deleteImage = async (
+    slot: "logo" | "cover",
+    currentUrl: string | null,
+    setUrl: (v: string | null) => void,
+  ) => {
+    if (!providerId || !userId || !currentUrl) return;
+
+    // Best-effort Storage delete — path uses userId (matches auth.uid() in policy)
+    const ext = currentUrl.split(".").pop()?.split("?")[0];
+    if (ext) {
+      await supabase.storage.from(STORAGE_BUCKET).remove([`${userId}/${slot}.${ext}`]);
+    }
+
+    const col = slot === "logo" ? "logo_url" : "cover_url";
+    await supabase.from("providers").update({ [col]: null }).eq("id", providerId);
+    setUrl(null);
+    showToast(slot === "logo" ? "Logo removed." : "Cover photo removed.", true);
+  };
 
   const TAB_CONFIG: { key: TabKey; label: string; emoji: string; done: boolean }[] = [
     { key: "info",   label: "Business Info",   emoji: "📋", done: infoComplete   },
@@ -450,39 +512,129 @@ export default function ProfilePage() {
               <div className="prof-panel">
                 <div className="prof-panel-body">
 
+                  {/* Profile Photo (logo) */}
                   <div className="form-group">
                     <label className="form-label">
-                      Shop Logo
-                      <span className="prof-label-hint"> · recommended 400×400px</span>
+                      Profile Photo
+                      <span className="prof-label-hint"> · 800×800 px recommended (1:1) · min 400×400 px · max 2 MB</span>
                     </label>
-                    <p className="prof-hint">Choose a style for your shop logo</p>
-                    <div className="photo-picker-grid logos">
-                      {MOCK_LOGOS.map(l => (
-                        <div key={l.id} className={`photo-picker-item${selectedLogo === l.id ? " selected" : ""}`} onClick={() => setSelectedLogo(l.id)}>
-                          <div style={{ height: 68, background: l.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>{l.emoji}</div>
-                          <div className="photo-picker-label">{l.label}</div>
+                    <p className="prof-hint">Square crop, displayed as a circle — JPG or PNG only</p>
+
+                    <div className="photo-upload-slot">
+                      {logoUrl ? (
+                        <div className="photo-upload-preview">
+                          <img src={logoUrl} alt="Profile photo" className="photo-upload-img logo-img" />
+                          <div className="photo-upload-actions">
+                            <label className="photo-upload-replace-btn">
+                              {logoUploading ? "Uploading…" : "Replace"}
+                              <input
+                                type="file"
+                                accept="image/jpeg,image/png"
+                                style={{ display: "none" }}
+                                disabled={logoUploading}
+                                onChange={e => {
+                                  const f = e.target.files?.[0];
+                                  if (f) uploadImage(f, "logo", setLogoUploading, setLogoUrl, 2 * 1024 * 1024);
+                                  e.target.value = "";
+                                }}
+                              />
+                            </label>
+                            <button
+                              className="photo-upload-delete-btn"
+                              onClick={() => deleteImage("logo", logoUrl, setLogoUrl)}
+                            >
+                              Remove
+                            </button>
+                          </div>
                         </div>
-                      ))}
+                      ) : (
+                        <label className={`photo-upload-empty${logoUploading ? " uploading" : ""}`}>
+                          <div className="photo-upload-empty-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round"/>
+                              <polyline points="17 8 12 3 7 8" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              <line x1="12" y1="3" x2="12" y2="15" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round"/>
+                            </svg>
+                          </div>
+                          <div className="photo-upload-empty-label">
+                            {logoUploading ? "Uploading…" : "Click to upload profile photo"}
+                          </div>
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png"
+                            style={{ display: "none" }}
+                            disabled={logoUploading}
+                            onChange={e => {
+                              const f = e.target.files?.[0];
+                              if (f) uploadImage(f, "logo", setLogoUploading, setLogoUrl, 2 * 1024 * 1024);
+                              e.target.value = "";
+                            }}
+                          />
+                        </label>
+                      )}
                     </div>
                   </div>
 
+                  {/* Cover Photo */}
                   <div className="form-group" style={{ marginTop: 20, marginBottom: 0 }}>
                     <label className="form-label">
                       Cover Photo
-                      <span className="prof-label-hint"> · recommended 1280×720px</span>
+                      <span className="prof-label-hint"> · 1920×640 px recommended (3:1) · min 960×320 px · max 5 MB</span>
                     </label>
-                    <p className="prof-hint">Choose a cover style for your shop page</p>
-                    <div className="photo-picker-grid">
-                      {MOCK_COVERS.map(c => (
-                        <div key={c.id} className={`photo-picker-item${selectedCover === c.id ? " selected" : ""}`} onClick={() => setSelectedCover(c.id)}>
-                          <div style={{ height: 80, background: `linear-gradient(135deg, ${c.from}, ${c.to})` }} />
-                          <div className="photo-picker-label">{c.label}</div>
+                    <p className="prof-hint">Wide banner image — JPG or PNG only</p>
+
+                    <div className="photo-upload-slot cover-slot">
+                      {coverUrl ? (
+                        <div className="photo-upload-preview">
+                          <img src={coverUrl} alt="Cover photo" className="photo-upload-img cover-img" />
+                          <div className="photo-upload-actions">
+                            <label className="photo-upload-replace-btn">
+                              {coverUploading ? "Uploading…" : "Replace"}
+                              <input
+                                type="file"
+                                accept="image/jpeg,image/png"
+                                style={{ display: "none" }}
+                                disabled={coverUploading}
+                                onChange={e => {
+                                  const f = e.target.files?.[0];
+                                  if (f) uploadImage(f, "cover", setCoverUploading, setCoverUrl, 5 * 1024 * 1024);
+                                  e.target.value = "";
+                                }}
+                              />
+                            </label>
+                            <button
+                              className="photo-upload-delete-btn"
+                              onClick={() => deleteImage("cover", coverUrl, setCoverUrl)}
+                            >
+                              Remove
+                            </button>
+                          </div>
                         </div>
-                      ))}
-                      <div className="photo-picker-add" onClick={() => showToast("Photo upload coming soon!")}>
-                        <div className="photo-picker-add-icon">+</div>
-                        <div className="photo-picker-add-label">Upload photo</div>
-                      </div>
+                      ) : (
+                        <label className={`photo-upload-empty cover-empty${coverUploading ? " uploading" : ""}`}>
+                          <div className="photo-upload-empty-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round"/>
+                              <polyline points="17 8 12 3 7 8" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              <line x1="12" y1="3" x2="12" y2="15" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round"/>
+                            </svg>
+                          </div>
+                          <div className="photo-upload-empty-label">
+                            {coverUploading ? "Uploading…" : "Click to upload cover photo"}
+                          </div>
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png"
+                            style={{ display: "none" }}
+                            disabled={coverUploading}
+                            onChange={e => {
+                              const f = e.target.files?.[0];
+                              if (f) uploadImage(f, "cover", setCoverUploading, setCoverUrl, 5 * 1024 * 1024);
+                              e.target.value = "";
+                            }}
+                          />
+                        </label>
+                      )}
                     </div>
                   </div>
 
@@ -517,10 +669,18 @@ export default function ProfilePage() {
               <div className="preview-card">
 
                 {/* Cover + logo */}
-                <div className="preview-cover" style={coverObj ? { background: `linear-gradient(135deg, ${coverObj.from}, ${coverObj.to})` } : {}}>
+                <div
+                  className="preview-cover"
+                  style={coverUrl
+                    ? { backgroundImage: `url(${coverUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
+                    : { background: "linear-gradient(135deg, #e8f4ff, #c7e8ff)" }
+                  }
+                >
                   <div className="preview-logo-wrap">
-                    <div className="preview-logo" style={logoObj ? { background: logoObj.bg } : {}}>
-                      {logoObj ? logoObj.emoji : name[0] || "?"}
+                    <div className="preview-logo" style={logoUrl ? { background: "transparent", padding: 0 } : {}}>
+                      {logoUrl
+                        ? <img src={logoUrl} alt="logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        : (name[0] || "?")}
                     </div>
                   </div>
                 </div>

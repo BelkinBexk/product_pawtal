@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -34,7 +34,8 @@ const CAT_COLORS: Record<string, string> = {
 const SIZES: SizeKey[]      = ["XXS", "XS", "S", "M", "L", "XL", "2XL"];
 const SIZE_WEIGHTS: string[] = ["<2 kg","2–5 kg","5–10 kg","10–15 kg","15–20 kg","20–30 kg","30+ kg"];
 const FUR_TYPES: FurType[]  = ["Short fur", "Long fur", "Special / Double coat"];
-const DURATIONS             = [15,30,45,60,90,120,150,180,240,360,480];
+const DURATION_HOURS        = [0,1,2,3,4,5,6,7,8];
+const DURATION_MINS         = [0,15,30,45];
 const BUFFERS               = [0,5,10,15,20,30,45,60];
 
 // Fur type ↔ DB enum
@@ -91,6 +92,78 @@ function DeleteModal({ name, onConfirm, onCancel }: { name: string; onConfirm: (
           <button className="svc-modal-delete" onClick={onConfirm}>Yes, delete</button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Toggle switch ─────────────────────────────────────────────────────────────
+function Toggle({ on, onChange, disabled }: { on: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
+  return (
+    <button
+      className={`svc-toggle${on ? " on" : ""}`}
+      onClick={() => !disabled && onChange(!on)}
+      type="button"
+      role="switch"
+      aria-checked={on}
+      disabled={disabled}
+    >
+      <span className="svc-toggle-thumb" />
+    </button>
+  );
+}
+
+// ── Custom select field ────────────────────────────────────────────────────────
+function FormSelect({ value, onChange, options, minWidth }: {
+  value: string | number;
+  onChange: (v: string | number) => void;
+  options: { label: string; value: string | number }[];
+  minWidth?: number | string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    if (open) document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [open]);
+
+  const selectedLabel = options.find(o => o.value === value)?.label ?? String(value);
+
+  return (
+    <div className="fsf-wrap" ref={ref} style={minWidth !== undefined ? { minWidth } : undefined}>
+      <button
+        className={`fsf-trigger${open ? " open" : ""}`}
+        onClick={() => setOpen(o => !o)}
+        type="button"
+      >
+        <span className="fsf-value">{selectedLabel}</span>
+        <svg viewBox="0 0 10 6" fill="none" width="9" height="9" style={{ flexShrink:0, transition:"transform 0.15s", transform: open ? "rotate(180deg)" : undefined }}>
+          <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+      {open && (
+        <div className="fsf-popover">
+          {options.map(o => (
+            <button
+              key={String(o.value)}
+              className={`fsf-option${o.value === value ? " selected" : ""}`}
+              onClick={() => { onChange(o.value); setOpen(false); }}
+              type="button"
+            >
+              {o.value === value
+                ? <svg viewBox="0 0 12 12" fill="none" width="11" height="11" style={{ flexShrink:0, color:"#17A8FF" }}>
+                    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                : <span style={{ width:11, flexShrink:0, display:"inline-block" }} />
+              }
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -152,9 +225,11 @@ function EditPage({ svc, isNew, saving, onSave, onBack, onDelete }: {
           </div>
           <div className="form-group">
             <label className="form-label" style={{ color: "#17A8FF" }}>Category <span style={{ color:"#ef4444" }}>*</span></label>
-            <select className="form-select" value={form.category} onChange={e => set("category", e.target.value)}>
-              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
+            <FormSelect
+              value={form.category}
+              onChange={v => set("category", v)}
+              options={CATEGORIES.map(c => ({ label: c, value: c }))}
+            />
           </div>
         </div>
       </div>
@@ -165,17 +240,29 @@ function EditPage({ svc, isNew, saving, onSave, onBack, onDelete }: {
         <div className="svc-dur-row">
           <div className="svc-dur-group">
             <label>Duration <span style={{ color:"#ef4444" }}>*</span></label>
-            <select className="form-select" value={form.duration} style={{ minWidth:140 }}
-              onChange={e => set("duration", Number(e.target.value))}>
-              {DURATIONS.map(d => <option key={d} value={d}>{d} min</option>)}
-            </select>
+            <div style={{ display:"flex", gap:8 }}>
+              <FormSelect
+                value={Math.floor(form.duration / 60)}
+                onChange={v => set("duration", Number(v) * 60 + (form.duration % 60))}
+                options={DURATION_HOURS.map(h => ({ label: `${h}h`, value: h }))}
+                minWidth={90}
+              />
+              <FormSelect
+                value={form.duration % 60}
+                onChange={v => set("duration", Math.floor(form.duration / 60) * 60 + Number(v))}
+                options={DURATION_MINS.map(m => ({ label: `${m} min`, value: m }))}
+                minWidth={90}
+              />
+            </div>
           </div>
           <div className="svc-dur-group">
             <label>Buffer Time</label>
-            <select className="form-select" value={form.bufferTime} style={{ minWidth:120 }}
-              onChange={e => set("bufferTime", Number(e.target.value))}>
-              {BUFFERS.map(b => <option key={b} value={b}>{b === 0 ? "None" : `${b} min`}</option>)}
-            </select>
+            <FormSelect
+              value={form.bufferTime}
+              onChange={v => set("bufferTime", Number(v))}
+              options={BUFFERS.map(b => ({ label: b === 0 ? "None" : `${b} min`, value: b }))}
+              minWidth={120}
+            />
           </div>
           <label className="svc-vary-check">
             <input type="checkbox" checked={form.variesBySize}
@@ -242,17 +329,23 @@ function EditPage({ svc, isNew, saving, onSave, onBack, onDelete }: {
             value={form.description}
             onChange={e => set("description", e.target.value)} />
         </div>
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:16 }}>
+          <Toggle on={form.active} onChange={v => set("active", v)} disabled={saving} />
+          <span className={`svc-toggle-label${form.active ? " on" : ""}`} style={{ fontSize:13 }}>
+            {form.active ? "Active" : "Inactive"}
+          </span>
+        </div>
       </div>
 
       {/* Footer actions */}
       <div style={{ display:"flex", gap:10, justifyContent:"space-between", alignItems:"center", paddingBottom:32 }}>
-        <button className="svc-edit-back" style={{ color:"#ef4444" }} onClick={onDelete} disabled={saving}>
+        <button className="svc-danger-btn" onClick={onDelete} disabled={saving}>
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
             <path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M3 4l1 9h8l1-9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
           {isNew ? "Discard" : "Delete service"}
         </button>
-        <div style={{ display:"flex", gap:10 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:20 }}>
           <button className="prof-discard-btn" onClick={onBack} disabled={saving}>Cancel</button>
           <button className="prof-save-btn" onClick={handleSave} disabled={saving}>
             {saving ? "Saving…" : isNew ? "Add Service" : "Save Changes"}
@@ -355,11 +448,13 @@ function ServiceRow({ svc, onEdit, onToggle, onDelete }: {
       <td><span className="svc-cat-tag" style={{ color: cc }}>{svc.category}</span></td>
       <td className="svc-dur">{fmtDuration(svc.duration)}</td>
       <td className="svc-price">{fmtPrice(svc)}</td>
-      <td>
-        <button className={`svc-status-btn${svc.active ? " active" : " inactive"}`}
-          onClick={e => { e.stopPropagation(); onToggle(); }}>
-          {svc.active ? "Active" : "Inactive"}
-        </button>
+      <td onClick={e => e.stopPropagation()}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <Toggle on={svc.active} onChange={() => onToggle()} />
+          <span className={`svc-toggle-label${svc.active ? " on" : ""}`}>
+            {svc.active ? "Active" : "Inactive"}
+          </span>
+        </div>
       </td>
       <td className="svc-actions" onClick={e => e.stopPropagation()}>
         <button className="svc-icon-btn edit" title="Edit" onClick={onEdit}>
@@ -437,10 +532,10 @@ export default function ServicesPage() {
   useEffect(() => {
     async function init() {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) { setLoading(false); return; }
       const { data: provider } = await supabase
         .from("providers").select("id").eq("user_id", user.id).single();
-      if (!provider) return;
+      if (!provider) { setLoading(false); return; }
       setProviderId(provider.id);
       await loadServices(provider.id);
     }
